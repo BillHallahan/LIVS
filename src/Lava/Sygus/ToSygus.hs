@@ -13,7 +13,7 @@ toSygus es =
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
-    fspec ++ "\n" ++ constraints ++ "\n(check-synth)"
+    "(set-logic SLIA)\n" ++ fspec ++ "\n" ++ constraints ++ "\n(check-synth)"
 
 toSygusExample :: Example -> String
 toSygusExample (Example { func_name = f, input = is, output = out }) =
