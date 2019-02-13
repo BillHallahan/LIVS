@@ -1,0 +1,10 @@
+(synth-fun double ((x1 Int)) Int
+((Start Int (ntInt))
+(ntInt Int
+(0 1 2 3 4 5 x1
+(+ ntInt ntInt)
+(- ntInt ntInt)
+(* ntInt ntInt)))))
+(constraint (= (double 1) 2))
+(constraint (= (double 2) 4))
+(check-synth)
