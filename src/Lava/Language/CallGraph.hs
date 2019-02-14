@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Lava.Language.CallGraph ( CallGraph
                                , CallForest
                                , CallTree
@@ -10,6 +12,7 @@ module Lava.Language.CallGraph ( CallGraph
 import Lava.Language.Syntax
 
 import qualified Data.Graph as G
+import Data.List
 import Data.Maybe
 
 data CallGraph = CallGraph G.Graph (G.Vertex -> Name)
@@ -18,7 +21,15 @@ data CallGraph = CallGraph G.Graph (G.Vertex -> Name)
 createCallGraph :: [(Name, [Name])] -> CallGraph
 createCallGraph nss =
     let
-        (g, f, _) = G.graphFromEdges . map (\(n, ns) -> ((), n, ns)) $ nss
+        -- We want to make sure that all names are included as nodes, even if
+        -- they are only in the outlist.  Data.Graph does not guarantee this,
+        -- so we do it ourselves.
+        nss_f = map fst nss 
+        nss_s = nub $ concatMap snd nss
+        nss_s' = nss_s \\ nss_f
+        nss' = nss ++ map (,[]) nss_s'
+
+        (g, f, _) = G.graphFromEdges . map (\(n, ns) -> ((), n, ns)) $ nss'
     in
     CallGraph g (mid . f)
     where
