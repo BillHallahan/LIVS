@@ -40,7 +40,7 @@ writeCVC4 :: CVC4 -> String -> IO ()
 writeCVC4 (CVC4 (h_in, _, _)) form = hPutStr h_in form
 
 readCVC4 :: CVC4 -> IO String
-readCVC4 cvc4@(CVC4 (_, h_out, _)) = do
+readCVC4 (CVC4 (_, h_out, _)) = do
     r <- hWaitForInput h_out (-1)
     if r then do
         out <- hGetContents h_out

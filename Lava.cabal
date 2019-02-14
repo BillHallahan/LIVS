@@ -31,6 +31,7 @@ library
                        , containers
                        , mtl
                        , process >= 1.6
+  ghc-options:         -O2 -Wall
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -48,6 +49,7 @@ executable Lava
 
 test-suite test
   build-depends:         base >= 4.10 && < 4.11
+                       , containers
                        , lava
                        , tasty >= 1.0
                        , tasty-hunit >= 0.10

@@ -29,7 +29,7 @@ instance Typed Lit where
 
 instance Typed Type where
     typeOf (TyCon _ t) = t
-    typeOf (TyFun t1 t2) = TYPE
+    typeOf (TyFun _ _) = TYPE
     typeOf TYPE = TYPE
 
 newtype PresType = PresType Type

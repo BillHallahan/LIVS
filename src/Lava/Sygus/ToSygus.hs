@@ -39,11 +39,11 @@ toSygusType TYPE = "TYPE"
 genSynthFun :: Name -> [Type] -> Type -> String
 genSynthFun n it ot =
     let
-        xs = ["x" ++ show i | i <- [1..]]
+        xs = ["x" ++ show i | i <- [1..] :: [Integer]]
 
         xs' = take (length it) xs
 
-        sit = concatMap (\(n, t) -> "(" ++ n ++ " " ++ toSygusType t ++ ")") $ zip xs' it
+        sit = concatMap (\(n', t) -> "(" ++ n' ++ " " ++ toSygusType t ++ ")") $ zip xs' it
         sot = toSygusType ot
     in
     "(synth-fun " ++ n ++ " (" ++ sit ++ ")"

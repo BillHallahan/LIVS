@@ -3,8 +3,6 @@ module Lava.Language.Expr ( mkLams
 
 import Lava.Language.Syntax
 
-import Data.Foldable
-
 mkLams :: [Id] -> Expr -> Expr
 mkLams is e = foldr Lam e is
 
