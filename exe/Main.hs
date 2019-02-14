@@ -1,6 +1,7 @@
 module Main where
 
 import Lava.Language.Syntax
+import Lava.Language.Typing
 
 import Lava.Sygus.CVC4Interface
 import Lava.Sygus.SMTParser
@@ -18,22 +19,27 @@ main = do
     putStrLn ""
 
     cvc4 <- getCVC4
-    writeCVC4 cvc4 form
-    r <- readCVC4 cvc4
+    r <- runCVC4 cvc4 form
 
     putStrLn r
 
     let l = lexer r
     putStrLn $ show l
 
-    let p = parse M.empty l
+    let p = parse (M.fromList [("+", TyFun intType (TyFun intType intType))]) l
     putStrLn $ show p
 
 examples :: [Example]
 examples = [ Example { func_name = "double"
                      , input = [LInt 1]
-                     , output = LInt 2}
+                     , output = LInt 2 }
            , Example { func_name = "double"
                      , input = [LInt 2]
-                     , output = LInt 4}
+                     , output = LInt 4 }
+           , Example { func_name = "doubleAndAdd"
+                     , input = [LInt 2, LInt 3]
+                     , output = LInt 10 }
+           , Example { func_name = "doubleAndAdd"
+                     , input = [LInt 3, LInt 4]
+                     , output = LInt 14 }
            ]

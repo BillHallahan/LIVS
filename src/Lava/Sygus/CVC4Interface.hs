@@ -1,7 +1,6 @@
 module Lava.Sygus.CVC4Interface ( CVC4
                                 , getCVC4
-                                , writeCVC4
-                                , readCVC4
+                                , runCVC4
                                 , closeCVC4 ) where
 
 import Control.Exception
@@ -31,6 +30,11 @@ getProcessHandles pr = do
     hSetBuffering h_in LineBuffering
 
     return (h_in, h_out, p)
+
+runCVC4 :: CVC4 -> String -> IO String
+runCVC4 cvc4 s = do
+    writeCVC4 cvc4 s
+    readCVC4 cvc4
 
 writeCVC4 :: CVC4 -> String -> IO ()
 writeCVC4 (CVC4 (h_in, _, _)) form = hPutStr h_in form

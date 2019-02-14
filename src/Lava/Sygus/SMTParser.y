@@ -15,6 +15,7 @@ import qualified Data.Map as M
 
 %token
     name        { TokenName $$ }
+    int         { TokenInt $$ }
     defineFun   { TokenDefineFun }
     '('         { TokenOpenParen }
     ')'         { TokenCloseParen }
@@ -23,8 +24,12 @@ import qualified Data.Map as M
 
 %%
 
-defFun :: { Expr }
-       : '(' defineFun name '(' args ')' ret expr ')' { mkLams $5 $8 }
+defFuns :: { [(Name, Expr)] }
+        : defFuns defFun { $2:$1 }
+        | {- empty -} { [] }
+
+defFun :: { (Name, Expr) }
+       : '(' defineFun name '(' args ')' ret expr ')' { ($3 , mkLams $5 $8) }
 
 args :: { [Id] }
      : args_rev { reverse $1 }
@@ -56,6 +61,7 @@ expr :: { Expr }
      | name {% do
                 i <-idM $1
                 return $ Var i }
+     | int { Lit (LInt $1) }
 
 {
 data Parser = Parser { types :: M.Map Name Type}
@@ -65,8 +71,8 @@ newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Mon
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parse :: M.Map Name Type -> [Token] -> Expr
-parse m t = fst $ runParserM m (parse1 t) 
+parse :: M.Map Name Type -> [Token] -> M.Map Name Expr
+parse m t = M.fromList . fst $ runParserM m (parse1 t) 
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."

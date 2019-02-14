@@ -16,9 +16,11 @@ tokens:-
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
     [$alpha $symbs] [$alpha $digit $symbs \_ \']*       { TokenName }
+    $digit+                                             { TokenInt . read }
 
 {
 data Token = TokenName String
+           | TokenInt Int
            | TokenDefineFun
            | TokenOpenParen
            | TokenCloseParen
