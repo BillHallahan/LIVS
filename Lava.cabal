@@ -16,12 +16,20 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:       Lava.Language.Syntax
+  exposed-modules:       Lava.Language.Expr
+                       , Lava.Language.Syntax
                        , Lava.Language.Typing
+                       , Lava.Sygus.CVC4Interface
+                       , Lava.Sygus.SMTLexer
+                       , Lava.Sygus.SMTParser
                        , Lava.Sygus.ToSygus
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.10 && <4.11
+  build-depends:         array
+                       , base >=4.10 && <4.11
+                       , containers
+                       , mtl
+                       , process >= 1.6
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -30,6 +38,7 @@ executable Lava
   -- other-extensions:    
   build-depends:         base >= 4.10 && < 4.11
                        , lava
+                       , containers
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -Wall 
                        -- -fprof-auto "-with-rtsopts=-p"
