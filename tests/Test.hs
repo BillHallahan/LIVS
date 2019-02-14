@@ -2,8 +2,8 @@ module Main where
 
 import Test.Tasty
 
-import Expr
-import Typing
+import Language.Expr
+import Language.Typing
 
 main :: IO ()
 main = defaultMain

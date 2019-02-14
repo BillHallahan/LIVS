@@ -16,7 +16,8 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:       Lava.Language.Expr
+  exposed-modules:       Lava.Language.CallGraph 
+                       , Lava.Language.Expr
                        , Lava.Language.Syntax
                        , Lava.Language.Typing
                        , Lava.Sygus.CVC4Interface

@@ -1,4 +1,4 @@
-module Typing (typingTests) where
+module Language.Typing (typingTests) where
 
 import Lava.Language.Syntax
 import Lava.Language.Typing
