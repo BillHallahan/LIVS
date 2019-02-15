@@ -5,6 +5,7 @@ import Test.Tasty
 import Language.CallGraph
 import Language.Expr
 import Language.Typing
+import LIVS.LIVS
 
 main :: IO ()
 main = defaultMain
@@ -13,4 +14,5 @@ main = defaultMain
 tests :: TestTree
 tests =  testGroup "Tests" [ exprTests
                            , typingTests
-                           , callGraphTests ]
+                           , callGraphTests
+                           , livsTests ]

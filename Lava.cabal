@@ -21,6 +21,7 @@ library
                        , Lava.Language.Heap
                        , Lava.Language.Syntax
                        , Lava.Language.Typing
+                       , Lava.LIVS.LIVS
                        , Lava.Sygus.CVC4Interface
                        , Lava.Sygus.SMTLexer
                        , Lava.Sygus.SMTParser
@@ -47,6 +48,17 @@ executable Lava
   ghc-options:         -O2 -threaded -Wall 
                        -- -fprof-auto "-with-rtsopts=-p"
   hs-source-dirs:      exe
+  main-is:             Main.hs
+
+executable PyLIVS
+  -- other-modules:   
+  -- other-extensions:    
+  build-depends:         base >= 4.10 && < 4.11
+                       , lava
+  default-language:    Haskell2010
+  ghc-options:         -O2 -threaded -Wall 
+                       -- -fprof-auto "-with-rtsopts=-p"
+  hs-source-dirs:      PyLIVS
   main-is:             Main.hs
 
 test-suite test

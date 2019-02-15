@@ -4,7 +4,8 @@ module Lava.Language.Syntax ( Name
                             , Lit (..)
                             , Type (..)
 
-                            , Example (..) ) where
+                            , Example (..)
+                            , examplesForFunc ) where
 
 type Name = String
 
@@ -28,3 +29,8 @@ data Type = TyCon Name Type
 data Example = Example { func_name :: String
                        , input :: [Lit]
                        , output :: Lit }
+                       deriving (Eq, Show, Read)
+
+-- | Filter a list of examples to only those relevant to the given function
+examplesForFunc :: Name -> [Example] -> [Example]
+examplesForFunc n = filter (\e -> n == func_name e)
