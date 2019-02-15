@@ -1,19 +1,28 @@
-module Lava.Sygus.ToSygus (toSygus) where
+module Lava.Sygus.ToSygus ( toSygus ) where
 
+import Lava.Language.Expr
+import qualified Lava.Language.Heap as H
 import Lava.Language.Syntax
 import Lava.Language.Typing
 
+import qualified Data.HashMap.Lazy as HM
 import Data.List
 
-toSygus :: [Example] -> String
-toSygus es =
+-- | Translates examples into a SyGuS problem.
+-- Functions from the heap are translated into SMT formulas, so they can be
+-- used during synthesis.
+toSygus :: H.Heap -> [Example] -> String
+toSygus h es =
     let
+        hf = concat . intersperse " " .  HM.elems $ H.mapWithKey' toSygusFunExpr h
+
         fs = collectFuncs es
         fspec = concatMap (\(n, it, ot) -> genSynthFun n it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
-    "(set-logic SLIA)\n" ++ fspec ++ "\n" ++ constraints ++ "\n(check-synth)"
+    "(set-logic SLIA)\n" ++ hf ++ "\n" ++ fspec ++ "\n"
+        ++ constraints ++ "\n(check-synth)"
 
 toSygusExample :: Example -> String
 toSygusExample (Example { func_name = f, input = is, output = out }) =
@@ -22,6 +31,19 @@ toSygusExample (Example { func_name = f, input = is, output = out }) =
         call = "(" ++ f ++ " " ++ as ++ ")"
     in
     "(constraint (= " ++ call ++ " " ++ toSygusLit out ++ "))"
+
+toSygusId :: Id -> String
+toSygusId (Id n _) = n
+
+toSygusIdWithType :: Id -> String
+toSygusIdWithType (Id n t) = "(" ++ n ++ " " ++ toSygusType t ++ ")"
+
+toSygusExpr :: Expr -> String
+toSygusExpr (Var i) = toSygusId i
+toSygusExpr (Lam _ e) = toSygusExpr e
+toSygusExpr e@(App _ _) =
+    "(" ++ (concat . intersperse " " . map toSygusExpr $ unApp e) ++ ")"
+toSygusExpr (Lit l) = toSygusLit l
 
 toSygusLit :: Lit -> String
 toSygusLit (LInt i) = show i
@@ -35,6 +57,16 @@ toSygusType t@(TyFun _ _) =
     in
     "(" ++ as ++ ") " ++ r
 toSygusType TYPE = "TYPE"
+
+toSygusFunExpr :: Name -> Expr -> String
+toSygusFunExpr n e =
+    let
+        as = concat . intersperse " " . map toSygusIdWithType $ leadingLams e
+        r = toSygusType $ returnType e
+
+        se = toSygusExpr e
+    in
+    "(define-fun " ++ n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
 genSynthFun :: Name -> [Type] -> Type -> String
 genSynthFun n it ot =
@@ -63,6 +95,5 @@ sygusInt xs =
         ++ "(ntInt Int\n" 
         ++ "(0 1 2 3 4 5 "
         ++ concat (intersperse " " xs) ++ "\n"
-        ++ "(+ ntInt ntInt)\n"
-        ++ "(- ntInt ntInt)\n"
-        ++ "(* ntInt ntInt))))"
+        ++ "(plus ntInt ntInt)\n"
+        ++ ")))"

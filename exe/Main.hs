@@ -1,5 +1,6 @@
 module Main where
 
+import qualified Lava.Language.Heap as H
 import Lava.Language.Syntax
 import Lava.Language.Typing
 
@@ -12,7 +13,20 @@ import qualified Data.Map as M
 
 main :: IO ()
 main = do
-    let form = toSygus examples
+    let h = H.fromList [("plus", Lam 
+                                (Id "x" intType) 
+                                (Lam 
+                                    (Id "y" intType) 
+                                    (App 
+                                        (App 
+                                            (Var (Id "+" (TyFun intType (TyFun intType intType))))
+                                            (Var (Id "y" intType))
+                                        )
+                                        (Var (Id "x" intType))
+                                    )
+                                ))]
+
+    let form = toSygus h examples
 
     putStrLn form
 
@@ -36,10 +50,10 @@ examples = [ Example { func_name = "double"
            , Example { func_name = "double"
                      , input = [LInt 2]
                      , output = LInt 4 }
-           , Example { func_name = "doubleAndAdd"
-                     , input = [LInt 2, LInt 3]
-                     , output = LInt 10 }
-           , Example { func_name = "doubleAndAdd"
-                     , input = [LInt 3, LInt 4]
-                     , output = LInt 14 }
+           -- , Example { func_name = "doubleAndAdd"
+           --           , input = [LInt 2, LInt 3]
+           --           , output = LInt 10 }
+           -- , Example { func_name = "doubleAndAdd"
+           --           , input = [LInt 3, LInt 4]
+           --           , output = LInt 14 }
            ]
