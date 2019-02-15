@@ -17,7 +17,7 @@ toSygus h es =
         hf = concat . intersperse " " .  HM.elems $ H.mapWithKey' toSygusFunExpr h
 
         fs = collectFuncs es
-        fspec = concatMap (\(n, it, ot) -> genSynthFun n it ot) fs
+        fspec = concatMap (\(n, it, ot) -> genSynthFun h n it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
@@ -68,8 +68,8 @@ toSygusFunExpr n e =
     in
     "(define-fun " ++ n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
-genSynthFun :: Name -> [Type] -> Type -> String
-genSynthFun n it ot =
+genSynthFun :: H.Heap -> Name -> [Type] -> Type -> String
+genSynthFun h n it ot =
     let
         xs = ["x" ++ show i | i <- [1..] :: [Integer]]
 
@@ -79,7 +79,7 @@ genSynthFun n it ot =
         sot = toSygusType ot
     in
     "(synth-fun " ++ n ++ " (" ++ sit ++ ")"
-        ++ " " ++ sot ++ "\n" ++ sygusInt xs' ++ ")"
+        ++ " " ++ sot ++ "\n" ++ sygusInt h xs' ++ ")"
 
 -- | Get all unique function names and types
 collectFuncs :: [Example] -> [(Name, [Type], Type)]
@@ -89,11 +89,26 @@ collectFuncs = nub
                           , typeOf $ output e)
                    )
 
-sygusInt :: [String] -> String
-sygusInt xs =
-           "((Start Int (ntInt))\n"
-        ++ "(ntInt Int\n" 
-        ++ "(0 1 2 3 4 5 "
-        ++ concat (intersperse " " xs) ++ "\n"
-        ++ "(plus ntInt ntInt)\n"
-        ++ ")))"
+sygusInt :: H.Heap -> [String] -> String
+sygusInt h xs =
+    let
+        sc = getSynthCalls h
+    in
+       "((Start Int (ntInt))\n"
+    ++ "(ntInt Int\n" 
+    ++ "(0 1 2 3 4 5 "
+    ++ concat (intersperse " " xs) ++ "\n"
+    ++ sc
+    ++ "(- ntInt ntInt)\n"
+    ++ "(* ntInt ntInt))))"
+
+getSynthCalls :: H.Heap -> String
+getSynthCalls =
+    concat . H.mapWithKey'
+        (\n e -> 
+            let
+                ts = concat . intersperse " " . map (const "ntInt") $ argTypes e
+            in
+            "(" ++ n ++ " " ++ ts ++ ")\n")
+
+-- "(plus ntInt ntInt)\n"

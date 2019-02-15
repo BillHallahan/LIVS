@@ -13,7 +13,7 @@ import qualified Data.Map as M
 
 main :: IO ()
 main = do
-    let h = H.fromList [("plus", Lam 
+    let h = H.fromList [("add", Lam 
                                 (Id "x" intType) 
                                 (Lam 
                                     (Id "y" intType) 
