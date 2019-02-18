@@ -26,6 +26,9 @@ library
                        , Lava.Sygus.SMTLexer
                        , Lava.Sygus.SMTParser
                        , Lava.Sygus.ToSygus
+                       , Lava.Target.General.Process
+                       , Lava.Target.OCaml.Interface
+                       , Lava.Target.Python.Interface
   -- other-modules:       
   -- other-extensions:    
   build-depends:         array
@@ -48,17 +51,6 @@ executable Lava
   ghc-options:         -O2 -threaded -Wall 
                        -- -fprof-auto "-with-rtsopts=-p"
   hs-source-dirs:      exe
-  main-is:             Main.hs
-
-executable PyLIVS
-  -- other-modules:   
-  -- other-extensions:    
-  build-depends:         base >= 4.10 && < 4.11
-                       , lava
-  default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -Wall 
-                       -- -fprof-auto "-with-rtsopts=-p"
-  hs-source-dirs:      PyLIVS
   main-is:             Main.hs
 
 test-suite test

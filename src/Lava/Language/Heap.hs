@@ -9,7 +9,9 @@ module Lava.Language.Heap ( Heap
                           , mapWithKey'
                           , filter
                           , filterWithKey
-                          , keys ) where
+                          , keys
+                          , toHashMap
+                          , toList ) where
 
 import Lava.Language.Syntax
 
@@ -50,3 +52,9 @@ filterWithKey p = Heap . M.filterWithKey p . unHeap
 
 keys :: Heap -> [Name]
 keys = M.keys . unHeap
+
+toHashMap :: Heap -> M.HashMap Name Expr
+toHashMap = unHeap
+
+toList :: Heap -> [(Name, Expr)]
+toList = M.toList . unHeap

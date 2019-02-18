@@ -40,15 +40,18 @@ livs' fuzz call cvc4 cg es h (n:ns) = do
 
     -- Take a guess at the definition of the function
     let form = toSygus relH re'
-    r <- runCVC4 cvc4 form
-    let r' = parse M.empty . lexer $ r
+    m <- runAndReadCVC4 cvc4 form
+    let m' = parse M.empty . lexer $ m
+        r = case M.lookup n m' of
+            Just r' -> r'
+            Nothing -> error "No function definition found."
 
     -- Check if our guess is correct.  If it is NOT correct,
     -- it must be the case that we made an incorrect guess about some previous,
     -- component function
-    cor <- checkFuncs call re' r'
+    cor <- checkFuncs call re' r
 
-    let h' = M.foldrWithKey H.insert h r'
+    let h' = H.insert n r h
 
     if cor
         then livs' fuzz call cvc4 cg es h' ns
@@ -74,5 +77,5 @@ filterToReachable n cg =
     in
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
-checkFuncs :: Call -> [Example] -> M.Map Name Expr -> IO Bool
+checkFuncs :: Call -> [Example] -> Expr -> IO Bool
 checkFuncs = undefined

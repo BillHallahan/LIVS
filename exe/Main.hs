@@ -9,6 +9,9 @@ import Lava.Sygus.SMTParser
 import Lava.Sygus.SMTLexer
 import Lava.Sygus.ToSygus
 
+import Lava.Target.OCaml.Interface
+import Lava.Target.Python.Interface
+
 import qualified Data.Map as M
 
 main :: IO ()
@@ -33,7 +36,7 @@ main = do
     putStrLn ""
 
     cvc4 <- getCVC4
-    r <- runCVC4 cvc4 form
+    r <- runAndReadCVC4 cvc4 form
 
     putStrLn r
 
@@ -42,6 +45,24 @@ main = do
 
     let p = parse (M.fromList [("+", TyFun intType (TyFun intType intType))]) l
     putStrLn $ show p
+
+    
+    mapM_ (putStrLn . uncurry toPythonExpr) $ H.toList h
+    mapM_ (putStrLn . toPythonExpr "f") p
+
+    ocaml <- getOCaml
+    putStrLn "Got ocaml"
+    mapM_ (runOCaml ocaml . uncurry toOCamlExpr) $ H.toList h
+    putStrLn "Ran ocaml"
+    print =<< runAndReadOCaml ocaml ("add 1 2;;\n")
+    putStrLn "Ran ocaml 2"
+    print =<< runAndReadOCaml ocaml ("add 2 3;;\n")
+
+    python <- getPython
+    putStrLn "Got python"
+    mapM_ (runPython python . uncurry toPythonExpr) $ H.toList h
+    putStrLn "Ran python"
+    print =<< runAndReadPython python ("add(1, 2)\n")
 
 examples :: [Example]
 examples = [ Example { func_name = "double"

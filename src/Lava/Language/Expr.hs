@@ -1,7 +1,9 @@
 module Lava.Language.Expr ( mkLams
                           , leadingLams
                           , mkApp
-                          , unApp) where
+                          , unApp
+                          , appCenter
+                          , appArgs) where
 
 import Lava.Language.Syntax
 
@@ -21,3 +23,10 @@ unApp = reverse . unApp'
 unApp' :: Expr -> [Expr]
 unApp' (App e e') = e':unApp' e
 unApp' e = [e]
+
+appCenter :: Expr -> Expr
+appCenter (App e _) = appCenter e
+appCenter e = e
+
+appArgs :: Expr -> [Expr]
+appArgs = tail . unApp
