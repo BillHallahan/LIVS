@@ -10,22 +10,12 @@ import Lava.Language.Syntax
 import Lava.Target.General.Process
 
 import Data.List
-import System.IO
 
 newtype OCaml = OCaml Process
 
 getOCaml :: IO OCaml
 getOCaml = do
     pr <- getProcess "ocaml" []
-    b <- getOutBuffering pr
-    putStrLn (show b)
-    showProcess pr
-    print =<< processReady pr
-    -- runProcess pr "let double x = x + x;;\n"
-    -- runProcess pr "let triple x = x + x + x;;\n"
-    -- r <- runAndReadProcess pr "double 5;;\n"
-    -- print r
-    print =<< processReady pr
     _ <- readProcess pr
     return $ OCaml pr
 
@@ -33,7 +23,13 @@ runAndReadOCaml :: OCaml -> String -> IO String
 runAndReadOCaml (OCaml ocaml) = runAndReadProcess ocaml
 
 runOCaml :: OCaml -> String -> IO ()
-runOCaml (OCaml ocaml) s = runProcess ocaml s
+runOCaml (OCaml ocaml) s = do
+    runProcess ocaml s
+    -- OCaml gives output even when just defining a function, so we clean that
+    -- up here
+
+    _ <- readProcess ocaml
+    return ()
 
 closeOCaml :: OCaml -> IO ()
 closeOCaml (OCaml ocaml) = closeProcess ocaml "exit 0;;\n"
