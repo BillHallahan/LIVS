@@ -62,8 +62,7 @@ getChars :: Handle -> IO String
 getChars h =
     catch
         (do
-            r <- hWaitForInput h 500
-            b <- hReady h
+            b <- hWaitForInput h 400
             if b then do
                 s <- hGetChar h
                 r <- getChars h

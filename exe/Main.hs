@@ -10,6 +10,8 @@ import Lava.Sygus.SMTLexer
 import Lava.Sygus.ToSygus
 
 import Lava.Target.OCaml.Interface
+import qualified Lava.Target.OCaml.LexerCL as OCaml
+import qualified Lava.Target.OCaml.ParserCL as OCaml
 import Lava.Target.Python.Interface
 
 import qualified Data.Map as M
@@ -54,9 +56,11 @@ main = do
     putStrLn "Got ocaml"
     mapM_ (runOCaml ocaml . uncurry toOCamlExpr) $ H.toList h
     putStrLn "Ran ocaml"
-    print =<< runAndReadOCaml ocaml ("add 1 2;;\n")
+    r1 <- runAndReadOCaml ocaml ("add 1 2;;\n")
+    print (OCaml.parse . OCaml.lexer $ r1)
     putStrLn "Ran ocaml 2"
-    print =<< runAndReadOCaml ocaml ("add 2 3;;\n")
+    r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
+    print (OCaml.parse . OCaml.lexer $ r2)
 
     python <- getPython
     putStrLn "Got python"

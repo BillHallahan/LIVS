@@ -28,6 +28,8 @@ library
                        , Lava.Sygus.ToSygus
                        , Lava.Target.General.Process
                        , Lava.Target.OCaml.Interface
+                       , Lava.Target.OCaml.LexerCL
+                       , Lava.Target.OCaml.ParserCL
                        , Lava.Target.Python.Interface
   -- other-modules:       
   -- other-extensions:    
