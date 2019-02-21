@@ -72,9 +72,10 @@ main = do
     r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
     print (OCaml.parse . OCaml.lexer $ r2)
 
-    es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 5
+    es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 2
     print es
 
+    -- loadFileOCaml ocaml "target_files/OCaml/ints.ml"
     -- lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) cvc4 graph
     -- print lr
 
@@ -87,7 +88,7 @@ main = do
 graph :: CallGraph
 graph = createCallGraph
     [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType intType)])
-    , (Id "add" (TyFun intType intType), []) ]
+    , (Id "add" (TyFun intType (TyFun intType intType)), []) ]
 
 
 examples :: [Example]

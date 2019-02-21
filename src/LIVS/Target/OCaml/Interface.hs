@@ -1,4 +1,5 @@
 module LIVS.Target.OCaml.Interface ( OCaml
+                                   , loadFileOCaml
                                    , defOCaml
                                    , callOCaml
                                    , getOCaml
@@ -15,15 +16,18 @@ import LIVS.Target.OCaml.LexerCL
 import LIVS.Target.OCaml.ParserCL
 
 import Data.List
-
+import Debug.Trace
 newtype OCaml = OCaml Process
+
+loadFileOCaml :: OCaml -> FilePath -> IO ()
+loadFileOCaml ocaml p = runOCaml ocaml $ "#use \"" ++ p ++ "\";;\n"
 
 defOCaml :: OCaml -> Id -> Expr -> IO ()
 defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
 
 callOCaml :: OCaml -> Expr -> IO Lit
 callOCaml ocaml e =
-    return . parse . lexer =<< runAndReadOCaml ocaml (toOCamlCall e)
+    return . parse . lexer =<< runAndReadOCaml ocaml (trace (toOCamlCall e)toOCamlCall e)
 
 getOCaml :: IO OCaml
 getOCaml = do
@@ -64,9 +68,9 @@ toOCamlExpr e@(App _ _)
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = toOCamlExpr e2 ++ " " ++ n ++ " " ++ toOCamlExpr e1
     | otherwise = 
-        toOCamlExpr (appCenter e)
-            ++ "(" ++ (concat . intersperse " " . map toOCamlExpr $ appArgs e) ++ ")"
-toOCamlExpr (Lit l) = toOCamlLit l
+        "(" ++ toOCamlExpr (appCenter e)
+            ++ (concat . intersperse " " . map toOCamlExpr $ appArgs e) ++ ")"
+toOCamlExpr (Lit l) = "(" ++ toOCamlLit l ++ ")"
 
 toOCamlId :: Id -> String
 toOCamlId (Id n _) = n
