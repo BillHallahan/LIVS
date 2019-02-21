@@ -48,7 +48,7 @@ livs' call cvc4 cg es h (i@(Id n _):ns) = do
     -- Check if our guess is correct.  If it is NOT correct,
     -- it must be the case that we made an incorrect guess about some previous,
     -- component function
-    cor <- checkExamples call re' r
+    cor <- checkFuncs call re' r
 
     let h' = H.insert n r h
 
