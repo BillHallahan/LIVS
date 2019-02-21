@@ -12,6 +12,7 @@ import Lava.Sygus.SMTParser
 import Lava.Sygus.SMTLexer
 import Lava.Sygus.ToSygus
 
+import Control.Monad.Random
 import Data.List
 import qualified Data.Map as M
 import qualified Data.HashSet as S
@@ -20,25 +21,25 @@ import qualified Data.HashSet as S
 -- and parses to a Lit
 type Call = Expr -> IO Lit
 
-livs :: Call -> CVC4 -> CallGraph -> IO H.Heap
+livs :: (MonadIO m, MonadRandom m) => Call -> CVC4 -> CallGraph -> m H.Heap
 livs call cvc4 cg =
     let
         ord = synthOrder cg
     in
     livs' call cvc4 cg [] H.empty ord
 
-livs' :: Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> IO H.Heap
+livs' :: (MonadIO m, MonadRandom m) => Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
 livs' _ _ _ _ h [] = return h
 livs' call cvc4 cg es h (i@(Id n _):ns) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- undefined -- if re == [] then fuzzExamplesM call n 10 else return re
+    re' <- if re == [] then fuzzExamplesM call i 10 else return re
 
     let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
     let form = toSygus relH re'
-    m <- runAndReadCVC4 cvc4 form
+    m <- liftIO $ runAndReadCVC4 cvc4 form
     let m' = parse M.empty . lexer $ m
         r = case M.lookup n m' of
             Just r' -> r'
@@ -47,7 +48,7 @@ livs' call cvc4 cg es h (i@(Id n _):ns) = do
     -- Check if our guess is correct.  If it is NOT correct,
     -- it must be the case that we made an incorrect guess about some previous,
     -- component function
-    cor <- checkFuncs call re' r
+    cor <- checkExamples call re' r
 
     let h' = H.insert n r h
 
@@ -75,5 +76,5 @@ filterToReachable n cg =
     in
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
-checkFuncs :: Call -> [Example] -> Expr -> IO Bool
+checkFuncs :: Call -> [Example] -> Expr -> m Bool
 checkFuncs = undefined
