@@ -1,4 +1,4 @@
-module LIVS.LIVS.Fuzz ( fuzzExamplesM
+module LIVS.Core.Fuzz ( fuzzExamplesM
                       , fuzzExampleM
                       , fuzzLitM ) where
 

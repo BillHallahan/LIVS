@@ -3,7 +3,7 @@ module LIVS.LIVS where
 import LIVS.Language.CallGraph
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
-import LIVS.LIVS.LIVS
+import LIVS.Core.LIVS
 
 import Data.List
 

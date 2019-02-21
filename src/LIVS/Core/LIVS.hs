@@ -1,12 +1,12 @@
 -- Language Independence Via Synthesis
-module LIVS.LIVS.LIVS ( Call
+module LIVS.Core.LIVS ( Call
                       , livs
                       , synthOrder ) where
 
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
-import LIVS.LIVS.Fuzz
+import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTParser
 import LIVS.Sygus.SMTLexer

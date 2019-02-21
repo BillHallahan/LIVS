@@ -21,8 +21,8 @@ library
                        , LIVS.Language.Heap
                        , LIVS.Language.Syntax
                        , LIVS.Language.Typing
-                       , LIVS.LIVS.Fuzz
-                       , LIVS.LIVS.LIVS
+                       , LIVS.Core.Fuzz
+                       , LIVS.Core.LIVS
                        , LIVS.Sygus.CVC4Interface
                        , LIVS.Sygus.SMTLexer
                        , LIVS.Sygus.SMTParser
@@ -47,7 +47,7 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
 
-executable Lava
+executable livs
   -- other-modules:   
   -- other-extensions:    
   build-depends:         base >= 4.10 && < 4.11
