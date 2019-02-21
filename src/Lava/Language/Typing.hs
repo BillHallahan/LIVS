@@ -4,6 +4,7 @@ module Lava.Language.Typing ( Typed (..)
                             , exampleFuncType
 
                             , mkTyFun
+                            , unTyFun
                             , argTypes
                             , returnType ) where
 
@@ -45,6 +46,13 @@ exampleFuncType es = mkTyFun $ map typeOf (input es) ++ [typeOf (output es)]
 
 mkTyFun :: [Type] -> Type
 mkTyFun = foldr1 TyFun
+
+unTyFun :: Type -> [Type]
+unTyFun = reverse . unTyFun'
+
+unTyFun' :: Type -> [Type]
+unTyFun' (TyFun t t') = t':unTyFun' t
+unTyFun' t = [t]
 
 argTypes :: Typed t => t -> [Type]
 argTypes = argTypes' . typeOf

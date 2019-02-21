@@ -54,9 +54,10 @@ main = do
 
     ocaml <- getOCaml
     putStrLn "Got ocaml"
-    mapM_ (runOCaml ocaml . uncurry toOCamlExpr) $ H.toList h
+    mapM_ (runOCaml ocaml . uncurry toOCamlDef) $ H.toList h
     putStrLn "Ran ocaml"
     r1 <- runAndReadOCaml ocaml ("add 1 2;;\n")
+
     print (OCaml.parse . OCaml.lexer $ r1)
     putStrLn "Ran ocaml 2"
     r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")

@@ -14,8 +14,8 @@ import Lava.Target.OCaml.LexerCL
 
 %%
 
-expr :: { Expr }
-     : int { Lit (LInt $1) }
+lit :: { Lit }
+    : int { LInt $1 }
 
 {
 parseError :: [Token] -> a

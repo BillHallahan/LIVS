@@ -1,12 +1,12 @@
 -- Language Independence Via Synthesis
 module Lava.LIVS.LIVS ( Call
-                      , Fuzz
                       , livs
                       , synthOrder ) where
 
 import Lava.Language.CallGraph
 import qualified Lava.Language.Heap as H
 import Lava.Language.Syntax
+import Lava.LIVS.Fuzz
 import Lava.Sygus.CVC4Interface
 import Lava.Sygus.SMTParser
 import Lava.Sygus.SMTLexer
@@ -14,29 +14,27 @@ import Lava.Sygus.ToSygus
 
 import Data.List
 import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.HashSet as S
 
 -- | Converts the Expr to the target language, concretely computes the result,
--- and parses back to an Expr
-type Call = Expr -> IO Expr
+-- and parses to a Lit
+type Call = Expr -> IO Lit
 
-type Fuzz = Name -> IO [Example]
-
-livs :: Fuzz -> Call -> CVC4 -> CallGraph -> IO H.Heap
-livs fuzz call cvc4 cg =
+livs :: Call -> CVC4 -> CallGraph -> IO H.Heap
+livs call cvc4 cg =
     let
         ord = synthOrder cg
     in
-    livs' fuzz call cvc4 cg [] H.empty ord
+    livs' call cvc4 cg [] H.empty ord
 
-livs' :: Fuzz -> Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Name] -> IO H.Heap
-livs' _ _ _ _ _ h [] = return h
-livs' fuzz call cvc4 cg es h (n:ns) = do
+livs' :: Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> IO H.Heap
+livs' _ _ _ _ h [] = return h
+livs' call cvc4 cg es h (i@(Id n _):ns) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- if re == [] then fuzz n else return re
+    re' <- undefined -- if re == [] then fuzzExamplesM call n 10 else return re
 
-    let relH = filterToReachable n cg h
+    let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
     let form = toSygus relH re'
@@ -54,7 +52,7 @@ livs' fuzz call cvc4 cg es h (n:ns) = do
     let h' = H.insert n r h
 
     if cor
-        then livs' fuzz call cvc4 cg es h' ns
+        then livs' call cvc4 cg es h' ns
         else undefined
 
 -- | Decides an order to synthesize function definitions in.
@@ -62,18 +60,18 @@ livs' fuzz call cvc4 cg es h (n:ns) = do
 -- we want to synthesize all function's it calls, f_1...f_n.
 -- This is always possible, except in the case of mutual recursion, which we
 -- break arbitrarily
-synthOrder :: CallGraph -> [Name]
+synthOrder :: CallGraph -> [Id]
 synthOrder = nub . concatMap (reverse . synthOrder') . dfs
     where
-        synthOrder' :: CallTree -> [Name]
+        synthOrder' :: CallTree -> [Id]
         synthOrder' ct = vert ct:concatMap synthOrder' (trees ct)
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
-filterToReachable :: Name -> CallGraph -> H.Heap -> H.Heap
+filterToReachable :: Id -> CallGraph -> H.Heap -> H.Heap
 filterToReachable n cg =
     let
-        r = reachable n cg
+        r = S.map idName $ reachable n cg
     in
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
