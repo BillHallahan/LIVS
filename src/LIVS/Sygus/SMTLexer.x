@@ -1,5 +1,5 @@
 {
-module Lava.Sygus.SMTLexer ( Token (..) 
+module LIVS.Sygus.SMTLexer ( Token (..) 
                            , lexer ) where
 }
 

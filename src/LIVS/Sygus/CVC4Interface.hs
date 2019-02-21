@@ -1,9 +1,9 @@
-module Lava.Sygus.CVC4Interface ( CVC4
+module LIVS.Sygus.CVC4Interface ( CVC4
                                 , getCVC4
                                 , runAndReadCVC4
                                 , closeCVC4 ) where
 
-import Lava.Target.General.Process
+import LIVS.Target.General.Process
 
 newtype CVC4 = CVC4 Process
 

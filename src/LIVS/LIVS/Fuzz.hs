@@ -1,10 +1,10 @@
-module Lava.LIVS.Fuzz ( fuzzExamplesM
+module LIVS.LIVS.Fuzz ( fuzzExamplesM
                       , fuzzExampleM
                       , fuzzLitM ) where
 
-import Lava.Language.Expr
-import Lava.Language.Syntax
-import Lava.Language.Typing
+import LIVS.Language.Expr
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
 import Control.Monad.Random
 

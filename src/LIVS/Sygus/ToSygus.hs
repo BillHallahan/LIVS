@@ -1,9 +1,9 @@
-module Lava.Sygus.ToSygus ( toSygus ) where
+module LIVS.Sygus.ToSygus ( toSygus ) where
 
-import Lava.Language.Expr
-import qualified Lava.Language.Heap as H
-import Lava.Language.Syntax
-import Lava.Language.Typing
+import LIVS.Language.Expr
+import qualified LIVS.Language.Heap as H
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as HM
 import Data.List

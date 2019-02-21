@@ -1,5 +1,5 @@
 {
-module Lava.Target.OCaml.LexerCL ( Token (..)
+module LIVS.Target.OCaml.LexerCL ( Token (..)
                                  , lexer ) where
 }
 

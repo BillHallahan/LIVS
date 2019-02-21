@@ -1,8 +1,8 @@
 module Language.Expr where
 
-import Lava.Language.Syntax
-import Lava.Language.Expr
-import Lava.Language.Typing
+import LIVS.Language.Syntax
+import LIVS.Language.Expr
+import LIVS.Language.Typing
 
 import Test.Tasty
 import Test.Tasty.HUnit

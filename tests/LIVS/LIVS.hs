@@ -1,9 +1,9 @@
 module LIVS.LIVS where
 
-import Lava.Language.CallGraph
-import Lava.Language.Syntax
-import Lava.Language.Typing
-import Lava.LIVS.LIVS
+import LIVS.Language.CallGraph
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
+import LIVS.LIVS.LIVS
 
 import Data.List
 

@@ -1,8 +1,8 @@
 module Language.CallGraph (callGraphTests) where
 
-import Lava.Language.CallGraph
-import Lava.Language.Syntax
-import Lava.Language.Typing
+import LIVS.Language.CallGraph
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
 import qualified Data.HashSet as S
 

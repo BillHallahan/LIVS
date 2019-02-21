@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Lava.Language.Syntax ( Name
+module LIVS.Language.Syntax ( Name
                             , Id (..)
                             , Expr (..)
                             , Lit (..)

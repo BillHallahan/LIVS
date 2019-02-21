@@ -16,22 +16,22 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:       Lava.Language.CallGraph 
-                       , Lava.Language.Expr
-                       , Lava.Language.Heap
-                       , Lava.Language.Syntax
-                       , Lava.Language.Typing
-                       , Lava.LIVS.Fuzz
-                       , Lava.LIVS.LIVS
-                       , Lava.Sygus.CVC4Interface
-                       , Lava.Sygus.SMTLexer
-                       , Lava.Sygus.SMTParser
-                       , Lava.Sygus.ToSygus
-                       , Lava.Target.General.Process
-                       , Lava.Target.OCaml.Interface
-                       , Lava.Target.OCaml.LexerCL
-                       , Lava.Target.OCaml.ParserCL
-                       , Lava.Target.Python.Interface
+  exposed-modules:       LIVS.Language.CallGraph 
+                       , LIVS.Language.Expr
+                       , LIVS.Language.Heap
+                       , LIVS.Language.Syntax
+                       , LIVS.Language.Typing
+                       , LIVS.LIVS.Fuzz
+                       , LIVS.LIVS.LIVS
+                       , LIVS.Sygus.CVC4Interface
+                       , LIVS.Sygus.SMTLexer
+                       , LIVS.Sygus.SMTParser
+                       , LIVS.Sygus.ToSygus
+                       , LIVS.Target.General.Process
+                       , LIVS.Target.OCaml.Interface
+                       , LIVS.Target.OCaml.LexerCL
+                       , LIVS.Target.OCaml.ParserCL
+                       , LIVS.Target.Python.Interface
   -- other-modules:       
   -- other-extensions:    
   build-depends:         array

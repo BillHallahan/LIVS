@@ -1,4 +1,4 @@
-module Lava.Language.Typing ( Typed (..)
+module LIVS.Language.Typing ( Typed (..)
                             , PresType (..)
                             , intType
                             , exampleFuncType
@@ -8,7 +8,7 @@ module Lava.Language.Typing ( Typed (..)
                             , argTypes
                             , returnType ) where
 
-import Lava.Language.Syntax
+import LIVS.Language.Syntax
 
 class Typed t where
     typeOf :: t -> Type

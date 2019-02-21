@@ -1,4 +1,4 @@
-module Lava.Target.OCaml.Interface ( OCaml
+module LIVS.Target.OCaml.Interface ( OCaml
                                    , execOCaml
                                    , getOCaml
                                    , runAndReadOCaml
@@ -7,11 +7,11 @@ module Lava.Target.OCaml.Interface ( OCaml
                                    , toOCamlDef
                                    , toOCamlExpr ) where
 
-import Lava.Language.Expr
-import Lava.Language.Syntax
-import Lava.Target.General.Process
-import Lava.Target.OCaml.LexerCL
-import Lava.Target.OCaml.ParserCL
+import LIVS.Language.Expr
+import LIVS.Language.Syntax
+import LIVS.Target.General.Process
+import LIVS.Target.OCaml.LexerCL
+import LIVS.Target.OCaml.ParserCL
 
 import Data.List
 

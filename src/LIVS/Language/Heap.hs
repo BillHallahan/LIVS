@@ -1,4 +1,4 @@
-module Lava.Language.Heap ( Heap
+module LIVS.Language.Heap ( Heap
                           , empty
                           , fromList
                           , insert
@@ -13,7 +13,7 @@ module Lava.Language.Heap ( Heap
                           , toHashMap
                           , toList ) where
 
-import Lava.Language.Syntax
+import LIVS.Language.Syntax
 
 import qualified Data.HashMap.Lazy as M
 import Prelude hiding (map, filter, lookup)

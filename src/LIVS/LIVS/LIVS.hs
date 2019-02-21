@@ -1,16 +1,16 @@
 -- Language Independence Via Synthesis
-module Lava.LIVS.LIVS ( Call
+module LIVS.LIVS.LIVS ( Call
                       , livs
                       , synthOrder ) where
 
-import Lava.Language.CallGraph
-import qualified Lava.Language.Heap as H
-import Lava.Language.Syntax
-import Lava.LIVS.Fuzz
-import Lava.Sygus.CVC4Interface
-import Lava.Sygus.SMTParser
-import Lava.Sygus.SMTLexer
-import Lava.Sygus.ToSygus
+import LIVS.Language.CallGraph
+import qualified LIVS.Language.Heap as H
+import LIVS.Language.Syntax
+import LIVS.LIVS.Fuzz
+import LIVS.Sygus.CVC4Interface
+import LIVS.Sygus.SMTParser
+import LIVS.Sygus.SMTLexer
+import LIVS.Sygus.ToSygus
 
 import Control.Monad.Random
 import Data.List

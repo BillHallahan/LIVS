@@ -1,18 +1,18 @@
 module Main where
 
-import qualified Lava.Language.Heap as H
-import Lava.Language.Syntax
-import Lava.Language.Typing
+import qualified LIVS.Language.Heap as H
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
-import Lava.Sygus.CVC4Interface
-import Lava.Sygus.SMTParser
-import Lava.Sygus.SMTLexer
-import Lava.Sygus.ToSygus
+import LIVS.Sygus.CVC4Interface
+import LIVS.Sygus.SMTParser
+import LIVS.Sygus.SMTLexer
+import LIVS.Sygus.ToSygus
 
-import Lava.Target.OCaml.Interface
-import qualified Lava.Target.OCaml.LexerCL as OCaml
-import qualified Lava.Target.OCaml.ParserCL as OCaml
-import Lava.Target.Python.Interface
+import LIVS.Target.OCaml.Interface
+import qualified LIVS.Target.OCaml.LexerCL as OCaml
+import qualified LIVS.Target.OCaml.ParserCL as OCaml
+import LIVS.Target.Python.Interface
 
 import qualified Data.Map as M
 

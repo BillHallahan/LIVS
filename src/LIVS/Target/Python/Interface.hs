@@ -1,13 +1,13 @@
-module Lava.Target.Python.Interface ( Python
+module LIVS.Target.Python.Interface ( Python
                                     , getPython
                                     , runAndReadPython
                                     , runPython
                                     , closePython
                                     , toPythonExpr ) where
 
-import Lava.Language.Expr
-import Lava.Language.Syntax
-import Lava.Target.General.Process
+import LIVS.Language.Expr
+import LIVS.Language.Syntax
+import LIVS.Target.General.Process
 
 import Data.List
 

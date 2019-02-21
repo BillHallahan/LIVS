@@ -1,7 +1,7 @@
 module Language.Typing (typingTests) where
 
-import Lava.Language.Syntax
-import Lava.Language.Typing
+import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
 import Test.Tasty
 import Test.Tasty.HUnit

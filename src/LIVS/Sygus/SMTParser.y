@@ -1,9 +1,9 @@
 {
-module Lava.Sygus.SMTParser ( parse ) where
+module LIVS.Sygus.SMTParser ( parse ) where
 
-import Lava.Language.Expr
-import Lava.Language.Syntax
-import Lava.Sygus.SMTLexer
+import LIVS.Language.Expr
+import LIVS.Language.Syntax
+import LIVS.Sygus.SMTLexer
 
 import Control.Monad.State.Lazy
 import qualified Data.Map as M

@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module Lava.Language.CallGraph ( CallGraph
+module LIVS.Language.CallGraph ( CallGraph
                                , CallForest
                                , CallTree
                                , createCallGraph
@@ -10,7 +10,7 @@ module Lava.Language.CallGraph ( CallGraph
                                , reachable
                                , findVert) where
 
-import Lava.Language.Syntax
+import LIVS.Language.Syntax
 
 import qualified Data.Graph as G
 import Data.List

@@ -1,8 +1,8 @@
 {
-module Lava.Target.OCaml.ParserCL ( parse ) where
+module LIVS.Target.OCaml.ParserCL ( parse ) where
 
-import Lava.Language.Syntax
-import Lava.Target.OCaml.LexerCL
+import LIVS.Language.Syntax
+import LIVS.Target.OCaml.LexerCL
 }
 
 %name parse

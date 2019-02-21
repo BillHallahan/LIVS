@@ -1,11 +1,11 @@
-module Lava.Language.Expr ( mkLams
+module LIVS.Language.Expr ( mkLams
                           , leadingLams
                           , mkApp
                           , unApp
                           , appCenter
                           , appArgs) where
 
-import Lava.Language.Syntax
+import LIVS.Language.Syntax
 
 mkLams :: [Id] -> Expr -> Expr
 mkLams is e = foldr Lam e is
