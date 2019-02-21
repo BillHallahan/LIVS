@@ -1,5 +1,6 @@
 module LIVS.Target.OCaml.Interface ( OCaml
-                                   , execOCaml
+                                   , defOCaml
+                                   , callOCaml
                                    , getOCaml
                                    , runAndReadOCaml
                                    , runOCaml
@@ -17,9 +18,12 @@ import Data.List
 
 newtype OCaml = OCaml Process
 
-execOCaml :: OCaml -> Expr -> IO Lit
-execOCaml ocaml e =
-    return . parse . lexer =<< runAndReadOCaml ocaml (toOCamlExpr e)
+defOCaml :: OCaml -> Id -> Expr -> IO ()
+defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
+
+callOCaml :: OCaml -> Expr -> IO Lit
+callOCaml ocaml e =
+    return . parse . lexer =<< runAndReadOCaml ocaml (toOCamlCall e)
 
 getOCaml :: IO OCaml
 getOCaml = do
@@ -49,6 +53,9 @@ toOCamlDef n e =
         e' = toOCamlExpr e
     in
     "let " ++ n ++ " " ++ as ++ " =\n\t" ++ e' ++ ";;\n"
+
+toOCamlCall :: Expr -> String
+toOCamlCall e = toOCamlExpr e ++ ";;\n"
 
 toOCamlExpr :: Expr -> String
 toOCamlExpr (Var i) = toOCamlId i

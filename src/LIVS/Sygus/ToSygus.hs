@@ -25,10 +25,10 @@ toSygus h es =
         ++ constraints ++ "\n(check-synth)"
 
 toSygusExample :: Example -> String
-toSygusExample (Example { func_name = f, input = is, output = out }) =
+toSygusExample (Example { func = f, input = is, output = out }) =
     let
         as = concat . intersperse " " $ map toSygusLit is 
-        call = "(" ++ f ++ " " ++ as ++ ")"
+        call = "(" ++ idName f ++ " " ++ as ++ ")"
     in
     "(constraint (= " ++ call ++ " " ++ toSygusLit out ++ "))"
 
@@ -84,7 +84,7 @@ genSynthFun h n it ot =
 -- | Get all unique function names and types
 collectFuncs :: [Example] -> [(Name, [Type], Type)]
 collectFuncs = nub 
-             . map (\e -> ( func_name e
+             . map (\e -> ( funcName e
                           , map typeOf . input $ e
                           , typeOf $ output e)
                    )

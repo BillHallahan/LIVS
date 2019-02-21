@@ -36,7 +36,6 @@ createCallGraph iss =
     CallGraph g (fst3 . f)
     where
         fst3 (x, _, _) = x
-        mid (_, x, _) = x
 
 type CallForest = [CallTree]
 

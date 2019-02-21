@@ -9,6 +9,7 @@ module LIVS.Language.Syntax ( Name
                             , Example (..)
 
                             , idName
+                            , funcName
                             , examplesForFunc ) where
 
 import GHC.Generics (Generic)
@@ -40,11 +41,14 @@ data Type = TyCon Name Type
 
 instance Hashable Type
 
-data Example = Example { func_name :: String
+data Example = Example { func :: Id
                        , input :: [Lit]
                        , output :: Lit }
                        deriving (Eq, Show, Read, Generic)
 
+funcName :: Example -> Name
+funcName = idName . func
+
 -- | Filter a list of examples to only those relevant to the given function
 examplesForFunc :: Name -> [Example] -> [Example]
-examplesForFunc n = filter (\e -> n == func_name e)
+examplesForFunc n = filter (\e -> n == funcName e)

@@ -18,7 +18,7 @@ import LIVS.Language.Syntax
 import qualified Data.HashMap.Lazy as M
 import Prelude hiding (map, filter, lookup)
 
-newtype Heap = Heap { unHeap :: M.HashMap Name Expr }
+newtype Heap = Heap { unHeap :: M.HashMap Name Expr } deriving (Show, Read)
 
 empty :: Heap
 empty = Heap M.empty

@@ -1,9 +1,11 @@
 -- Language Independence Via Synthesis
-module LIVS.Core.LIVS ( Call
+module LIVS.Core.LIVS ( Def
+                      , Call
                       , livs
                       , synthOrder ) where
 
 import LIVS.Language.CallGraph
+import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import LIVS.Core.Fuzz
@@ -17,20 +19,25 @@ import Data.List
 import qualified Data.Map as M
 import qualified Data.HashSet as S
 
+-- | Initializes an environment with a definition of a function with the given
+-- name and body
+type Def = Id -> Expr -> IO ()
+
 -- | Converts the Expr to the target language, concretely computes the result,
 -- and parses to a Lit
 type Call = Expr -> IO Lit
 
-livs :: (MonadIO m, MonadRandom m) => Call -> CVC4 -> CallGraph -> m H.Heap
-livs call cvc4 cg =
+livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CVC4 -> CallGraph -> m H.Heap
+livs def call cvc4 cg =
     let
         ord = synthOrder cg
     in
-    livs' call cvc4 cg [] H.empty ord
+    livs' def call cvc4 cg [] H.empty ord
 
-livs' :: (MonadIO m, MonadRandom m) => Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ h [] = return h
-livs' call cvc4 cg es h (i@(Id n _):ns) = do
+livs' :: (MonadIO m, MonadRandom m) => 
+        Def -> Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ _ h [] = return h
+livs' def call cvc4 cg es h (i@(Id n _):ns) = do
     -- Get examples
     let re = examplesForFunc n es
     re' <- if re == [] then fuzzExamplesM call i 10 else return re
@@ -48,12 +55,12 @@ livs' call cvc4 cg es h (i@(Id n _):ns) = do
     -- Check if our guess is correct.  If it is NOT correct,
     -- it must be the case that we made an incorrect guess about some previous,
     -- component function
-    cor <- checkFuncs call re' r
+    cor <- liftIO $ checkExamples def call i r re'
 
     let h' = H.insert n r h
 
     if cor
-        then livs' call cvc4 cg es h' ns
+        then livs' def call cvc4 cg es h' ns
         else undefined
 
 -- | Decides an order to synthesize function definitions in.
@@ -76,5 +83,13 @@ filterToReachable n cg =
     in
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
-checkFuncs :: Call -> [Example] -> Expr -> m Bool
-checkFuncs = undefined
+-- | Checks that the given synthesized function satisfies the examples
+checkExamples :: MonadIO m => Def -> Call -> Id -> Expr -> [Example] -> m Bool
+checkExamples def call i e es = do
+    liftIO $ def i e
+    return . and =<< mapM (checkExample call i) es
+
+checkExample :: MonadIO m => Call -> Id -> Example -> m Bool
+checkExample call i (Example { input = is, output = out}) = do
+    r <- liftIO . call . mkApp $ Var i:map Lit is
+    return $ r == out
