@@ -1,4 +1,6 @@
 module LIVS.Target.General.Process ( Process
+                                   , runProcessOnce
+
                                    , getProcess
                                    , runAndReadProcess
                                    , runProcess
@@ -12,6 +14,14 @@ module LIVS.Target.General.Process ( Process
 import Control.Exception
 import System.IO
 import System.Process hiding (readProcess, runProcess)
+import qualified System.Process as P
+
+-- Running and getting input from a process one time:
+
+runProcessOnce :: String -> [String] -> IO String
+runProcessOnce fp as = P.readProcess fp as ""
+
+-- Running and interacting with a REPL process:
 
 newtype Process = Process (Handle, Handle, ProcessHandle)
 

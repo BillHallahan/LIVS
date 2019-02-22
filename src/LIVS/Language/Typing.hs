@@ -19,10 +19,10 @@ instance Typed Id where
 instance Typed Expr where
     typeOf (Var i) = typeOf i
     typeOf (Lam i e) = TyFun (typeOf i) (typeOf e)
-    typeOf (App e _) =
+    typeOf a@(App e _) =
         case typeOf e of
             TyFun _ t2 -> t2
-            _ -> error "Bad type."
+            _ -> error $ "Bad type."
     typeOf (Lit l) = typeOf l
 
 instance Typed Lit where

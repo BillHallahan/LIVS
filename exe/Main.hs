@@ -43,10 +43,12 @@ main = do
 
     putStrLn ""
 
-    cvc4 <- getCVC4
-    putStrLn "Right before"
-    r <- runAndReadCVC4 cvc4 form
-    putStrLn "Right after"
+    -- cvc4 <- getCVC4
+    -- putStrLn "Right before"
+    -- r <- runAndReadCVC4 cvc4 form
+    -- putStrLn "Right after"
+
+    r <- runCVC4WithFile form
 
     putStrLn r
 
@@ -56,7 +58,8 @@ main = do
     let p = parse (M.fromList [("+", TyFun intType (TyFun intType intType))]) l
     putStrLn $ show p
 
-    
+    -- closeCVC4 cvc4
+
     mapM_ (putStrLn . uncurry toPythonExpr) $ H.toList h
     mapM_ (putStrLn . toPythonExpr "f") p
 
@@ -75,9 +78,10 @@ main = do
     es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 2
     print es
 
-    -- loadFileOCaml ocaml "target_files/OCaml/ints.ml"
-    -- lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) cvc4 graph
-    -- print lr
+    cvc4 <- getCVC4
+    loadFileOCaml ocaml "target_files/OCaml/ints.ml"
+    lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) graph
+    print lr
 
     -- python <- getPython
     -- putStrLn "Got python"

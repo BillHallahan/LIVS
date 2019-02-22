@@ -16,7 +16,7 @@ import LIVS.Target.OCaml.LexerCL
 import LIVS.Target.OCaml.ParserCL
 
 import Data.List
-import Debug.Trace
+
 newtype OCaml = OCaml Process
 
 loadFileOCaml :: OCaml -> FilePath -> IO ()
@@ -27,7 +27,7 @@ defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
 
 callOCaml :: OCaml -> Expr -> IO Lit
 callOCaml ocaml e =
-    return . parse . lexer =<< runAndReadOCaml ocaml (trace (toOCamlCall e)toOCamlCall e)
+    return . parse . lexer =<< runAndReadOCaml ocaml (toOCamlCall e)
 
 getOCaml :: IO OCaml
 getOCaml = do

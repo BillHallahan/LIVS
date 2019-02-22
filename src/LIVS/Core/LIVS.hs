@@ -27,26 +27,28 @@ type Def = Id -> Expr -> IO ()
 -- and parses to a Lit
 type Call = Expr -> IO Lit
 
-livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CVC4 -> CallGraph -> m H.Heap
-livs def call cvc4 cg =
+livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CallGraph -> m H.Heap
+livs def call cg =
     let
         ord = synthOrder cg
     in
-    livs' def call cvc4 cg [] H.empty ord
+    livs' def call cg [] H.empty ord
 
 livs' :: (MonadIO m, MonadRandom m) => 
-        Def -> Call -> CVC4 -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ _ h [] = return h
-livs' def call cvc4 cg es h (i@(Id n _):ns) = do
+        Def -> Call -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ h [] = return h
+livs' def call cg es h (i@(Id n _):ns) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- if re == [] then fuzzExamplesM call i 10 else return re
+    re' <- if re == [] then fuzzExamplesM call i 3 else return re
 
     let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
     let form = toSygus relH re'
-    m <- liftIO $ runAndReadCVC4 cvc4 form
+    liftIO $ putStrLn form
+    m <- liftIO $ runCVC4WithFile form
+    liftIO $ putStrLn m
     let m' = parse M.empty . lexer $ m
         r = case M.lookup n m' of
             Just r' -> r'
@@ -60,7 +62,7 @@ livs' def call cvc4 cg es h (i@(Id n _):ns) = do
     let h' = H.insert n r h
 
     if cor
-        then livs' def call cvc4 cg es h' ns
+        then livs' def call cg es h' ns
         else undefined
 
 -- | Decides an order to synthesize function definitions in.

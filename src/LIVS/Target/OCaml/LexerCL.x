@@ -9,13 +9,14 @@ $digit = 0-9
 $alpha = [a-zA-Z]
 
 tokens:-
+    \-$digit+                                           { TokenInt . read }
+    $digit+                                             { TokenInt . read }
     $white+                                             ;
     \#                                                  ;
     \-                                                  ;
     \:                                                  ;
     =                                                   ;
     int                                                 ;
-    $digit+                                             { TokenInt . read }
 {
 data Token = TokenInt Int
 
