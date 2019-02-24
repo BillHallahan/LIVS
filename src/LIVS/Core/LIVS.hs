@@ -2,8 +2,7 @@
 module LIVS.Core.LIVS ( Def
                       , Call
                       , livsCVC4
-                      , livs
-                      , synthOrder ) where
+                      , livs ) where
 
 import LIVS.Language.CallGraph
 import LIVS.Language.Expr
@@ -29,12 +28,16 @@ type Call m = Expr -> m Lit
 type Gen m = H.Heap -> S.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
 
 livsCVC4 :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
-livsCVC4 def call = livs def call runSygusWithGrammar
+livsCVC4 def call cg = livs def call (runSygusWithGrammar cg) cg
 
 livs :: MonadRandom m => Def m -> Call m -> Gen m -> CallGraph -> H.Heap -> m H.Heap
 livs def call gen cg h =
     let
-        ord = filter (not . flip H.isPrimitive h . idName) $ synthOrder cg
+        -- before synthesizing a function f, we want to synthesize all
+        -- function's it calls, f_1...f_n.
+        -- This is always possible, except in the case of mutual recursion, which we
+        -- break arbitrarily
+        ord = filter (not . flip H.isPrimitive h . idName) $ postOrderList cg
     in
     livs' def call gen cg [] h ord
 
@@ -66,17 +69,6 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
     if cor
         then livs' def call gen cg es h' ns
         else error "livs': Incorrect guess"
-
--- | Decides an order to synthesize function definitions in.
--- The only real constraint here is that, before synthesizing a function f,
--- we want to synthesize all function's it calls, f_1...f_n.
--- This is always possible, except in the case of mutual recursion, which we
--- break arbitrarily
-synthOrder :: CallGraph -> [Id]
-synthOrder = nub . concatMap (reverse . synthOrder') . dfs
-    where
-        synthOrder' :: CallTree -> [Id]
-        synthOrder' ct = vert ct:concatMap synthOrder' (trees ct)
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph

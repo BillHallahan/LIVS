@@ -7,6 +7,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runAndReadCVC4
                                 , closeCVC4) where
 
+import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import LIVS.Sygus.SMTLexer
@@ -21,12 +22,12 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => H.Heap -> [Example] -> m (HM.HashMap Name Expr)
-runSygus h = runSygusWithGrammar h (HS.fromList $ H.keys h)
+runSygus :: MonadIO m => CallGraph -> H.Heap -> [Example] -> m (HM.HashMap Name Expr)
+runSygus cg h = runSygusWithGrammar cg h (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => H.Heap -> HS.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
-runSygusWithGrammar h hsr es = do
-    let form = toSygusWithGrammar h hsr es
+runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
+runSygusWithGrammar cg h hsr es = do
+    let form = toSygusWithGrammar cg h hsr es
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
     liftIO $ putStrLn m

@@ -5,6 +5,7 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 import qualified Data.HashSet as S
+import Data.List
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -15,7 +16,9 @@ callGraphTests = testGroup "Call Graph" [ dfs1
                                         , reachable2
                                         , directlyCalls1
                                         , findVert1
-                                        , findVert2 ]
+                                        , findVert2
+                                        , postOrderList1
+                                        , postOrderList2 ]
 
 dfs1 :: TestTree
 dfs1 = testCase "DFS Test 1"
@@ -38,6 +41,21 @@ directlyCalls1 = testCase "directlyCalls Test 1"
     $ assertBool ("Correct directlyCalls" ++ show (directlyCalls (toId "g") graph2))
         (directlyCalls (toId "g") graph2 == 
             S.fromList [toId "x", toId "h"])
+
+postOrderList1 :: TestTree
+postOrderList1 = testCase "postOrderList 1"
+    $ assertBool "Correct synthOrder" (postOrderList' (toId "z") (toId "f") graph1)
+
+postOrderList2 :: TestTree
+postOrderList2 = testCase "postOrderList 2"
+    $ assertBool "Correct postOrderList" (postOrderList' (toId "h") (toId "z") graph1)
+
+postOrderList' :: Id -> Id -> CallGraph -> Bool
+postOrderList' i1 i2 g =
+    let
+        ord = postOrderList g
+    in
+    elemIndex i1 ord < elemIndex i2 ord
 
 findVert1 :: TestTree 
 findVert1 = testCase "findVert Test 1"

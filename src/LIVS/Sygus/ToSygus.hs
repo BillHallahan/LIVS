@@ -1,6 +1,7 @@
 module LIVS.Sygus.ToSygus ( toSygus 
                           , toSygusWithGrammar) where
 
+import LIVS.Language.CallGraph
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
@@ -9,21 +10,26 @@ import LIVS.Language.Typing
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.List
+import Data.Maybe
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
-toSygus :: H.Heap -> [Example] -> String
-toSygus h = toSygusWithGrammar h (HS.fromList $ H.keys h)
+toSygus :: CallGraph -> H.Heap -> [Example] -> String
+toSygus cg h = toSygusWithGrammar cg h (HS.fromList $ H.keys h)
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis. The passed Name's restricts the grammar to only
 -- directly use the names in the Set.
-toSygusWithGrammar :: H.Heap -> HS.HashSet Name -> [Example] -> String
-toSygusWithGrammar h hsr es =
+toSygusWithGrammar :: CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> String
+toSygusWithGrammar cg h hsr es =
     let
-        hf = concat . intersperse "\n" .  HM.elems $ H.mapWithKeyDefs' toSygusFunExpr h
+        -- Functions in SMT formulas need to be declared before they are used,
+        -- so we add them to the formula in post-order.
+        post = map idName $ postOrderList cg
+        h' = H.mapWithKeyDefs' toSygusFunExpr h
+        hf = concat . intersperse "\n" $ mapMaybe (flip HM.lookup h') post
 
         ls = map LInt [0..3]
 

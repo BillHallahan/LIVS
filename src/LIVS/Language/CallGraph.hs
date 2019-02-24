@@ -9,6 +9,7 @@ module LIVS.Language.CallGraph ( CallGraph
                                , trees
                                , reachable
                                , directlyCalls
+                               , postOrderList
                                , findVert) where
 
 import LIVS.Language.Syntax
@@ -64,6 +65,13 @@ directlyCalls :: Id -> CallGraph -> S.HashSet Id
 directlyCalls i (CallGraph cg ti _) =
     S.fromList . map snd . filter ((==) i . fst) 
           . map (\(v1, v2) -> (ti v1, ti v2)) . G.edges $ cg
+
+-- | Gives a list of Id's in post-order
+postOrderList :: CallGraph -> [Id]
+postOrderList = nub . concatMap (reverse . postOrderList') . dfs
+    where
+        postOrderList' :: CallTree -> [Id]
+        postOrderList' ct = vert ct:concatMap postOrderList' (trees ct)
 
 findVert :: Id -> CallGraph -> Maybe CallTree
 findVert i g

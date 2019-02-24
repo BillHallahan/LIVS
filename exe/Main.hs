@@ -36,8 +36,11 @@ main = do
                                     )
                                 ))
                         , ("+", H.Primitive $ TyFun intType (TyFun intType intType))]
+        cg = createCallGraph
+            [ (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))])
+            , (Id "+" (TyFun intType (TyFun intType intType)), []) ]
 
-    let form = toSygus h examples
+    let form = toSygus cg h examples
 
     putStrLn form
 
@@ -102,8 +105,8 @@ graph = createCallGraph
     , (Id "abs2" (TyFun intType intType), [ Id "-" (TyFun intType (TyFun intType intType))
                                           , Id ">=" (TyFun intType (TyFun intType boolType))
                                           , Id "ite" (TyFun boolType (TyFun intType (TyFun intType intType)))])
-    {- , (Id "abs3" (TyFun intType intType), [ Id "abs2" (TyFun intType intType) ])
-    , (Id "abs4" (TyFun intType intType), [ Id "abs3" (TyFun intType intType) ]) -} ]
+    , (Id "abs3" (TyFun intType intType), [ Id "abs2" (TyFun intType intType) ])
+    , (Id "abs4" (TyFun intType intType), [ Id "abs3" (TyFun intType intType) ]) ]
 
 
 examples :: [Example]
