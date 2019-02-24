@@ -5,10 +5,18 @@ module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runAndReadCVC4
                                 , closeCVC4) where
 
+import qualified LIVS.Heap as H
+import LIVS.Sygus.ToSygus
 import LIVS.Target.General.Process
 
 import System.IO
 import System.IO.Temp
+
+runSygus :: MonadIO m => H.Heap -> [Example] -> m (HM.HashMap Name Expr)
+runSygus h es = do
+    let form = toSygus h es
+    m <- liftIO $ runCVC4WithFile form
+    return . parseSMT (H.map' typeOf h) . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
                 -> IO String
@@ -18,7 +26,7 @@ runCVC4WithFile sygus =
             hPutStr h sygus
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
-            
+
             runProcessOnce "cvc4" [fp, "--lang", "sygus"])
 
 newtype CVC4 = CVC4 Process
