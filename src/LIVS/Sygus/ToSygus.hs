@@ -1,4 +1,5 @@
-module LIVS.Sygus.ToSygus ( toSygus ) where
+module LIVS.Sygus.ToSygus ( toSygus 
+                          , toSygusWithGrammar) where
 
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
@@ -6,18 +7,27 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as HS
 import Data.List
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
 toSygus :: H.Heap -> [Example] -> String
-toSygus h es =
+toSygus h = toSygusWithGrammar h (HS.fromList $ H.keys h)
+
+-- | Translates examples into a SyGuS problem.
+-- Functions from the heap are translated into SMT formulas, so they can be
+-- used during synthesis. The passed Name's restricts the grammar to only
+-- directly use the names in the Set.
+toSygusWithGrammar :: H.Heap -> HS.HashSet Name -> [Example] -> String
+toSygusWithGrammar h hsr es =
     let
-        hf = concat . intersperse " " .  HM.elems $ H.mapWithKeyDefs' toSygusFunExpr h
+        hf = concat . intersperse "\n" .  HM.elems $ H.mapWithKeyDefs' toSygusFunExpr h
 
         fs = collectFuncs es
-        fspec = concatMap (\(n, it, ot) -> genSynthFun h n it ot) fs
+        hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
+        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in

@@ -8,12 +8,8 @@ import LIVS.Language.CallGraph
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
-import LIVS.Language.Typing
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
-import LIVS.Sygus.SMTParser
-import LIVS.Sygus.SMTLexer
-import LIVS.Sygus.ToSygus
 
 import Control.Monad.Random
 import Data.List
@@ -44,9 +40,10 @@ livs' def call cg es h (i@(Id n _):ns) = do
     re' <- if re == [] then fuzzExamplesM call i 3 else return re
 
     let relH = filterToReachable i cg h
+        gram = directlyCalls i cg
 
     -- Take a guess at the definition of the function
-    m <- runSygus relH re'
+    m <- runSygusWithGrammar relH (S.map idName gram) re'
 
     let r = case HM.lookup n m of
             Just r' -> r'

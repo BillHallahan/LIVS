@@ -1,5 +1,6 @@
 module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runSygus
+                                , runSygusWithGrammar
                                 , runCVC4WithFile
 
                                 , getCVC4
@@ -16,12 +17,17 @@ import LIVS.Target.General.Process
 
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
 runSygus :: MonadIO m => H.Heap -> [Example] -> m (HM.HashMap Name Expr)
-runSygus h es = do
-    let form = toSygus h es
+runSygus h = runSygusWithGrammar h (HS.fromList $ H.keys h)
+
+runSygusWithGrammar :: MonadIO m => H.Heap -> HS.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
+runSygusWithGrammar h hsr es = do
+    let form = toSygusWithGrammar h hsr es
+    liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
     return . parseSMT (H.map' typeOf h) . lexSMT $ m
 

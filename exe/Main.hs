@@ -93,6 +93,7 @@ main = do
 graph :: CallGraph
 graph = createCallGraph
     [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType (TyFun intType intType))])
+    , (Id "quadruple" (TyFun intType intType), [Id "double" (TyFun intType intType)])
     , (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))]) ]
 
 
