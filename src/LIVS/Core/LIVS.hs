@@ -26,14 +26,10 @@ type Def m = Id -> Expr -> m ()
 type Call m = Expr -> m Lit
 
 -- Generates code satisfying a set of examples
-type Gen m = Id -> CallGraph -> H.Heap -> [Example] -> m (HM.HashMap Name Expr)
+type Gen m = H.Heap -> S.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
 
 livsCVC4 :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
-livsCVC4 def call = livs def call gen
-    where
-        gen i cg h es = do
-            let gram = directlyCalls i cg
-            runSygusWithGrammar h (S.map idName gram) es
+livsCVC4 def call = livs def call runSygusWithGrammar
 
 livs :: MonadRandom m => Def m -> Call m -> Gen m -> CallGraph -> H.Heap -> m H.Heap
 livs def call gen cg h =
@@ -51,9 +47,10 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
     re' <- if re == [] then fuzzExamplesM call i 3 else return re
 
     let relH = filterToReachable i cg h
+        gram = S.map idName $ directlyCalls i cg
 
     -- Take a guess at the definition of the function
-    m <- gen i cg relH re'
+    m <- gen relH gram re'
 
     let r = case HM.lookup n m of
             Just r' -> r'

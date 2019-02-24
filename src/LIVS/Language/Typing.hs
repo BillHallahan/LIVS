@@ -1,6 +1,7 @@
 module LIVS.Language.Typing ( Typed (..)
                             , PresType (..)
                             , intType
+                            , boolType
                             , exampleFuncType
 
                             , mkTyFun
@@ -40,6 +41,9 @@ instance Typed PresType where
 
 intType :: Type
 intType = TyCon "Int" TYPE
+
+boolType :: Type
+boolType = TyCon "Bool" TYPE
 
 exampleFuncType :: Example -> Type
 exampleFuncType es = mkTyFun $ map typeOf (input es) ++ [typeOf (output es)]

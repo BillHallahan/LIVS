@@ -77,7 +77,10 @@ main = do
     es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 2
     print es
 
-    let livsH = H.fromList [("+", H.Primitive $ TyFun intType (TyFun intType intType))]
+    let livsH = H.fromList [ ("+", H.Primitive $ TyFun intType (TyFun intType intType))
+                           , ("=", H.Primitive $ TyFun intType (TyFun intType boolType))
+                           , (">=", H.Primitive $ TyFun intType (TyFun intType boolType))
+                           , ("ite", H.Primitive $ TyFun boolType (TyFun intType intType))]
 
     putStrLn "HERE"
     loadFileOCaml ocaml "target_files/OCaml/ints.ml"
