@@ -20,11 +20,10 @@ import qualified LIVS.Target.OCaml.ParserCL as OCaml
 import LIVS.Target.Python.Interface
 
 import Control.Monad.IO.Class
-import qualified Data.Map as M
 
 main :: IO ()
 main = do
-    let h = H.fromList [("add", Lam 
+    let h = H.fromList [("add", H.Def $ Lam 
                                 (Id "x" intType) 
                                 (Lam 
                                     (Id "y" intType) 
@@ -52,35 +51,36 @@ main = do
 
     putStrLn r
 
-    let l = lexer r
+    let l = lexSMT r
     putStrLn $ show l
-
-    let p = parse (M.fromList [("+", TyFun intType (TyFun intType intType))]) l
-    putStrLn $ show p
 
     -- closeCVC4 cvc4
 
-    mapM_ (putStrLn . uncurry toPythonExpr) $ H.toList h
-    mapM_ (putStrLn . toPythonExpr "f") p
+    -- mapM_ (putStrLn . uncurry toPythonExpr) . H.toList $ H.filter H.isDef h
+    -- mapM_ (putStrLn . toPythonExpr "f") p
 
     ocaml <- getOCaml
     putStrLn "Got ocaml"
 
-    mapM_ (runOCaml ocaml . uncurry toOCamlDef) $ H.toList h
+    mapM_ (\(n, hObj) -> case hObj of
+                        H.Def e -> runOCaml ocaml $ toOCamlDef n e
+                        _ -> return ()) . H.toList $ H.filter H.isDef h
     putStrLn "Ran ocaml"
     r1 <- runAndReadOCaml ocaml ("add 1 2;;\n")
 
-    print (OCaml.parse . OCaml.lexer $ r1)
-    putStrLn "Ran ocaml 2"
-    r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
-    print (OCaml.parse . OCaml.lexer $ r2)
+    -- print (OCaml.parse . OCaml.lexer $ r1)
+    -- putStrLn "Ran ocaml 2"
+    -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
+    -- print (OCaml.parse . OCaml.lexer $ r2)
 
     es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 2
     print es
 
-    cvc4 <- getCVC4
+    let livsH = H.fromList [("+", H.Primitive $ TyFun intType (TyFun intType intType))]
+
+    putStrLn "HERE"
     loadFileOCaml ocaml "target_files/OCaml/ints.ml"
-    lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) graph
+    lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) graph livsH
     print lr
 
     -- python <- getPython
@@ -91,7 +91,7 @@ main = do
 
 graph :: CallGraph
 graph = createCallGraph
-    [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType intType)])
+    [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType (TyFun intType intType))])
     , (Id "add" (TyFun intType (TyFun intType intType)), []) ]
 
 

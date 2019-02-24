@@ -12,6 +12,7 @@ import Test.Tasty.HUnit
 callGraphTests :: TestTree
 callGraphTests = testGroup "Call Graph" [ dfs1
                                         , reachable1
+                                        , reachable2
                                         , findVert1
                                         , findVert2 ]
 
@@ -25,6 +26,11 @@ reachable1 = testCase "reachable Test 1"
         (reachable (toId "f") graph2 == 
             S.fromList [toId "f", toId "h", toId "p", toId "q", toId "k"])
 
+reachable2 :: TestTree
+reachable2 = testCase "reachable Test 2"
+    $ assertBool "Correct reachable" 
+        (reachable (toId "f") graph3 == 
+            S.fromList [toId "f", toId "e"])
 
 findVert1 :: TestTree 
 findVert1 = testCase "findVert Test 1"
@@ -52,6 +58,9 @@ graph2 = createCallGraph
     , (toId "z", [toId "h"])
     , (toId "h", [toId "p", toId "q"])
     , (toId "p", [toId "k"])]
+
+graph3 :: CallGraph
+graph3 = createCallGraph [(toId "f", [toId "e"])]
 
 toId :: Name -> Id
 toId n = Id n (TyFun intType intType)

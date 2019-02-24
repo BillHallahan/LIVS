@@ -34,5 +34,5 @@ fuzzExampleM call i = do
 
 fuzzLitM :: MonadRandom m => Type -> m Lit
 fuzzLitM t
-    | t == intType = return . LInt =<< getRandomR (-20, 20)
+    | t == intType = return . LInt =<< getRandomR (-100 * 100, 100 * 100)
     | otherwise = error "fuzz: We cannot fuzz values of the given type."

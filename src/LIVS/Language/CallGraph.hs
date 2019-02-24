@@ -17,7 +17,7 @@ import Data.List
 import Data.Maybe
 import qualified Data.HashSet as S
 
-data CallGraph = CallGraph G.Graph (G.Vertex -> Id)
+data CallGraph = CallGraph G.Graph (G.Vertex -> Id) (Id -> Maybe G.Vertex)
 
 -- | Takes a list, mapping functions to the functions they call
 createCallGraph :: [(Id, [Id])] -> CallGraph
@@ -31,33 +31,31 @@ createCallGraph iss =
         iss_s' = iss_s \\ iss_f
         iss' = iss ++ map (,[]) iss_s'
 
-        (g, f, _) = G.graphFromEdges . map (\(i, is) -> (i, idName i, map idName is)) $ iss'
+        (g, ti, tv) = G.graphFromEdges . map (\(i, is) -> (i, idName i, map idName is)) $ iss'
     in
-    CallGraph g (fst3 . f)
+    CallGraph g (fst3 . ti) (tv . idName)
     where
         fst3 (x, _, _) = x
 
 type CallForest = [CallTree]
 
 dfs :: CallGraph -> CallForest
-dfs (CallGraph g f) = map (flip CallTree f) (G.dff g)
+dfs (CallGraph g ti tv) = map (\x  -> CallTree x ti tv) (G.dff g)
 
-data CallTree = CallTree (G.Tree G.Vertex) (G.Vertex -> Id)
+data CallTree = CallTree (G.Tree G.Vertex) (G.Vertex -> Id) (Id -> Maybe G.Vertex)
 
 vert :: CallTree -> Id
-vert (CallTree (G.Node a _) f) = f a 
+vert (CallTree (G.Node a _) f _) = f a 
 
 trees :: CallTree -> CallForest
-trees (CallTree (G.Node _ ts) f) = map (flip CallTree f) ts
+trees (CallTree (G.Node _ ts) ti tv) = map (\x  -> CallTree x ti tv) ts
 
 -- | Returns all Id's (verts) reachable from the given Id in the CallGraph
 reachable :: Id -> CallGraph -> S.HashSet Id
-reachable n cg = maybe S.empty id (fmap reachableTree $ findVert n cg)
-
--- | Returns all Id's (verts) reachable from the given CallTree
-reachableTree :: CallTree -> S.HashSet Id
-reachableTree t =
-    foldr S.union (S.singleton $ vert t) $ map reachableTree (trees t)
+reachable n (CallGraph cg ti tv) =
+    case tv n of
+        Just v -> S.fromList . map ti $ G.reachable cg v -- maybe S.empty id (fmap reachableTree $ findVert n cg)
+        Nothing -> S.empty
 
 findVert :: Id -> CallGraph -> Maybe CallTree
 findVert n g

@@ -1,12 +1,12 @@
 {
-module LIVS.Sygus.SMTParser ( parse ) where
+module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
 import LIVS.Sygus.SMTLexer
 
 import Control.Monad.State.Lazy
-import qualified Data.Map as M
+import qualified Data.HashMap.Lazy as HM
 }
 
 %name parse1
@@ -64,38 +64,38 @@ expr :: { Expr }
      | int { Lit (LInt $1) }
 
 {
-data Parser = Parser { types :: M.Map Name Type}
+data Parser = Parser { types :: HM.HashMap Name Type}
 
 newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Monad)
 
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parse :: M.Map Name Type -> [Token] -> M.Map Name Expr
-parse m t = M.fromList . fst $ runParserM m (parse1 t) 
+parseSMT :: HM.HashMap Name Type -> [Token] -> HM.HashMap Name Expr
+parseSMT m t = HM.fromList . fst $ runParserM m (parse1 t) 
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."
 
 -- Helpers for the monad
-runParserM :: M.Map Name Type -> ParserM a -> (a, Parser)
+runParserM :: HM.HashMap Name Type -> ParserM a -> (a, Parser)
 runParserM m (ParserM p) = runState p (Parser { types = m })
 
-setTypes :: M.Map Name Type -> ParserM ()
+setTypes :: HM.HashMap Name Type -> ParserM ()
 setTypes m = do
     s <- get
     put $ s { types = m }
 
-getTypes :: ParserM (M.Map Name Type)
+getTypes :: ParserM (HM.HashMap Name Type)
 getTypes = return . types =<< get
 
 setType :: Name -> Type -> ParserM ()
 setType n t = do
     m <- getTypes
-    setTypes (M.insert n t m)
+    setTypes (HM.insert n t m)
 
 getType :: Name -> ParserM (Maybe Type)
-getType n = return . M.lookup n =<< getTypes
+getType n = return . HM.lookup n =<< getTypes
 
 idM :: Name -> ParserM Id
 idM n = do

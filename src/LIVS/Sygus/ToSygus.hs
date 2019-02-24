@@ -14,7 +14,7 @@ import Data.List
 toSygus :: H.Heap -> [Example] -> String
 toSygus h es =
     let
-        hf = concat . intersperse " " .  HM.elems $ H.mapWithKey' toSygusFunExpr h
+        hf = concat . intersperse " " .  HM.elems $ H.mapWithKeyDefs' toSygusFunExpr h
 
         fs = collectFuncs es
         fspec = concatMap (\(n, it, ot) -> genSynthFun h n it ot) fs

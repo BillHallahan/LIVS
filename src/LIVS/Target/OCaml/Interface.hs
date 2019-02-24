@@ -16,7 +16,6 @@ import LIVS.Target.OCaml.LexerCL
 import LIVS.Target.OCaml.ParserCL
 
 import Data.List
-
 newtype OCaml = OCaml Process
 
 loadFileOCaml :: OCaml -> FilePath -> IO ()
@@ -26,8 +25,12 @@ defOCaml :: OCaml -> Id -> Expr -> IO ()
 defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
 
 callOCaml :: OCaml -> Expr -> IO Lit
-callOCaml ocaml e =
-    return . parse . lexer =<< runAndReadOCaml ocaml (toOCamlCall e)
+callOCaml ocaml e = do
+    r <- runAndReadOCaml ocaml (toOCamlCall e)
+    lx <- return . lexer $ r
+    case lx of
+        Right l -> return . parse $ l
+        Left err -> error $ err ++ "\n" ++ show r
 
 getOCaml :: IO OCaml
 getOCaml = do

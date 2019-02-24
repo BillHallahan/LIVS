@@ -8,6 +8,7 @@ import LIVS.Language.CallGraph
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
+import LIVS.Language.Typing
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTParser
@@ -16,8 +17,10 @@ import LIVS.Sygus.ToSygus
 
 import Control.Monad.Random
 import Data.List
-import qualified Data.Map as M
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
+
+import Debug.Trace
 
 -- | Initializes an environment with a definition of a function with the given
 -- name and body
@@ -27,12 +30,12 @@ type Def = Id -> Expr -> IO ()
 -- and parses to a Lit
 type Call = Expr -> IO Lit
 
-livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CallGraph -> m H.Heap
-livs def call cg =
+livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CallGraph -> H.Heap -> m H.Heap
+livs def call cg h =
     let
         ord = synthOrder cg
     in
-    livs' def call cg [] H.empty ord
+    livs' def call cg [] h ord
 
 livs' :: (MonadIO m, MonadRandom m) => 
         Def -> Call -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
@@ -45,12 +48,14 @@ livs' def call cg es h (i@(Id n _):ns) = do
     let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
+    liftIO $ print h
+    liftIO $ print relH
     let form = toSygus relH re'
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
-    liftIO $ putStrLn m
-    let m' = parse M.empty . lexer $ m
-        r = case M.lookup n m' of
+
+    let m' = parseSMT (H.map' typeOf h) . lexSMT $ m
+        r = case HM.lookup n m' of
             Just r' -> r'
             Nothing -> error "No function definition found."
 
@@ -59,7 +64,7 @@ livs' def call cg es h (i@(Id n _):ns) = do
     -- component function
     cor <- liftIO $ checkExamples def call i r re'
 
-    let h' = H.insert n r h
+    let h' = H.insertDef n r h
 
     if cor
         then livs' def call cg es h' ns
@@ -79,11 +84,11 @@ synthOrder = nub . concatMap (reverse . synthOrder') . dfs
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
 filterToReachable :: Id -> CallGraph -> H.Heap -> H.Heap
-filterToReachable n cg =
+filterToReachable i cg =
     let
-        r = S.map idName $ reachable n cg
+        r = S.map idName $ reachable i cg
     in
-    H.filterWithKey (\n' _ -> n' `S.member` r)
+    trace ("r = " ++ show r) H.filterWithKey (\n' _ -> n' `S.member` r)
 
 -- | Checks that the given synthesized function satisfies the examples
 checkExamples :: MonadIO m => Def -> Call -> Id -> Expr -> [Example] -> m Bool

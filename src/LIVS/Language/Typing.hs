@@ -22,7 +22,7 @@ instance Typed Expr where
     typeOf a@(App e _) =
         case typeOf e of
             TyFun _ t2 -> t2
-            _ -> error $ "Bad type."
+            _ -> error $ "Bad type." ++ show a
     typeOf (Lit l) = typeOf l
 
 instance Typed Lit where

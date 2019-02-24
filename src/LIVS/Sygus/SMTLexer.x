@@ -1,6 +1,6 @@
 {
 module LIVS.Sygus.SMTLexer ( Token (..) 
-                           , lexer ) where
+                           , lexSMT ) where
 }
 
 %wrapper "basic"
@@ -26,6 +26,6 @@ data Token = TokenName String
            | TokenCloseParen
            deriving Show
 
-lexer :: String -> [Token]
-lexer = alexScanTokens
+lexSMT :: String -> [Token]
+lexSMT = alexScanTokens
 }
