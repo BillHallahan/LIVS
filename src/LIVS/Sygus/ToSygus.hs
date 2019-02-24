@@ -99,9 +99,7 @@ sygusInt h xs =
     ++ "(0 1 2 3 4 5 "
     ++ concat (intersperse " " xs) ++ "\n"
     ++ sc
-    ++ "(+ ntInt ntInt)\n"
-    ++ "(- ntInt ntInt)\n"
-    ++ "(* ntInt ntInt))))"
+    ++ ")))"
 
 getSynthCalls :: H.Heap -> String
 getSynthCalls =

@@ -8,6 +8,7 @@ module LIVS.Language.CallGraph ( CallGraph
                                , vert
                                , trees
                                , reachable
+                               , directlyCalls
                                , findVert) where
 
 import LIVS.Language.Syntax
@@ -17,7 +18,8 @@ import Data.List
 import Data.Maybe
 import qualified Data.HashSet as S
 
-data CallGraph = CallGraph G.Graph (G.Vertex -> Id) (Id -> Maybe G.Vertex)
+data CallGraph =
+    CallGraph G.Graph (G.Vertex -> Id) (Id -> Maybe G.Vertex)
 
 -- | Takes a list, mapping functions to the functions they call
 createCallGraph :: [(Id, [Id])] -> CallGraph
@@ -39,10 +41,10 @@ createCallGraph iss =
 
 type CallForest = [CallTree]
 
+data CallTree = CallTree (G.Tree G.Vertex) (G.Vertex -> Id) (Id -> Maybe G.Vertex)
+
 dfs :: CallGraph -> CallForest
 dfs (CallGraph g ti tv) = map (\x  -> CallTree x ti tv) (G.dff g)
-
-data CallTree = CallTree (G.Tree G.Vertex) (G.Vertex -> Id) (Id -> Maybe G.Vertex)
 
 vert :: CallTree -> Id
 vert (CallTree (G.Node a _) f _) = f a 
@@ -54,16 +56,22 @@ trees (CallTree (G.Node _ ts) ti tv) = map (\x  -> CallTree x ti tv) ts
 reachable :: Id -> CallGraph -> S.HashSet Id
 reachable n (CallGraph cg ti tv) =
     case tv n of
-        Just v -> S.fromList . map ti $ G.reachable cg v -- maybe S.empty id (fmap reachableTree $ findVert n cg)
+        Just v -> S.fromList . map ti $ G.reachable cg v
         Nothing -> S.empty
 
+-- | Returns all Id's directally called by the given Id
+directlyCalls :: Id -> CallGraph -> S.HashSet Id
+directlyCalls i (CallGraph cg ti _) =
+    S.fromList . map snd . filter ((==) i . fst) 
+          . map (\(v1, v2) -> (ti v1, ti v2)) . G.edges $ cg
+
 findVert :: Id -> CallGraph -> Maybe CallTree
-findVert n g
-    | (t:_) <- mapMaybe (findVertTree n) $ dfs g = Just t
+findVert i g
+    | (t:_) <- mapMaybe (findVertTree i) $ dfs g = Just t
     | otherwise = Nothing
 
 findVertTree :: Id -> CallTree -> Maybe CallTree
-findVertTree n ct
-    | vert ct == n = Just ct
-    | (r:_) <- mapMaybe (findVertTree n) (trees ct) = Just r
+findVertTree i ct
+    | vert ct == i = Just ct
+    | (r:_) <- mapMaybe (findVertTree i) (trees ct) = Just r
     | otherwise = Nothing

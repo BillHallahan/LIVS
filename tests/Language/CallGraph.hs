@@ -13,6 +13,7 @@ callGraphTests :: TestTree
 callGraphTests = testGroup "Call Graph" [ dfs1
                                         , reachable1
                                         , reachable2
+                                        , directlyCalls1
                                         , findVert1
                                         , findVert2 ]
 
@@ -31,6 +32,12 @@ reachable2 = testCase "reachable Test 2"
     $ assertBool "Correct reachable" 
         (reachable (toId "f") graph3 == 
             S.fromList [toId "f", toId "e"])
+
+directlyCalls1 :: TestTree
+directlyCalls1 = testCase "directlyCalls Test 1"
+    $ assertBool ("Correct directlyCalls" ++ show (directlyCalls (toId "g") graph2))
+        (directlyCalls (toId "g") graph2 == 
+            S.fromList [toId "x", toId "h"])
 
 findVert1 :: TestTree 
 findVert1 = testCase "findVert Test 1"

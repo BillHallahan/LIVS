@@ -23,7 +23,7 @@ import Control.Monad.IO.Class
 
 main :: IO ()
 main = do
-    let h = H.fromList [("add", H.Def $ Lam 
+    let h = H.fromList [ ("add", H.Def $ Lam 
                                 (Id "x" intType) 
                                 (Lam 
                                     (Id "y" intType) 
@@ -34,7 +34,8 @@ main = do
                                         )
                                         (Var (Id "x" intType))
                                     )
-                                ))]
+                                ))
+                        , ("+", H.Primitive $ TyFun intType (TyFun intType intType))]
 
     let form = toSygus h examples
 
@@ -64,7 +65,7 @@ main = do
 
     mapM_ (\(n, hObj) -> case hObj of
                         H.Def e -> runOCaml ocaml $ toOCamlDef n e
-                        _ -> return ()) . H.toList $ H.filter H.isDef h
+                        _ -> return ()) . H.toList $ H.filter H.isDefObj h
     putStrLn "Ran ocaml"
     r1 <- runAndReadOCaml ocaml ("add 1 2;;\n")
 
@@ -92,7 +93,7 @@ main = do
 graph :: CallGraph
 graph = createCallGraph
     [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType (TyFun intType intType))])
-    , (Id "add" (TyFun intType (TyFun intType intType)), []) ]
+    , (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))]) ]
 
 
 examples :: [Example]

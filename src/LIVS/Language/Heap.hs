@@ -19,7 +19,9 @@ module LIVS.Language.Heap ( Heap
                           , toList
 
                           , isDef
-                          , isPrimitive ) where
+                          , isPrimitive
+                          , isDefObj
+                          , isPrimitiveObj ) where
 
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
@@ -98,10 +100,16 @@ toHashMap = unHeap
 toList :: Heap -> [(Name, HeapObj)]
 toList = M.toList . unHeap
 
-isDef :: HeapObj -> Bool
-isDef (Def _) = True
-isDef _ = False
+isDef :: Name -> Heap -> Bool
+isDef n h = maybe False isDefObj $ lookup n h
 
-isPrimitive :: HeapObj -> Bool
-isPrimitive (Primitive _) = True
-isPrimitive _ = False
+isPrimitive :: Name -> Heap -> Bool
+isPrimitive n h = maybe False isPrimitiveObj $ lookup n h
+
+isDefObj :: HeapObj -> Bool
+isDefObj (Def _) = True
+isDefObj _ = False
+
+isPrimitiveObj :: HeapObj -> Bool
+isPrimitiveObj (Primitive _) = True
+isPrimitiveObj _ = False

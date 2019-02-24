@@ -31,7 +31,7 @@ type Call m = Expr -> m Lit
 livs :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
 livs def call cg h =
     let
-        ord = synthOrder cg
+        ord = filter (not . flip H.isPrimitive h . idName) $ synthOrder cg
     in
     livs' def call cg [] h ord
 
@@ -46,12 +46,9 @@ livs' def call cg es h (i@(Id n _):ns) = do
     let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
-    -- let form = toSygus relH re'
-    -- m <- liftIO $ runCVC4WithFile form
     m <- runSygus relH re'
 
-    let -- m' = parseSMT (H.map' typeOf h) . lexSMT $ m
-        r = case HM.lookup n m of
+    let r = case HM.lookup n m of
             Just r' -> r'
             Nothing -> error "No function definition found."
 

@@ -1,14 +1,21 @@
 module LIVS.Sygus.CVC4Interface ( CVC4
+                                , runSygus
                                 , runCVC4WithFile
 
                                 , getCVC4
                                 , runAndReadCVC4
                                 , closeCVC4) where
 
-import qualified LIVS.Heap as H
+import qualified LIVS.Language.Heap as H
+import LIVS.Language.Syntax
+import LIVS.Sygus.SMTLexer
+import LIVS.Sygus.SMTParser
 import LIVS.Sygus.ToSygus
+import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
+import Control.Monad.IO.Class
+import qualified Data.HashMap.Lazy as HM
 import System.IO
 import System.IO.Temp
 
