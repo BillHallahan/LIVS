@@ -1,6 +1,7 @@
 -- Language Independence Via Synthesis
 module LIVS.Core.LIVS ( Def
                       , Call
+                      , livsCVC4
                       , livs
                       , synthOrder ) where
 
@@ -24,26 +25,35 @@ type Def m = Id -> Expr -> m ()
 -- and parses to a Lit
 type Call m = Expr -> m Lit
 
-livs :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
-livs def call cg h =
+-- Generates code satisfying a set of examples
+type Gen m = Id -> CallGraph -> H.Heap -> [Example] -> m (HM.HashMap Name Expr)
+
+livsCVC4 :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
+livsCVC4 def call = livs def call gen
+    where
+        gen i cg h es = do
+            let gram = directlyCalls i cg
+            runSygusWithGrammar h (S.map idName gram) es
+
+livs :: MonadRandom m => Def m -> Call m -> Gen m -> CallGraph -> H.Heap -> m H.Heap
+livs def call gen cg h =
     let
         ord = filter (not . flip H.isPrimitive h . idName) $ synthOrder cg
     in
-    livs' def call cg [] h ord
+    livs' def call gen cg [] h ord
 
-livs' :: (MonadIO m, MonadRandom m) => 
-        Def m -> Call m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ h [] = return h
-livs' def call cg es h (i@(Id n _):ns) = do
+livs' :: MonadRandom m => 
+        Def m -> Call m -> Gen m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ _ h [] = return h
+livs' def call gen cg es h (i@(Id n _):ns) = do
     -- Get examples
     let re = examplesForFunc n es
     re' <- if re == [] then fuzzExamplesM call i 3 else return re
 
     let relH = filterToReachable i cg h
-        gram = directlyCalls i cg
 
     -- Take a guess at the definition of the function
-    m <- runSygusWithGrammar relH (S.map idName gram) re'
+    m <- gen i cg relH re'
 
     let r = case HM.lookup n m of
             Just r' -> r'
@@ -57,7 +67,7 @@ livs' def call cg es h (i@(Id n _):ns) = do
     let h' = H.insertDef n r h
 
     if cor
-        then livs' def call cg es h' ns
+        then livs' def call gen cg es h' ns
         else undefined
 
 -- | Decides an order to synthesize function definitions in.

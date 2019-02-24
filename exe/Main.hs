@@ -81,7 +81,7 @@ main = do
 
     putStrLn "HERE"
     loadFileOCaml ocaml "target_files/OCaml/ints.ml"
-    lr <- liftIO $ livs (defOCaml ocaml) (callOCaml ocaml) graph livsH
+    lr <- liftIO $ livsCVC4 (defOCaml ocaml) (callOCaml ocaml) graph livsH
     print lr
 
     -- python <- getPython
