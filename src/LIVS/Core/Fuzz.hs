@@ -8,17 +8,15 @@ import LIVS.Language.Typing
 
 import Control.Monad.Random
 
-fuzzExamplesM :: ( MonadIO m
-                 , MonadRandom m) => 
-                 (Expr -> IO Lit) -- ^ Executes and returns the value of the given expression
+fuzzExamplesM :: MonadRandom m => 
+                 (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
               -> Id -- ^ A function call
               -> Int -- ^ How many examples to fuzz
               -> m [Example] -- ^ A fuzzed input/output example
 fuzzExamplesM call i n = mapM (\_ -> fuzzExampleM call i) [1..n]
 
-fuzzExampleM :: ( MonadIO m
-                , MonadRandom m) => 
-                (Expr -> IO Lit) -- ^ Executes and returns the value of the given expression
+fuzzExampleM :: MonadRandom m => 
+                (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
              -> Id -- ^ A function call
              -> m Example -- ^ A fuzzed input/output example
 fuzzExampleM call i = do
@@ -26,7 +24,7 @@ fuzzExampleM call i = do
     ls <- mapM fuzzLitM ts
 
     let outE = mkApp (Var i:map Lit ls)
-    r <- liftIO $ call outE 
+    r <- call outE 
 
     return Example { func = i
                    , input = ls

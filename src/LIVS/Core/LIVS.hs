@@ -20,17 +20,15 @@ import Data.List
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
 
-import Debug.Trace
-
 -- | Initializes an environment with a definition of a function with the given
 -- name and body
-type Def = Id -> Expr -> IO ()
+type Def m = Id -> Expr -> m ()
 
 -- | Converts the Expr to the target language, concretely computes the result,
 -- and parses to a Lit
-type Call = Expr -> IO Lit
+type Call m = Expr -> m Lit
 
-livs :: (MonadIO m, MonadRandom m) => Def -> Call -> CallGraph -> H.Heap -> m H.Heap
+livs :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
 livs def call cg h =
     let
         ord = synthOrder cg
@@ -38,7 +36,7 @@ livs def call cg h =
     livs' def call cg [] h ord
 
 livs' :: (MonadIO m, MonadRandom m) => 
-        Def -> Call -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
+        Def m -> Call m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
 livs' _ _ _ _ h [] = return h
 livs' def call cg es h (i@(Id n _):ns) = do
     -- Get examples
@@ -48,10 +46,7 @@ livs' def call cg es h (i@(Id n _):ns) = do
     let relH = filterToReachable i cg h
 
     -- Take a guess at the definition of the function
-    liftIO $ print h
-    liftIO $ print relH
     let form = toSygus relH re'
-    liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
 
     let m' = parseSMT (H.map' typeOf h) . lexSMT $ m
@@ -62,7 +57,7 @@ livs' def call cg es h (i@(Id n _):ns) = do
     -- Check if our guess is correct.  If it is NOT correct,
     -- it must be the case that we made an incorrect guess about some previous,
     -- component function
-    cor <- liftIO $ checkExamples def call i r re'
+    cor <- checkExamples def call i r re'
 
     let h' = H.insertDef n r h
 
@@ -88,15 +83,15 @@ filterToReachable i cg =
     let
         r = S.map idName $ reachable i cg
     in
-    trace ("r = " ++ show r) H.filterWithKey (\n' _ -> n' `S.member` r)
+    H.filterWithKey (\n' _ -> n' `S.member` r)
 
 -- | Checks that the given synthesized function satisfies the examples
-checkExamples :: MonadIO m => Def -> Call -> Id -> Expr -> [Example] -> m Bool
+checkExamples :: Monad m => Def m -> Call m -> Id -> Expr -> [Example] -> m Bool
 checkExamples def call i e es = do
-    liftIO $ def i e
+    def i e
     return . and =<< mapM (checkExample call i) es
 
-checkExample :: MonadIO m => Call -> Id -> Example -> m Bool
+checkExample :: Monad m => Call m -> Id -> Example -> m Bool
 checkExample call i (Example { input = is, output = out}) = do
-    r <- liftIO . call . mkApp $ Var i:map Lit is
+    r <- call . mkApp $ Var i:map Lit is
     return $ r == out
