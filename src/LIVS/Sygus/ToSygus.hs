@@ -25,9 +25,11 @@ toSygusWithGrammar h hsr es =
     let
         hf = concat . intersperse "\n" .  HM.elems $ H.mapWithKeyDefs' toSygusFunExpr h
 
+        ls = map LInt [0..3]
+
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
-        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n it ot) fs
+        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n ls it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
@@ -78,18 +80,22 @@ toSygusFunExpr n e =
     in
     "(define-fun " ++ n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
-genSynthFun :: H.Heap -> Name -> [Type] -> Type -> String
-genSynthFun h n it ot =
+genSynthFun :: H.Heap -> Name -> [Lit] -> [Type] -> Type -> String
+genSynthFun h n ls it ot =
     let
-        xs = ["x" ++ show i | i <- [1..] :: [Integer]]
+        vs = ["x" ++ show i | i <- [1..] :: [Integer]]
 
-        xs' = take (length it) xs
+        vs' = map (uncurry Id) $ zip vs it
 
-        sit = concatMap (\(n', t) -> "(" ++ n' ++ " " ++ toSygusType t ++ ")") $ zip xs' it
+        sit = concatMap (\(i, t) -> "(" ++ idName i ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
+
+        rts = nub . map returnType $ H.elems h
+        gs = concat . intersperse "\n" $ map (\t -> sygusGrammar t h ls vs') rts
     in
-    "(synth-fun " ++ n ++ " (" ++ sit ++ ")"
-        ++ " " ++ sot ++ "\n" ++ sygusInt h xs' ++ ")"
+    "(synth-fun " ++ n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
+        ++ "((Start " ++ sot ++ " (" ++ typeSymbol ot ++ "))\n"
+        ++ gs ++ "))"
 
 -- | Get all unique function names and types
 collectFuncs :: [Example] -> [(Name, [Type], Type)]
@@ -99,25 +105,35 @@ collectFuncs = nub
                           , typeOf $ output e)
                    )
 
-sygusInt :: H.Heap -> [String] -> String
-sygusInt h xs =
+-- | Returns a grammar to return values of the given type
+sygusGrammar :: Type
+             -> H.Heap
+             -> [Lit]
+             -> [Id] -- ^ Variables usable in the grammar
+             -> String
+sygusGrammar t@(TyCon n _) h ls vs =
     let
-        sc = getSynthCalls h
+        sc = sygusGrammar' t h
+        vs' = map idName $ filter (\i -> typeOf i == t) vs
+        ls' = map toSygusLit $ filter (\l -> typeOf l == t) ls
     in
-       "((Start Int (ntInt))\n"
-    ++ "(ntInt Int\n" 
-    ++ "(0 1 2 3 4 5 "
-    ++ concat (intersperse " " xs) ++ "\n"
+       "(" ++ typeSymbol t ++ " " ++ n ++ "\n" 
+    ++ "(" ++ concat (intersperse " " ls') ++ " "
+    ++ concat (intersperse " " vs') ++ "\n"
     ++ sc
-    ++ ")))"
+    ++ "))"
+sygusGrammar _ _ _ _ = error $ "sygusGrammar: Bad type."
 
-getSynthCalls :: H.Heap -> String
-getSynthCalls =
+sygusGrammar' :: Type -> H.Heap -> String
+sygusGrammar' t =
     concat . H.mapWithKey'
         (\n e -> 
             let
-                ts = concat . intersperse " " . map (const "ntInt") $ argTypes e
+                ts = concat . intersperse " " . map typeSymbol $ argTypes e
             in
             "(" ++ n ++ " " ++ ts ++ ")\n")
+        . H.filter (\e -> t == returnType e)
 
--- "(plus ntInt ntInt)\n"
+typeSymbol :: Type -> String
+typeSymbol (TyCon n _) = "nt" ++ n
+typeSymbol _ = error $ "typeSymbol: Bad type."

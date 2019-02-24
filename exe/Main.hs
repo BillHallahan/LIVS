@@ -78,9 +78,10 @@ main = do
     print es
 
     let livsH = H.fromList [ ("+", H.Primitive $ TyFun intType (TyFun intType intType))
+                           , ("-", H.Primitive $ TyFun intType (TyFun intType intType))
                            , ("=", H.Primitive $ TyFun intType (TyFun intType boolType))
                            , (">=", H.Primitive $ TyFun intType (TyFun intType boolType))
-                           , ("ite", H.Primitive $ TyFun boolType (TyFun intType intType))]
+                           , ("ite", H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
 
     putStrLn "HERE"
     loadFileOCaml ocaml "target_files/OCaml/ints.ml"
@@ -97,7 +98,12 @@ graph :: CallGraph
 graph = createCallGraph
     [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType (TyFun intType intType))])
     , (Id "quadruple" (TyFun intType intType), [Id "double" (TyFun intType intType)])
-    , (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))]) ]
+    , (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))])
+    , (Id "abs2" (TyFun intType intType), [ Id "-" (TyFun intType (TyFun intType intType))
+                                          , Id ">=" (TyFun intType (TyFun intType boolType))
+                                          , Id "ite" (TyFun boolType (TyFun intType (TyFun intType intType)))])
+    {- , (Id "abs3" (TyFun intType intType), [ Id "abs2" (TyFun intType intType) ])
+    , (Id "abs4" (TyFun intType intType), [ Id "abs3" (TyFun intType intType) ]) -} ]
 
 
 examples :: [Example]

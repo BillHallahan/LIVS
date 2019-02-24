@@ -15,9 +15,12 @@ module LIVS.Language.Heap ( Heap
                           , filter
                           , filterWithKey
                           , keys
+                          , elems
                           , toHashMap
                           , toList
 
+                          , fromDef
+                          , catDefs
                           , isDef
                           , isPrimitive
                           , isDefObj
@@ -27,7 +30,9 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as M
+import Data.Maybe
 import Prelude hiding (map, filter, lookup)
+import qualified Prelude as P
 
 newtype Heap = Heap { unHeap :: M.HashMap Name HeapObj } deriving (Show, Read)
 
@@ -94,11 +99,21 @@ filterWithKey p = Heap . M.filterWithKey p . unHeap
 keys :: Heap -> [Name]
 keys = M.keys . unHeap
 
+elems :: Heap -> [HeapObj]
+elems = M.elems . unHeap
+
 toHashMap :: Heap -> M.HashMap Name HeapObj
 toHashMap = unHeap
 
 toList :: Heap -> [(Name, HeapObj)]
 toList = M.toList . unHeap
+
+fromDef :: HeapObj -> Maybe Expr
+fromDef (Def e) = Just e
+fromDef _ = Nothing
+
+catDefs :: [HeapObj] -> [Expr]
+catDefs = catMaybes . P.map fromDef
 
 isDef :: Name -> Heap -> Bool
 isDef n h = maybe False isDefObj $ lookup n h

@@ -4,4 +4,4 @@ let double (x: int) = add x x
 
 let quadruple (x: int) = double (double x)
 
-let abs(x: int) = if x >= 0 then x else -x
+let abs2 (x: int) = if x >= 0 then x else -x

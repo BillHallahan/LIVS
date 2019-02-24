@@ -65,7 +65,7 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
 
     if cor
         then livs' def call gen cg es h' ns
-        else undefined
+        else error "livs': Incorrect guess"
 
 -- | Decides an order to synthesize function definitions in.
 -- The only real constraint here is that, before synthesizing a function f,
