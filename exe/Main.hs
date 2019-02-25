@@ -13,6 +13,7 @@ import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.ToSygus
 
+import LIVS.Target.General.LanguageEnv
 import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
@@ -82,8 +83,9 @@ main = do
                            , ("ite", H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
 
     putStrLn "HERE"
-    loadFileOCaml ocaml "target_files/OCaml/ints.ml"
-    lr <- liftIO $ livsCVC4 (defOCaml ocaml) (callOCaml ocaml) graph livsH
+    ocamlEnv <- ocamlLanguageEnv
+    load ocamlEnv "target_files/OCaml/ints.ml"
+    lr <- liftIO $ livsCVC4 ocamlEnv graph livsH
     print lr
 
     -- python <- getPython

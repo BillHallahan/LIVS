@@ -1,4 +1,5 @@
 module LIVS.Target.OCaml.Interface ( OCaml
+                                   , ocamlLanguageEnv
                                    , loadFileOCaml
                                    , defOCaml
                                    , callOCaml
@@ -11,12 +12,20 @@ module LIVS.Target.OCaml.Interface ( OCaml
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
+import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
 import LIVS.Target.OCaml.LexerCL
 import LIVS.Target.OCaml.ParserCL
 
 import Data.List
 newtype OCaml = OCaml Process
+
+ocamlLanguageEnv :: IO (LanguageEnv IO)
+ocamlLanguageEnv = do
+    ocaml <- getOCaml
+    return $ LanguageEnv { load = loadFileOCaml ocaml
+                         , def = defOCaml ocaml
+                         , call = callOCaml ocaml }
 
 loadFileOCaml :: OCaml -> FilePath -> IO ()
 loadFileOCaml ocaml p = runOCaml ocaml $ "#use \"" ++ p ++ "\";;\n"

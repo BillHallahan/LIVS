@@ -28,6 +28,7 @@ library
                        , LIVS.Sygus.SMTLexer
                        , LIVS.Sygus.SMTParser
                        , LIVS.Sygus.ToSygus
+                       , LIVS.Target.General.LanguageEnv
                        , LIVS.Target.General.Process
                        , LIVS.Target.OCaml.Interface
                        , LIVS.Target.OCaml.LexerCL
