@@ -10,14 +10,10 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 import LIVS.Sygus.CVC4Interface
-import LIVS.Sygus.SMTParser
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.ToSygus
 
 import LIVS.Target.OCaml.Interface
-import qualified LIVS.Target.OCaml.LexerCL as OCaml
-import qualified LIVS.Target.OCaml.ParserCL as OCaml
-import LIVS.Target.Python.Interface
 
 import Control.Monad.IO.Class
 
@@ -70,7 +66,6 @@ main = do
                         H.Def e -> runOCaml ocaml $ toOCamlDef n e
                         _ -> return ()) . H.toList $ H.filter H.isDefObj h
     putStrLn "Ran ocaml"
-    r1 <- runAndReadOCaml ocaml ("add 1 2;;\n")
 
     -- print (OCaml.parse . OCaml.lexer $ r1)
     -- putStrLn "Ran ocaml 2"

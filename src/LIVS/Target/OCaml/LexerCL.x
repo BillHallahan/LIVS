@@ -24,7 +24,7 @@ data Token = TokenInt Int
 word wr (_,_,_,input) len = return $ wr (take len input)
 
 lexer :: String -> Either String [Token]
-lexer s = runAlex s lexer1
+lexer str = runAlex str lexer1
 
 lexer1 :: Alex [Token]
 lexer1 = do
@@ -32,7 +32,6 @@ lexer1 = do
     case tok of
         TokenEOF -> return []
         _ -> return . (:) tok =<< lexer1
-
 
 alexEOF = return TokenEOF
 }
