@@ -1,4 +1,8 @@
 {
+
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
