@@ -24,6 +24,7 @@ library
                        , LIVS.Core.Fuzz
                        , LIVS.Core.LIVS
                        , LIVS.Sygus.CVC4Interface
+                       , LIVS.Sygus.Result
                        , LIVS.Sygus.SMTLexer
                        , LIVS.Sygus.SMTParser
                        , LIVS.Sygus.ToSygus

@@ -10,11 +10,12 @@ import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
+import LIVS.Sygus.Result
 
 import Control.Monad.Random
-import Data.List
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
+import Data.List
 
 -- | Initializes an environment with a definition of a function with the given
 -- name and body
@@ -25,7 +26,7 @@ type Def m = Id -> Expr -> m ()
 type Call m = Expr -> m Lit
 
 -- Generates code satisfying a set of examples
-type Gen m = H.Heap -> S.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
+type Gen m = H.Heap -> S.HashSet Name -> [Example] -> m Result
 
 livsCVC4 :: (MonadIO m, MonadRandom m) => Def m -> Call m -> CallGraph -> H.Heap -> m H.Heap
 livsCVC4 def call cg = livs def call (runSygusWithGrammar cg) cg
@@ -55,20 +56,26 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
     -- Take a guess at the definition of the function
     m <- gen relH gram re'
 
-    let r = case HM.lookup n m of
-            Just r' -> r'
-            Nothing -> error "No function definition found."
+    case m of
+        Sat m' -> do
+            let r = case HM.lookup n m' of
+                    Just r' -> r'
+                    Nothing -> error "No function definition found."
 
-    -- Check if our guess is correct.  If it is NOT correct,
-    -- it must be the case that we made an incorrect guess about some previous,
-    -- component function
-    cor <- checkExamples def call i r re'
+            -- Check if our guess is correct.  If it is NOT correct,
+            -- it must be the case that we made an incorrect guess about some previous,
+            -- component function
+            cor <- checkExamples def call i r re'
 
-    let h' = H.insertDef n r h
+            let h' = H.insertDef n r h
 
-    if cor
-        then livs' def call gen cg es h' ns
-        else error "livs': Incorrect guess"
+            if cor
+                then livs' def call gen cg (nub $ re' ++ es) h' ns
+                else error "livs': Incorrect guess"
+
+        UnSat -> error "livs': Could not synthesize functions, revise called functions (blindly)"
+        
+        Unknown -> error "livs': Could maybe not synthesize functions, revise called functions (blindly)"
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph

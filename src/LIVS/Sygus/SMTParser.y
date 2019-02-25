@@ -3,6 +3,7 @@ module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
+import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 
 import Control.Monad.State.Lazy
@@ -14,6 +15,9 @@ import qualified Data.HashMap.Lazy as HM
 %error { parseError }
 
 %token
+    sat         { TokenSat }
+    unsat       { TokenUnSat }
+    unknown     { TokenUnknown }
     name        { TokenName $$ }
     int         { TokenInt $$ }
     defineFun   { TokenDefineFun }
@@ -23,6 +27,11 @@ import qualified Data.HashMap.Lazy as HM
 %monad { ParserM }
 
 %%
+
+res :: { Result }
+     : unsat defFuns { Sat $ HM.fromList $2 }
+     | sat { UnSat }
+     | unknown { Unknown }
 
 defFuns :: { [(Name, Expr)] }
         : defFuns defFun { $2:$1 }
@@ -71,8 +80,11 @@ newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Mon
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parseSMT :: HM.HashMap Name Type -> [Token] -> HM.HashMap Name Expr
-parseSMT m t = HM.fromList . fst $ runParserM m (parse1 t) 
+parseSMT :: HM.HashMap Name Type -> [Token] -> Result -- HM.HashMap Name Expr
+parseSMT m t = fst $ runParserM m (parse1 t)
+    -- case r of 
+    --     Left dl -> undefined -- Sat $ HM.fromList dl
+    --     Right err -> undefined -- err
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."

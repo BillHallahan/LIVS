@@ -11,7 +11,9 @@ $symbs = [\+ \- \* \> \=]
 
 tokens:-
     $white+                                             ;
-    unsat                                               ;
+    sat                                                 { const TokenSat }
+    unsat                                               { const TokenUnSat }
+    unknown                                             { const TokenUnknown}
     define\-fun                                         { const TokenDefineFun }
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
@@ -19,7 +21,10 @@ tokens:-
     $digit+                                             { TokenInt . read }
 
 {
-data Token = TokenName String
+data Token = TokenSat
+           | TokenUnSat
+           | TokenUnknown
+           | TokenName String
            | TokenInt Int
            | TokenDefineFun
            | TokenOpenParen

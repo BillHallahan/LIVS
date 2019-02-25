@@ -31,7 +31,7 @@ toSygusWithGrammar cg h hsr es =
         h' = H.mapWithKeyDefs' toSygusFunExpr h
         hf = concat . intersperse "\n" $ mapMaybe (flip HM.lookup h') post
 
-        ls = map LInt [0..3]
+        ls = map LInt [0..2]
 
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h

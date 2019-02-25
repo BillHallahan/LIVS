@@ -10,6 +10,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
+import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
 import LIVS.Sygus.ToSygus
@@ -17,15 +18,14 @@ import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
 import Control.Monad.IO.Class
-import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => CallGraph -> H.Heap -> [Example] -> m (HM.HashMap Name Expr)
+runSygus :: MonadIO m => CallGraph -> H.Heap -> [Example] -> m Result
 runSygus cg h = runSygusWithGrammar cg h (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> m (HM.HashMap Name Expr)
+runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> m Result
 runSygusWithGrammar cg h hsr es = do
     let form = toSygusWithGrammar cg h hsr es
     liftIO $ putStrLn form
@@ -42,7 +42,7 @@ runCVC4WithFile sygus =
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            runProcessOnce "cvc4" [fp, "--lang", "sygus"])
+            runProcessOnce "cvc4" [fp, "--lang", "sygus", "--tlimit", "10000"])
 
 newtype CVC4 = CVC4 Process
 
