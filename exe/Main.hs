@@ -73,9 +73,6 @@ main = do
     -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
     -- print (OCaml.parse . OCaml.lexer $ r2)
 
-    es <- fuzzExamplesM (callOCaml ocaml) 2 (Id "abs" (TyFun intType intType))
-    print es
-
     let livsH = H.fromList [ ("+", H.Primitive $ TyFun intType (TyFun intType intType))
                            , ("-", H.Primitive $ TyFun intType (TyFun intType intType))
                            , ("=", H.Primitive $ TyFun intType (TyFun intType boolType))
@@ -84,8 +81,7 @@ main = do
 
     putStrLn "HERE"
     ocamlEnv <- ocamlLanguageEnv
-    load ocamlEnv "target_files/OCaml/ints.ml"
-    lr <- liftIO $ livsCVC4 ocamlEnv graph livsH
+    lr <- liftIO $ livsCVC4 ocamlEnv "target_files/OCaml/ints.ml" graph livsH
     print lr
 
     -- python <- getPython

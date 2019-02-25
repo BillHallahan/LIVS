@@ -5,26 +5,30 @@ module LIVS.Core.Fuzz ( fuzzExamplesM
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
+import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
 
 fuzzExamplesM :: MonadRandom m => 
-                 (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
+                 LanguageEnv m
+              -> FilePath
               -> Int -- ^ How many examples to fuzz
               -> Id -- ^ A function call
               -> m [Example] -- ^ A fuzzed input/output example
-fuzzExamplesM call n i = mapM (\_ -> fuzzExampleM call i) [1..n]
+fuzzExamplesM le fp n i = do
+    load le fp
+    mapM (\_ -> fuzzExampleM (call le) i) [1..n]
 
 fuzzExampleM :: MonadRandom m => 
                 (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
              -> Id -- ^ A function call
              -> m Example -- ^ A fuzzed input/output example
-fuzzExampleM call i = do
+fuzzExampleM ca i = do
     let ts = argTypes i
     ls <- mapM fuzzLitM ts
 
     let outE = mkApp (Var i:map Lit ls)
-    r <- call outE 
+    r <- ca outE 
 
     return Example { func = i
                    , input = ls
