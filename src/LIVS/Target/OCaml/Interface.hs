@@ -26,6 +26,7 @@ defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
 
 callOCaml :: OCaml -> Expr -> IO Lit
 callOCaml ocaml e = do
+    print $ toOCamlCall e
     r <- runAndReadOCaml ocaml (toOCamlCall e)
     lx <- return . lexer $ r
     case lx of

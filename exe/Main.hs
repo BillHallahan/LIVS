@@ -72,7 +72,7 @@ main = do
     -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
     -- print (OCaml.parse . OCaml.lexer $ r2)
 
-    es <- fuzzExamplesM (callOCaml ocaml) (Id "abs" (TyFun intType intType)) 2
+    es <- fuzzExamplesM (callOCaml ocaml) 2 (Id "abs" (TyFun intType intType))
     print es
 
     let livsH = H.fromList [ ("+", H.Primitive $ TyFun intType (TyFun intType intType))

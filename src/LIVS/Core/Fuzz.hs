@@ -10,10 +10,10 @@ import Control.Monad.Random
 
 fuzzExamplesM :: MonadRandom m => 
                  (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
-              -> Id -- ^ A function call
               -> Int -- ^ How many examples to fuzz
+              -> Id -- ^ A function call
               -> m [Example] -- ^ A fuzzed input/output example
-fuzzExamplesM call i n = mapM (\_ -> fuzzExampleM call i) [1..n]
+fuzzExamplesM call n i = mapM (\_ -> fuzzExampleM call i) [1..n]
 
 fuzzExampleM :: MonadRandom m => 
                 (Expr -> m Lit) -- ^ Executes and returns the value of the given expression

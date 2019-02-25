@@ -45,12 +45,12 @@ livs def call gen cg h =
 livs' :: MonadRandom m => 
         Def m -> Call m -> Gen m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
 livs' _ _ _ _ _ h [] = return h
-livs' def call gen cg es h (i@(Id n _):ns) = do
+livs' def call gen cg es h (i@(Id n _):is) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- if re == [] then fuzzExamplesM call i 3 else return re
+    re' <- if re == [] then fuzzExamplesM call 2 i else return re
 
-    let relH = filterToReachable i cg h
+    let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable i cg h
         gram = S.map idName $ directlyCalls i cg
 
     -- Take a guess at the definition of the function
@@ -60,7 +60,7 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
         Sat m' -> do
             let r = case HM.lookup n m' of
                     Just r' -> r'
-                    Nothing -> error "No function definition found."
+                    Nothing -> error "livs': No function definition found."
 
             -- Check if our guess is correct.  If it is NOT correct,
             -- it must be the case that we made an incorrect guess about some previous,
@@ -70,12 +70,25 @@ livs' def call gen cg es h (i@(Id n _):ns) = do
             let h' = H.insertDef n r h
 
             if cor
-                then livs' def call gen cg (nub $ re' ++ es) h' ns
+                then livs' def call gen cg (nub $ re' ++ es) h' is
                 else error "livs': Incorrect guess"
 
-        UnSat -> error "livs': Could not synthesize functions, revise called functions (blindly)"
+        _ -> livsUnSatUnknown i def call gen cg (re' ++ es) h is
         
-        Unknown -> error "livs': Could maybe not synthesize functions, revise called functions (blindly)"
+-- | Sometimes, the SyGuS solver may return UnSat, or Unknown.  In either case,
+-- it may be that previously synthesized functions had incorrect definitions.
+-- However, because we don't even have a guess about the possible correct definition,
+-- we simply return to and add examples for all functions directly called in the call graph.
+livsUnSatUnknown :: MonadRandom m => 
+        Id -> Def m -> Call m -> Gen m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
+livsUnSatUnknown i def call gen cg es h is = do
+    let dc = filter (not . flip H.isPrimitive h . idName) 
+                                $ S.toList $ directlyCalls i cg
+        is' = dc ++ i:is
+
+    es' <- mapM (fuzzExamplesM call 2) dc
+
+    livs' def call gen cg (es ++ concat es') h is'
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
