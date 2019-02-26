@@ -1,10 +1,15 @@
 module LIVS.Language.Naming ( Name (..)
                             , nameToString
-                            , stringToName ) where
+                            , stringToName
+
+                            , NameGen
+                            , mkNameGen
+                            , freshName ) where
 
 import LIVS.Language.Syntax
 
 import Data.Char
+import qualified Data.HashMap.Lazy as HM
 
 nameToString :: Name -> String
 nameToString (Name n Nothing) = n
@@ -19,3 +24,15 @@ stringToName s =
     case i of
         _:_ -> Name s'' (Just . read $ reverse i)
         [] -> Name s'' Nothing
+
+newtype NameGen = NameGen (HM.HashMap String Integer)
+
+mkNameGen :: [Name] -> NameGen
+mkNameGen =
+    NameGen . HM.fromList . map (\(Name n i) -> (n, maybe 0 id $ fmap (+ 1) i))
+
+freshName :: Name -> NameGen -> (Name, NameGen)
+freshName (Name n _) (NameGen ng) = (Name n (Just i), NameGen ng')
+    where
+        i = HM.lookupDefault 0 n ng
+        ng' = HM.insert n (i + 1) ng
