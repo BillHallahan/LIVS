@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module LIVS.Language.Syntax ( Name
+module LIVS.Language.Syntax ( Name (..)
                             , Id (..)
                             , Expr (..)
                             , Lit (..)
@@ -15,7 +15,10 @@ module LIVS.Language.Syntax ( Name
 import GHC.Generics (Generic)
 import Data.Hashable
 
-type Name = String
+data Name = Name String (Maybe Integer)
+            deriving (Eq, Ord, Show, Read, Generic)
+
+instance Hashable Name
 
 data Id = Id Name Type
           deriving (Eq, Show, Read, Generic)
@@ -26,10 +29,13 @@ idName :: Id -> Name
 idName (Id n _) = n
 
 data Expr = Var Id
+          | Lit Lit
           | Lam Id Expr
           | App Expr Expr
-          | Lit Lit
+          | Let Binding Expr
           deriving (Eq, Show, Read, Generic)
+
+type Binding = (Id, Expr)
 
 data Lit = LInt Int
            deriving (Eq, Show, Read, Generic)

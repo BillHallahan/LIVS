@@ -19,12 +19,13 @@ instance Typed Id where
 
 instance Typed Expr where
     typeOf (Var i) = typeOf i
+    typeOf (Lit l) = typeOf l
     typeOf (Lam i e) = TyFun (typeOf i) (typeOf e)
     typeOf a@(App e _) =
         case typeOf e of
             TyFun _ t2 -> t2
             _ -> error $ "Bad type." ++ show a
-    typeOf (Lit l) = typeOf l
+    typeOf (Let _ e) = typeOf e
 
 instance Typed Lit where
     typeOf (LInt _) = intType
@@ -40,10 +41,10 @@ instance Typed PresType where
     typeOf (PresType t) = t 
 
 intType :: Type
-intType = TyCon "Int" TYPE
+intType = TyCon (Name "Int" Nothing) TYPE
 
 boolType :: Type
-boolType = TyCon "Bool" TYPE
+boolType = TyCon (Name "Bool" Nothing) TYPE
 
 exampleFuncType :: Example -> Type
 exampleFuncType es = mkTyFun $ map typeOf (input es) ++ [typeOf (output es)]

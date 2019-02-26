@@ -11,6 +11,7 @@ module LIVS.Target.OCaml.Interface ( OCaml
                                    , toOCamlExpr ) where
 
 import LIVS.Language.Expr
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
@@ -69,27 +70,31 @@ toOCamlDef n e =
         as = concat . intersperse " " . map toOCamlId $ leadingLams e
         e' = toOCamlExpr e
     in
-    "let " ++ n ++ " " ++ as ++ " =\n\t" ++ e' ++ ";;\n"
+    "let " ++ nameToString n ++ " " ++ as ++ " =\n\t" ++ e' ++ ";;\n"
 
 toOCamlCall :: Expr -> String
 toOCamlCall e = toOCamlExpr e ++ ";;\n"
 
 toOCamlExpr :: Expr -> String
 toOCamlExpr (Var i) = toOCamlId i
+toOCamlExpr (Lit l) = "(" ++ toOCamlLit l ++ ")"
 toOCamlExpr (Lam _ e) = toOCamlExpr e
 toOCamlExpr e@(App _ _)
     | App (App (Var (Id n _)) e1) e2 <- e
-    , n `elem` operators = toOCamlExpr e2 ++ " " ++ n ++ " " ++ toOCamlExpr e1
+    , n `elem` operators = toOCamlExpr e2 ++ " " ++nameToString n ++ " " ++ toOCamlExpr e1
     | otherwise = 
         "(" ++ toOCamlExpr (appCenter e)
             ++ (concat . intersperse " " . map toOCamlExpr $ appArgs e) ++ ")"
-toOCamlExpr (Lit l) = "(" ++ toOCamlLit l ++ ")"
+toOCamlExpr (Let (i, b) e) =
+    "let " ++ toOCamlId i ++ " = " ++ toOCamlExpr b ++ " in " ++ toOCamlExpr e
 
 toOCamlId :: Id -> String
-toOCamlId (Id n _) = n
+toOCamlId (Id n _) = nameToString n
 
 toOCamlLit :: Lit -> String
 toOCamlLit (LInt i) = show i
 
 operators :: [Name]
-operators = ["+", "-", "*"]
+operators = [ Name "+" Nothing
+            , Name "-" Nothing
+            , Name "*" Nothing ]

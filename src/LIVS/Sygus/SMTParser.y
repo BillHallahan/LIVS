@@ -22,7 +22,7 @@ import qualified Data.HashMap.Lazy as HM
     sat         { TokenSat }
     unsat       { TokenUnSat }
     unknown     { TokenUnknown }
-    name        { TokenName $$ }
+    smtName     { TokenName $$ }
     int         { TokenInt $$ }
     defineFun   { TokenDefineFun }
     '('         { TokenOpenParen }
@@ -76,6 +76,9 @@ expr :: { Expr }
                 return $ Var i }
      | int { Lit (LInt $1) }
 
+name :: { Name }
+     : smtName { Name $1 Nothing}
+
 {
 data Parser = Parser { types :: HM.HashMap Name Type}
 
@@ -84,11 +87,8 @@ newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Mon
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parseSMT :: HM.HashMap Name Type -> [Token] -> Result -- HM.HashMap Name Expr
+parseSMT :: HM.HashMap Name Type -> [Token] -> Result
 parseSMT m t = fst $ runParserM m (parse1 t)
-    -- case r of 
-    --     Left dl -> undefined -- Sat $ HM.fromList dl
-    --     Right err -> undefined -- err
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."

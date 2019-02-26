@@ -1,7 +1,7 @@
 module LIVS.Target.General.LanguageEnv ( Load
-									   , Def
-							           , Call
-							           , LanguageEnv (..) ) where
+                                       , Def
+                                       , Call
+                                       , LanguageEnv (..) ) where
 
 import LIVS.Language.Syntax
 
@@ -19,4 +19,4 @@ type Call m = Expr -> m Lit
 -- | An interface to interact with an external language interpreter/compiler
 data LanguageEnv m = LanguageEnv { load :: Load m
                                  , def :: Def m
-								 , call :: Call m }
+                                 , call :: Call m }

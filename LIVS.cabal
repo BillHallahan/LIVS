@@ -19,6 +19,7 @@ library
   exposed-modules:       LIVS.Language.CallGraph 
                        , LIVS.Language.Expr
                        , LIVS.Language.Heap
+                       , LIVS.Language.Naming
                        , LIVS.Language.Syntax
                        , LIVS.Language.Typing
                        , LIVS.Core.Fuzz

@@ -20,22 +20,22 @@ import Control.Monad.IO.Class
 
 main :: IO ()
 main = do
-    let h = H.fromList [ ("add", H.Def $ Lam 
-                                (Id "x" intType) 
+    let h = H.fromList [ (Name "add" Nothing, H.Def $ Lam 
+                                (Id (Name "x" Nothing) intType) 
                                 (Lam 
-                                    (Id "y" intType) 
+                                    (Id (Name "y" Nothing) intType) 
                                     (App 
                                         (App 
-                                            (Var (Id "+" (TyFun intType (TyFun intType intType))))
-                                            (Var (Id "y" intType))
+                                            (Var (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))))
+                                            (Var (Id (Name "y" Nothing) intType))
                                         )
-                                        (Var (Id "x" intType))
+                                        (Var (Id (Name "x" Nothing) intType))
                                     )
                                 ))
-                        , ("+", H.Primitive $ TyFun intType (TyFun intType intType))]
+                        , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))]
         cg = createCallGraph
-            [ (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))])
-            , (Id "+" (TyFun intType (TyFun intType intType)), []) ]
+            [ (Id (Name "add" Nothing) (TyFun intType (TyFun intType intType)), [Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))])
+            , (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType)), []) ]
 
     let form = toSygus cg h examples
 
@@ -73,11 +73,11 @@ main = do
     -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
     -- print (OCaml.parse . OCaml.lexer $ r2)
 
-    let livsH = H.fromList [ ("+", H.Primitive $ TyFun intType (TyFun intType intType))
-                           , ("-", H.Primitive $ TyFun intType (TyFun intType intType))
-                           , ("=", H.Primitive $ TyFun intType (TyFun intType boolType))
-                           , (">=", H.Primitive $ TyFun intType (TyFun intType boolType))
-                           , ("ite", H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
+    let livsH = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                           , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                           , (Name "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+                           , (Name ">=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
 
     putStrLn "HERE"
     ocamlEnv <- ocamlLanguageEnv
@@ -92,21 +92,21 @@ main = do
 
 graph :: CallGraph
 graph = createCallGraph
-    [ (Id "double" (TyFun intType intType), [Id "add" (TyFun intType (TyFun intType intType))])
-    , (Id "quadruple" (TyFun intType intType), [Id "double" (TyFun intType intType)])
-    , (Id "add" (TyFun intType (TyFun intType intType)), [Id "+" (TyFun intType (TyFun intType intType))])
-    , (Id "abs2" (TyFun intType intType), [ Id "-" (TyFun intType (TyFun intType intType))
-                                          , Id ">=" (TyFun intType (TyFun intType boolType))
-                                          , Id "ite" (TyFun boolType (TyFun intType (TyFun intType intType)))])
-    , (Id "abs3" (TyFun intType intType), [ Id "abs2" (TyFun intType intType) ])
-    , (Id "abs4" (TyFun intType intType), [ Id "abs3" (TyFun intType intType) ]) ]
+    [ (Id (Name "double" Nothing) (TyFun intType intType), [Id (Name "add" Nothing) (TyFun intType (TyFun intType intType))])
+    , (Id (Name "quadruple" Nothing) (TyFun intType intType), [Id (Name "double" Nothing) (TyFun intType intType)])
+    , (Id (Name "add" Nothing) (TyFun intType (TyFun intType intType)), [Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))])
+    , (Id (Name "abs2" Nothing ) (TyFun intType intType), [ Id (Name "-" Nothing) (TyFun intType (TyFun intType intType))
+                                                          , Id (Name ">=" Nothing) (TyFun intType (TyFun intType boolType))
+                                                          , Id (Name "ite" Nothing) (TyFun boolType (TyFun intType (TyFun intType intType)))])
+    , (Id (Name "abs3" Nothing) (TyFun intType intType), [ Id (Name "abs2" Nothing) (TyFun intType intType) ])
+    , (Id (Name "abs4" Nothing) (TyFun intType intType), [ Id (Name "abs3" Nothing) (TyFun intType intType) ]) ]
 
 
 examples :: [Example]
-examples = [ Example { func = Id "double" (TyFun intType intType)
+examples = [ Example { func = Id (Name "double" Nothing) (TyFun intType intType)
                      , input = [LInt 1]
                      , output = LInt 2 }
-           , Example { func = Id "double" (TyFun intType intType)
+           , Example { func = Id (Name "double" Nothing) (TyFun intType intType)
                      , input = [LInt 2]
                      , output = LInt 4 }
            -- , Example { func_name = "doubleAndAdd"

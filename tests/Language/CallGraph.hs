@@ -87,5 +87,5 @@ graph2 = createCallGraph
 graph3 :: CallGraph
 graph3 = createCallGraph [(toId "f", [toId "e"])]
 
-toId :: Name -> Id
-toId n = Id n (TyFun intType intType)
+toId :: String -> Id
+toId n = Id (Name n Nothing) (TyFun intType intType)

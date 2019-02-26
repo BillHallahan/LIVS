@@ -4,6 +4,7 @@ module LIVS.Sygus.ToSygus ( toSygus
 import LIVS.Language.CallGraph
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
@@ -46,28 +47,32 @@ toSygusExample :: Example -> String
 toSygusExample (Example { func = f, input = is, output = out }) =
     let
         as = concat . intersperse " " $ map toSygusLit is 
-        call = "(" ++ idName f ++ " " ++ as ++ ")"
+        call = "(" ++ toSygusId f ++ " " ++ as ++ ")"
     in
     "(constraint (= " ++ call ++ " " ++ toSygusLit out ++ "))"
 
 toSygusId :: Id -> String
-toSygusId (Id n _) = n
+toSygusId (Id n _) = nameToString n
 
 toSygusIdWithType :: Id -> String
-toSygusIdWithType (Id n t) = "(" ++ n ++ " " ++ toSygusType t ++ ")"
+toSygusIdWithType (Id n t) =
+    "(" ++ nameToString n ++ " " ++ toSygusType t ++ ")"
 
 toSygusExpr :: Expr -> String
 toSygusExpr (Var i) = toSygusId i
+toSygusExpr (Lit l) = toSygusLit l
 toSygusExpr (Lam _ e) = toSygusExpr e
 toSygusExpr e@(App _ _) =
     "(" ++ (concat . intersperse " " . map toSygusExpr $ unApp e) ++ ")"
-toSygusExpr (Lit l) = toSygusLit l
+toSygusExpr (Let (i, b) e) =
+    "(let ((" ++ toSygusId i
+        ++ " (" ++ toSygusExpr b ++ ")))" ++ toSygusExpr e ++ ")"
 
 toSygusLit :: Lit -> String
 toSygusLit (LInt i) = show i
 
 toSygusType :: Type -> String
-toSygusType (TyCon n _) = n
+toSygusType (TyCon n _) = nameToString n
 toSygusType t@(TyFun _ _) =
     let
         as = concat . intersperse " " . map toSygusType . argTypes $ PresType t
@@ -84,22 +89,22 @@ toSygusFunExpr n e =
 
         se = toSygusExpr e
     in
-    "(define-fun " ++ n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
+    "(define-fun " ++ nameToString n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
 genSynthFun :: H.Heap -> Name -> [Lit] -> [Type] -> Type -> String
 genSynthFun h n ls it ot =
     let
-        vs = ["x" ++ show i | i <- [1..] :: [Integer]]
+        vs = [Name "x" (Just i) | i <- [1..] :: [Integer]]
 
         vs' = map (uncurry Id) $ zip vs it
 
-        sit = concatMap (\(i, t) -> "(" ++ idName i ++ " " ++ toSygusType t ++ ")") $ zip vs' it
+        sit = concatMap (\(i, t) -> "(" ++ nameToString (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
 
         rts = nub . map returnType $ H.elems h
         gs = concat . intersperse "\n" $ map (\t -> sygusGrammar t h ls vs') rts
     in
-    "(synth-fun " ++ n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
+    "(synth-fun " ++ nameToString n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
         ++ "((Start " ++ sot ++ " (" ++ typeSymbol ot ++ "))\n"
         ++ gs ++ "))"
 
@@ -120,10 +125,10 @@ sygusGrammar :: Type
 sygusGrammar t@(TyCon n _) h ls vs =
     let
         sc = sygusGrammar' t h
-        vs' = map idName $ filter (\i -> typeOf i == t) vs
+        vs' = map nameToString . map idName $ filter (\i -> typeOf i == t) vs
         ls' = map toSygusLit $ filter (\l -> typeOf l == t) ls
     in
-       "(" ++ typeSymbol t ++ " " ++ n ++ "\n" 
+       "(" ++ typeSymbol t ++ " " ++ nameToString n ++ "\n" 
     ++ "(" ++ concat (intersperse " " ls') ++ " "
     ++ concat (intersperse " " vs') ++ "\n"
     ++ sc
@@ -137,9 +142,9 @@ sygusGrammar' t =
             let
                 ts = concat . intersperse " " . map typeSymbol $ argTypes e
             in
-            "(" ++ n ++ " " ++ ts ++ ")\n")
+            "(" ++ nameToString n ++ " " ++ ts ++ ")\n")
         . H.filter (\e -> t == returnType e)
 
 typeSymbol :: Type -> String
-typeSymbol (TyCon n _) = "nt" ++ n
+typeSymbol (TyCon n _) = "nt" ++ nameToString n
 typeSymbol _ = error $ "typeSymbol: Bad type."

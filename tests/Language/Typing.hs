@@ -16,15 +16,21 @@ exprType1 = testCase "Expr Type 1"
     $ assertBool "Correct type" (typeOf e1 == TyFun intType intType)
 
 e1 :: Expr
-e1 = Lam (Id "x" intType) (Var (Id "x" intType))
+e1 = Lam (Id xN intType) (Var (Id xN intType))
 
 exprType2 :: TestTree
 exprType2 = testCase "Expr Type 2"
     $ assertBool "Correct type" (typeOf e2 == intType)
 
 e2 :: Expr
-e2 = App (Lam (Id "x" intType) (Lit (LInt 0))) (Lit (LInt 1))
+e2 = App (Lam (Id xN intType) (Lit (LInt 0))) (Lit (LInt 1))
 
 mkFunTyTest :: TestTree
 mkFunTyTest = testCase "mkTyFun"
-    $ assertBool "mkTyFun" (mkTyFun [intType, TyCon "Float" TYPE] == TyFun intType (TyCon "Float" TYPE))
+    $ assertBool "mkTyFun" (mkTyFun [intType, TyCon floatN TYPE] == TyFun intType (TyCon floatN TYPE))
+
+xN :: Name
+xN = Name "x" Nothing
+
+floatN :: Name
+floatN = Name "Float" Nothing
