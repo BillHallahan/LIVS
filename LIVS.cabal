@@ -22,6 +22,7 @@ library
                        , LIVS.Language.Naming
                        , LIVS.Language.Syntax
                        , LIVS.Language.Typing
+                       , LIVS.Language.Monad.Naming
                        , LIVS.Core.Fuzz
                        , LIVS.Core.LIVS
                        , LIVS.Sygus.CVC4Interface

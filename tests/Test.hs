@@ -6,6 +6,7 @@ import Language.CallGraph
 import Language.Expr
 import Language.Naming
 import Language.Typing
+import Language.Monad.Naming
 import LIVS.LIVS
 
 main :: IO ()
@@ -17,4 +18,5 @@ tests =  testGroup "Tests" [ exprTests
                            , namingTests
                            , typingTests
                            , callGraphTests
-                           , livsTests ]
+                           , livsTests
+                           , monadNamingTests ]
