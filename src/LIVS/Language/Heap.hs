@@ -8,6 +8,7 @@ module LIVS.Language.Heap ( Heap
                           , map
                           , mapDefs
                           , map'
+                          , mapM
                           , mapWithKey
                           , mapWithKeyDefs
                           , mapWithKey'
@@ -31,7 +32,7 @@ import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as M
 import Data.Maybe
-import Prelude hiding (map, filter, lookup)
+import Prelude hiding (map, mapM, filter, lookup)
 import qualified Prelude as P
 
 newtype Heap = Heap { unHeap :: M.HashMap Name HeapObj } deriving (Show, Read)
@@ -71,6 +72,9 @@ mapDefs f = map f'
   
 map' :: (HeapObj -> v) -> Heap -> M.HashMap Name v
 map' f = M.map f . unHeap
+
+mapM :: Monad m => (HeapObj -> m HeapObj) -> Heap -> m Heap
+mapM f (Heap h) = return . Heap =<< P.mapM f h
 
 mapWithKey :: (Name -> HeapObj -> HeapObj) -> Heap -> Heap
 mapWithKey f = Heap . M.mapWithKey f . unHeap
