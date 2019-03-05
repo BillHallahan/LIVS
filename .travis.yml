@@ -22,5 +22,5 @@ install:
   - cabal install
 
 script:
-  cabal test
+  cabal new-test
 
