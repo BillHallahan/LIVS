@@ -3,10 +3,14 @@
 module LIVS.Language.Syntax ( Name (..)
                             , Id (..)
                             , Expr (..)
+                            , Val (..)
                             , Lit (..)
+                            , DC (..)
                             , Type (..)
 
                             , Example (..)
+
+                            , valToExpr
 
                             , idName
                             , funcName
@@ -29,16 +33,28 @@ idName :: Id -> Name
 idName (Id n _) = n
 
 data Expr = Var Id
+          | Data DC
           | Lit Lit
           | Lam Id Expr
           | App Expr Expr
           | Let Binding Expr
           deriving (Eq, Show, Read, Generic)
 
+data Val = DataVal DC
+         | LitVal Lit
+         deriving (Eq, Show, Read, Generic)
+
+valToExpr :: Val -> Expr
+valToExpr (DataVal dc) = Data dc
+valToExpr (LitVal l) = Lit l
+
 type Binding = (Id, Expr)
 
 data Lit = LInt Int
            deriving (Eq, Show, Read, Generic)
+
+data DC = DC Name Type
+          deriving (Eq, Show, Read, Generic)
 
 data Type = TyCon Name Type
           | TyFun Type Type
@@ -48,8 +64,8 @@ data Type = TyCon Name Type
 instance Hashable Type
 
 data Example = Example { func :: Id
-                       , input :: [Lit]
-                       , output :: Lit }
+                       , input :: [Val]
+                       , output :: Val }
                        deriving (Eq, Show, Read, Generic)
 
 funcName :: Example -> Name

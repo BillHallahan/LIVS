@@ -4,7 +4,10 @@ module LIVS.Language.Naming ( Name (..)
 
                             , NameGen
                             , mkNameGen
-                            , freshName ) where
+                            , freshName
+                            , unseededFreshName
+                            , freshId
+                            , unseededFreshId ) where
 
 import LIVS.Language.Syntax
 
@@ -36,3 +39,16 @@ freshName (Name n _) (NameGen ng) = (Name n (Just i), NameGen ng')
     where
         i = HM.lookupDefault 0 n ng
         ng' = HM.insert n (i + 1) ng
+
+unseededFreshName :: NameGen -> (Name, NameGen)
+unseededFreshName = freshName (Name "fresh" Nothing)
+
+freshId :: Name -> Type -> NameGen -> (Id, NameGen)
+freshId n t ng =
+    let
+        (n', ng') = freshName n ng
+    in
+    (Id n' t, ng')
+
+unseededFreshId :: Type -> NameGen -> (Id, NameGen)
+unseededFreshId = freshId (Name "fresh" Nothing)

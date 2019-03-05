@@ -104,11 +104,11 @@ graph = createCallGraph
 
 examples :: [Example]
 examples = [ Example { func = Id (Name "double" Nothing) (TyFun intType intType)
-                     , input = [LInt 1]
-                     , output = LInt 2 }
+                     , input = [LitVal $ LInt 1]
+                     , output = LitVal $ LInt 2 }
            , Example { func = Id (Name "double" Nothing) (TyFun intType intType)
-                     , input = [LInt 2]
-                     , output = LInt 4 }
+                     , input = [LitVal $ LInt 2]
+                     , output = LitVal $ LInt 4 }
            -- , Example { func_name = "doubleAndAdd"
            --           , input = [LInt 2, LInt 3]
            --           , output = LInt 10 }

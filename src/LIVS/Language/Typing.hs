@@ -19,6 +19,7 @@ instance Typed Id where
 
 instance Typed Expr where
     typeOf (Var i) = typeOf i
+    typeOf (Data dc) = typeOf dc
     typeOf (Lit l) = typeOf l
     typeOf (Lam i e) = TyFun (typeOf i) (typeOf e)
     typeOf a@(App e _) =
@@ -27,8 +28,15 @@ instance Typed Expr where
             _ -> error $ "Bad type." ++ show a
     typeOf (Let _ e) = typeOf e
 
+instance Typed Val where
+    typeOf (DataVal dc) = typeOf dc
+    typeOf (LitVal l) = typeOf l
+
 instance Typed Lit where
     typeOf (LInt _) = intType
+
+instance Typed DC where
+    typeOf (DC _ t) = t
 
 instance Typed Type where
     typeOf (TyCon _ t) = t

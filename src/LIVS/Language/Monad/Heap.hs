@@ -3,7 +3,9 @@
 
 module LIVS.Language.Monad.Heap ( HeapMonad (..)
                                 , HeapT
-                                , HeapM 
+                                , HeapM
+                                , heapT
+
                                 , runHeapT
                                 , evalHeapT
                                 , runHeapM
@@ -30,12 +32,18 @@ newtype HeapT m a = HeapT (StateT Heap m a)
 
 type HeapM a = HeapT Identity a
 
+instance MonadTrans HeapT where
+    lift = HeapT . lift
+    
 instance Monad m => MonadState Heap (HeapT m) where
     state f = HeapT (state f)
 
 instance Monad m => HeapMonad (HeapT m) where
     getHeap = get
     putHeap = put
+
+heapT :: Monad m => (Heap -> m (a, Heap)) -> HeapT m a
+heapT = HeapT . StateT
 
 runHeapT :: Monad m => HeapT m a -> Heap -> m (a, Heap)
 runHeapT (HeapT ht) = runStateT ht

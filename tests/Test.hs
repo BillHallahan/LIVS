@@ -2,6 +2,7 @@ module Main where
 
 import Test.Tasty
 
+import Interpreter.Interpreter
 import Language.CallGraph
 import Language.Expr
 import Language.Naming
@@ -14,9 +15,10 @@ main = defaultMain
        =<< return tests
 
 tests :: TestTree
-tests =  testGroup "Tests" [ exprTests
+tests =  testGroup "Tests" [ interpreterTests
+                           , callGraphTests
+                           , exprTests
                            , namingTests
                            , typingTests
-                           , callGraphTests
-                           , livsTests
-                           , monadNamingTests ]
+                           , monadNamingTests
+                           , livsTests ]

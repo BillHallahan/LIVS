@@ -103,5 +103,5 @@ checkExamples le fp i e es = do
 
 checkExample :: Monad m => Call m -> Id -> Example -> m Bool
 checkExample ca i (Example { input = is, output = out}) = do
-    r <- ca . mkApp $ Var i:map Lit is
+    r <- ca . mkApp $ Var i:map valToExpr is
     return $ r == out

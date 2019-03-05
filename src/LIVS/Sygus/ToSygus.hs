@@ -46,10 +46,10 @@ toSygusWithGrammar cg h hsr es =
 toSygusExample :: Example -> String
 toSygusExample (Example { func = f, input = is, output = out }) =
     let
-        as = concat . intersperse " " $ map toSygusLit is 
+        as = concat . intersperse " " $ map toSygusVal is 
         call = "(" ++ toSygusId f ++ " " ++ as ++ ")"
     in
-    "(constraint (= " ++ call ++ " " ++ toSygusLit out ++ "))"
+    "(constraint (= " ++ call ++ " " ++ toSygusVal out ++ "))"
 
 toSygusId :: Id -> String
 toSygusId (Id n _) = nameToString n
@@ -60,6 +60,7 @@ toSygusIdWithType (Id n t) =
 
 toSygusExpr :: Expr -> String
 toSygusExpr (Var i) = toSygusId i
+toSygusExpr (Data dc) = toSygusDC dc
 toSygusExpr (Lit l) = toSygusLit l
 toSygusExpr (Lam _ e) = toSygusExpr e
 toSygusExpr e@(App _ _) =
@@ -67,6 +68,13 @@ toSygusExpr e@(App _ _) =
 toSygusExpr (Let (i, b) e) =
     "(let ((" ++ toSygusId i
         ++ " (" ++ toSygusExpr b ++ ")))" ++ toSygusExpr e ++ ")"
+
+toSygusVal :: Val -> String
+toSygusVal (DataVal dc) = toSygusDC dc
+toSygusVal (LitVal dc) = toSygusLit dc
+
+toSygusDC :: DC -> String
+toSygusDC (DC n _) = nameToString n
 
 toSygusLit :: Lit -> String
 toSygusLit (LInt i) = show i

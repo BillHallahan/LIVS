@@ -1,6 +1,6 @@
 module LIVS.Core.Fuzz ( fuzzExamplesM
                       , fuzzExampleM
-                      , fuzzLitM ) where
+                      , fuzzValM ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
@@ -20,21 +20,21 @@ fuzzExamplesM le fp n i = do
     mapM (\_ -> fuzzExampleM (call le) i) [1..n]
 
 fuzzExampleM :: MonadRandom m => 
-                (Expr -> m Lit) -- ^ Executes and returns the value of the given expression
+                (Expr -> m Val) -- ^ Executes and returns the value of the given expression
              -> Id -- ^ A function call
              -> m Example -- ^ A fuzzed input/output example
 fuzzExampleM ca i = do
     let ts = argTypes i
-    ls <- mapM fuzzLitM ts
+    ls <- mapM fuzzValM ts
 
-    let outE = mkApp (Var i:map Lit ls)
+    let outE = mkApp (Var i:map valToExpr ls)
     r <- ca outE 
 
     return Example { func = i
                    , input = ls
                    , output = r}
 
-fuzzLitM :: MonadRandom m => Type -> m Lit
-fuzzLitM t
-    | t == intType = return . LInt =<< getRandomR (-100 * 100, 100 * 100)
+fuzzValM :: MonadRandom m => Type -> m Val
+fuzzValM t
+    | t == intType = return . LitVal . LInt =<< getRandomR (-100 * 100, 100 * 100)
     | otherwise = error "fuzz: We cannot fuzz values of the given type."

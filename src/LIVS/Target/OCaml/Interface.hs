@@ -34,7 +34,7 @@ loadFileOCaml ocaml p = runOCaml ocaml $ "#use \"" ++ p ++ "\";;\n"
 defOCaml :: OCaml -> Id -> Expr -> IO ()
 defOCaml ocaml (Id n _) = runOCaml ocaml . toOCamlDef n
 
-callOCaml :: OCaml -> Expr -> IO Lit
+callOCaml :: OCaml -> Expr -> IO Val
 callOCaml ocaml e = do
     print $ toOCamlCall e
     r <- runAndReadOCaml ocaml (toOCamlCall e)

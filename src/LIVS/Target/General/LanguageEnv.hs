@@ -14,7 +14,7 @@ type Def m = Id -> Expr -> m ()
 
 -- | Converts the Expr to the target language, concretely computes the result,
 -- and parses to a Lit
-type Call m = Expr -> m Lit
+type Call m = Expr -> m Val
 
 -- | An interface to interact with an external language interpreter/compiler
 data LanguageEnv m = LanguageEnv { load :: Load m

@@ -14,8 +14,8 @@ import LIVS.Target.OCaml.LexerCL
 
 %%
 
-lit :: { Lit }
-    : int { LInt $1 }
+lit :: { Val }
+    : int { LitVal (LInt $1) }
 
 {
 parseError :: [Token] -> a

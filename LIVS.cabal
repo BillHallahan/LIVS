@@ -16,7 +16,9 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:       LIVS.Language.CallGraph 
+  exposed-modules:       LIVS.Interpreter.Interpreter
+                       , LIVS.Interpreter.Stack
+                       , LIVS.Language.CallGraph 
                        , LIVS.Language.Expr
                        , LIVS.Language.Heap
                        , LIVS.Language.Naming
