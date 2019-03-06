@@ -1,10 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module LIVS.Language.Monad.Heap ( HeapMonad (..)
                                 , HeapT
                                 , HeapM
-                                , heapT
 
                                 , runHeapT
                                 , evalHeapT
@@ -22,6 +22,8 @@ import LIVS.Language.Syntax
 
 import Control.Monad.State.Lazy
 import Data.Functor.Identity
+
+import LIVS.Language.Monad.Naming
 
 class Monad m => HeapMonad m where
     getHeap :: m Heap
@@ -42,8 +44,13 @@ instance Monad m => HeapMonad (HeapT m) where
     getHeap = get
     putHeap = put
 
-heapT :: Monad m => (Heap -> m (a, Heap)) -> HeapT m a
-heapT = HeapT . StateT
+instance HeapMonad m => HeapMonad (NameGenT m) where
+    getHeap = lift getHeap
+    putHeap = lift . putHeap
+
+instance NameGenMonad m => NameGenMonad (HeapT m) where
+    freshNameM = lift . freshNameM
+    unseededFreshNameM = lift unseededFreshNameM
 
 runHeapT :: Monad m => HeapT m a -> Heap -> m (a, Heap)
 runHeapT (HeapT ht) = runStateT ht

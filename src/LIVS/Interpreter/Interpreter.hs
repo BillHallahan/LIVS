@@ -3,11 +3,13 @@
 {-# LANGUAGE TupleSections #-}
 
 module LIVS.Interpreter.Interpreter ( run
-                                    , runStep ) where
+                                    , runM
+                                    , runStepM ) where
 
 import LIVS.Interpreter.Stack
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 import LIVS.Language.Monad.Heap
@@ -17,28 +19,33 @@ import LIVS.Target.General.LanguageEnv
 data Frame = ApplyFrame Expr
            | Bind Id Expr -- ^ An Id from a Let Binding, and the continuation
 
-run :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
-    => LanguageEnv m
-    -> Int -- ^ Number of steps to take.
-    -> Expr
-    -> m Expr
-run le n e = rep n (runStep le) =<< constAppNF e
+type Env m = StackT Frame (HeapT (NameGenT m))
+
+run :: Monad m => LanguageEnv (Env m) -> Int -> Expr ->  H.Heap -> NameGen -> m Expr
+run le n e h = evalNameGenT (evalHeapT (evalStackT (runM le n e) empty) h)
+
+runM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
+     => LanguageEnv m
+     -> Int -- ^ Number of steps to take.
+     -> Expr
+     -> m Expr
+runM le n e = rep n (runStepM le) =<< constAppNF e
     where
         rep !n' f a
             | n' <= 0 = return a
             | otherwise = rep (n' - 1) f =<< f a
 
-runStep :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> m Expr
-runStep _ l@(Lit _) = do
+runStepM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> m Expr
+runStepM _ l@(Lit _) = do
     frm <- popM
     case frm of
         Just (Bind i e) -> do
             insertDefH (idName i) l
             return e
-        Just (ApplyFrame _) -> error "runStep: application to Lit"
+        Just (ApplyFrame _) -> error "runStepM: application to Lit"
         Nothing -> return l
 
-runStep le v@(Var (Id n _)) = do
+runStepM le v@(Var (Id n _)) = do
     r <- lookupH n
 
     case r of
@@ -50,20 +57,20 @@ runStep le v@(Var (Id n _)) = do
                 Just ars' -> do
                     let e = mkApp (v:ars')
                     return . valToExpr =<< call le e
-                Nothing -> error "runStep: insufficient arguments for primitive"
+                Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
-runStep _ le@(Lam i e) = do
+runStepM _ le@(Lam i e) = do
     frm <- popM
     case frm of
         Just (ApplyFrame ae) -> do
             insertDefH (idName i) ae
             return e
-        Just (Bind _ _) -> error "runStep: bind to Lam"
+        Just (Bind _ _) -> error "runStepM: bind to Lam"
         Nothing -> return le
-runStep _ (App e e') = do
+runStepM _ (App e e') = do
     pushM (ApplyFrame e')
     return e
-runStep _ (Let (i, e) e') = do
+runStepM _ (Let (i, e) e') = do
     pushM (Bind i e')
     return e
 
@@ -84,6 +91,7 @@ popArgs !n
 -- function arguments are variables or literals
 constAppNF :: NameGenMonad m => Expr -> m Expr
 constAppNF v@(Var _) = return v
+constAppNF dc@(Data _) = return dc
 constAppNF l@(Lit _) = return l
 constAppNF (Lam i e) = return . Lam i =<< constAppNF e
 constAppNF e@(App _ _) = do

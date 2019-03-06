@@ -17,6 +17,9 @@ module LIVS.Interpreter.Stack ( Stack
                               , runStackM
                               , evalStackM ) where
 
+import LIVS.Language.Monad.Heap
+import LIVS.Language.Monad.Naming
+
 import Control.Monad.State.Lazy
 import Data.Functor.Identity
 
@@ -67,6 +70,24 @@ instance Monad m => StackMonad b (StackT b m) where
     peekM = do
         stck <- get
         return $ peek stck
+
+instance HeapMonad m => HeapMonad (StackT b m) where
+    getHeap = lift getHeap
+    putHeap = lift . putHeap
+
+instance NameGenMonad m => NameGenMonad (StackT b m) where
+    freshNameM = lift . freshNameM
+    unseededFreshNameM = lift unseededFreshNameM
+
+instance StackMonad b m => StackMonad b (HeapT m) where
+    pushM = lift . pushM
+    popM = lift popM
+    peekM = lift peekM
+
+instance StackMonad b m => StackMonad b (NameGenT m) where
+    pushM = lift . pushM
+    popM = lift popM
+    peekM = lift peekM
 
 runStackT :: Monad m => StackT b m a -> Stack b -> m (a, Stack b)
 runStackT (StackT ht) = runStateT ht
