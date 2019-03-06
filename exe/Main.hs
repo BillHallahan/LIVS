@@ -1,6 +1,5 @@
 module Main where
 
-import LIVS.Core.Fuzz
 import LIVS.Core.LIVS
 
 import qualified LIVS.Language.Heap as H
@@ -16,7 +15,6 @@ import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.ToSygus
 
-import LIVS.Target.General.LanguageEnv
 import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class

@@ -18,9 +18,6 @@ import LIVS.Language.Monad.Naming
 import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.State.Lazy
-import Data.Functor.Identity
-
-import Debug.Trace
 
 data Frame = ApplyFrame Expr
            | Bind Id Expr -- ^ An Id from a Let Binding, and the continuation
@@ -45,7 +42,7 @@ runM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
      -> m Expr
 runM le n e = do
     mapDefsMH constAppNF
-    rep n (\e'' -> trace (show e'') runStepM le e'') =<< constAppNF e
+    rep n (\e'' -> runStepM le e'') =<< constAppNF e
     where
         rep !n' f a
             | n' <= 0 = return a
@@ -126,7 +123,7 @@ redArgs (App e1 e2) = do
 redArgs (Let (i, b) e) = do
     b' <- redArgs b
     e' <- redArgs e
-    return (Let (i, b') e)
+    return (Let (i, b') e')
 redArgs e = return e
 
 -- | By rewriting with Let's, converts an Expr into a form such that all
