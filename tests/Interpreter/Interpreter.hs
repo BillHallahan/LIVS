@@ -9,12 +9,15 @@ import LIVS.Language.Monad.Heap
 import LIVS.Target.General.LanguageEnv
 
 import Data.Functor.Identity
+import Data.HashSet as HS
 
 import Test.Tasty
 import Test.Tasty.HUnit
 
 interpreterTests :: TestTree
-interpreterTests = testGroup "Interpreter" [ run1 ]
+interpreterTests = testGroup "Interpreter" [ run1
+                                           , runCollectingExamples1
+                                           , runCollectingExamples2 ]
 
 run1 :: TestTree
 run1 = testCase "Run Test 1"
@@ -24,8 +27,44 @@ run1 = testCase "Run Test 1"
         abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
         e = App abs2 (Lit (LInt 4))
 
+runCollectingExamples1 :: TestTree
+runCollectingExamples1 = testCase "runCollectingExamples Test 1"
+    $ assertBool "Correct examples in runCollectingExamples1" 
+            (let
+                exs = HS.fromList (snd $ runCollectingExamplesWithIdentity (langEnv heap) 100 e heap (mkNameGen []))
+            in
+            abs2Ex `HS.member` exs && iteEx `HS.member` exs
+            )
+    where
+        abs3 = Var (Id (Name "abs3" Nothing) (TyFun intType intType))
+        e = App abs3 (Lit (LInt (-4)))
+
+        abs2Ex = Example { func = Id (Name "abs2" Nothing) (TyFun intType intType)
+                        , input = [ LitVal (LInt (-4)) ]
+                        , output = LitVal (LInt 4) }
+
+        iteEx = Example { func = iteId
+                        , input = [ DataVal (DC (Name "true" Nothing) (TyCon (Name "Bool" Nothing) TYPE))
+                                  , LitVal (LInt 4), LitVal (LInt (-4)) ]
+                        , output = LitVal (LInt 4) }
+
+runCollectingExamples2 :: TestTree
+runCollectingExamples2 = testCase "runCollectingExamples Test 2"
+    $ assertBool "Correct number of examples in runCollectingExamples2" 
+            (let
+                exs = snd $ runCollectingExamplesWithIdentity (langEnv heap) 100 e heap (mkNameGen [])
+            in
+            length exs == 5
+            )
+    where
+        abs3 = Var (Id (Name "abs3" Nothing) (TyFun intType intType))
+        e = App abs3 (Lit (LInt (-4)))
+
 runWithIdentity :: LanguageEnv Identity -> Int -> Expr ->  H.Heap -> NameGen -> Expr
 runWithIdentity le n e h ng = runIdentity (run le n e h ng)
+
+runCollectingExamplesWithIdentity :: LanguageEnv Identity -> Int -> Expr ->  H.Heap -> NameGen -> (Expr, [Example])
+runCollectingExamplesWithIdentity le n e h ng = runIdentity (runCollectingExamples le n e h ng)
 
 heap :: H.Heap
 heap = H.fromList
@@ -36,10 +75,10 @@ heap = H.fromList
                 (App 
                     (App 
                         (App 
-                            (Var (Id (Name "ite" Nothing) (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType))))) 
+                            (Var iteId) 
                             (App 
                                 (App 
-                                    (Var (Id (Name ">=" Nothing) (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE))))) 
+                                    (Var gteId) 
                                     (Lit (LInt 0))
                                 ) 
                                 (Var (Id (Name "x1" Nothing) intType))
@@ -47,7 +86,7 @@ heap = H.fromList
                         ) 
                         (App 
                             (App 
-                                (Var (Id (Name "-" Nothing) (TyFun intType (TyFun intType intType)))) 
+                                (Var subId) 
                                 (Lit (LInt 0))
                             ) 
                             (Var (Id (Name "x1" Nothing) intType))
@@ -57,6 +96,16 @@ heap = H.fromList
                 )
             )
         )
+    , ( Name "abs3" Nothing
+      , H.Def
+            (Lam 
+                (Id (Name "x1" Nothing) intType) 
+                (App 
+                    (Var (Id (Name "abs2" Nothing) (TyFun intType intType))) 
+                    (Var (Id (Name "x1" Nothing) intType))
+                )
+            )
+      )
     , ( Name "ite" Nothing
       , H.Primitive (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
       )
@@ -67,6 +116,15 @@ heap = H.fromList
       , H.Primitive (TyFun intType (TyFun intType intType))
       )
     ]
+
+iteId :: Id
+iteId = Id (Name "ite" Nothing) (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
+
+gteId :: Id
+gteId = Id (Name ">=" Nothing) (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
+
+subId :: Id
+subId = Id (Name "-" Nothing) (TyFun intType (TyFun intType intType))
 
 langEnv :: Monad m => H.Heap -> LanguageEnv m
 langEnv h = LanguageEnv { load = const $ return ()

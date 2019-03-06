@@ -85,7 +85,7 @@ main = do
     lr <- liftIO $ livsCVC4 ocamlEnv "target_files/OCaml/ints.ml" graph livsH
     print lr
 
-    res <- run ocamlEnv 50 (App (Var (Id (Name "abs2" Nothing) (TyFun intType intType))) (Lit (LInt (-4)))) lr (mkNameGen [])
+    res <- runCollectingExamples ocamlEnv 100 (App (Var (Id (Name "abs4" Nothing) (TyFun intType intType))) (Lit (LInt (-4)))) lr (mkNameGen [])
     print res
 
     -- python <- getPython

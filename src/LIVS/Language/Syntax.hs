@@ -10,7 +10,9 @@ module LIVS.Language.Syntax ( Name (..)
 
                             , Example (..)
 
+                            , exprToVal
                             , valToExpr
+                            , isVal
 
                             , idName
                             , funcName
@@ -18,6 +20,7 @@ module LIVS.Language.Syntax ( Name (..)
 
 import GHC.Generics (Generic)
 import Data.Hashable
+import Data.Maybe
 
 data Name = Name String (Maybe Integer)
             deriving (Eq, Ord, Show, Read, Generic)
@@ -40,21 +43,37 @@ data Expr = Var Id
           | Let Binding Expr
           deriving (Eq, Show, Read, Generic)
 
+instance Hashable Expr
+
 data Val = DataVal DC
          | LitVal Lit
          deriving (Eq, Show, Read, Generic)
 
+instance Hashable Val
+
+exprToVal :: Expr -> Maybe Val
+exprToVal (Data dc) = Just $ DataVal dc
+exprToVal (Lit l) = Just $ LitVal l
+exprToVal _ = Nothing
+
 valToExpr :: Val -> Expr
 valToExpr (DataVal dc) = Data dc
 valToExpr (LitVal l) = Lit l
+
+isVal :: Expr -> Bool
+isVal = isJust . exprToVal
 
 type Binding = (Id, Expr)
 
 data Lit = LInt Int
            deriving (Eq, Show, Read, Generic)
 
+instance Hashable Lit
+
 data DC = DC Name Type
           deriving (Eq, Show, Read, Generic)
+
+instance Hashable DC
 
 data Type = TyCon Name Type
           | TyFun Type Type
@@ -67,6 +86,8 @@ data Example = Example { func :: Id
                        , input :: [Val]
                        , output :: Val }
                        deriving (Eq, Show, Read, Generic)
+
+instance Hashable Example
 
 funcName :: Example -> Name
 funcName = idName . func

@@ -24,7 +24,7 @@ import LIVS.Language.Monad.Naming
 import Control.Monad.State.Lazy
 import Data.Functor.Identity
 
-newtype Stack b = Stack [b]
+newtype Stack b = Stack [b] deriving (Show, Read)
 
 empty :: Stack b
 empty = Stack []

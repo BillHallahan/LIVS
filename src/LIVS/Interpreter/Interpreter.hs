@@ -1,11 +1,15 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module LIVS.Interpreter.Interpreter ( RunEnv
                                     , run
+                                    , runCollectingExamples
                                     , runM
-                                    , runStepM ) where
+                                    , runStepM
+                                    , runCollectingExamplesM
+                                    , runStepCollectingExamplesM ) where
 
 import LIVS.Interpreter.Stack
 import LIVS.Language.Expr
@@ -21,6 +25,9 @@ import Control.Monad.State.Lazy
 
 data Frame = ApplyFrame Expr
            | Bind Id Expr -- ^ An Id from a Let Binding, and the continuation
+           | FuncCall Id [Expr] -- ^ Records a previous function call's name and input arguments.
+                                -- Used to collect new potential input/output pairs
+           deriving (Show, Read)
 
 type RunEnv m = StackT Frame (HeapT (NameGenT m))
 
@@ -35,6 +42,11 @@ run le n e h ng = do
     let le' = liftLanguageEnv getEnv le
     runEnv h ng empty (runM le' n e)
 
+runCollectingExamples :: Monad m => LanguageEnv m -> Int -> Expr ->  H.Heap -> NameGen -> m (Expr, [Example])
+runCollectingExamples le n e h ng = do
+    let le' = liftLanguageEnv getEnv le
+    runEnv h ng empty (runCollectingExamplesM le' n e)
+
 runM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
      => LanguageEnv m
      -> Int -- ^ Number of steps to take.
@@ -42,30 +54,62 @@ runM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
      -> m Expr
 runM le n e = do
     mapDefsMH constAppNF
-    rep n (\e'' -> runStepM le e'') =<< constAppNF e
+    rep n (runStepM le) =<< constAppNF e
+
+runCollectingExamplesM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
+                       => LanguageEnv m
+                       -> Int -- ^ Number of steps to take.
+                       -> Expr
+                       -> m (Expr, [Example])
+runCollectingExamplesM le n e = do
+    mapDefsMH constAppNF
+    e' <- constAppNF e
+    rep n (uncurry (runStepCollectingExamplesM le)) (e', [])
+
+rep :: Monad m => Int -> (a -> m a) -> a -> m a
+rep !n' f a
+    | n' <= 0 = return a
+    | otherwise = rep (n' - 1) f =<< f a
+
+runStepCollectingExamplesM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> [Example] -> m (Expr, [Example])
+runStepCollectingExamplesM le e@(App _ _) exs = do
+    let (f:es) = unApp e
+
+    -- If we are calling a function, record the function and the inputs on the stack
+    case f of
+        Var f' -> pushM $ FuncCall f' es
+        _ -> return ()
+
+    e' <- runStepM le e
+    return (e', exs)
+runStepCollectingExamplesM le e exs
+    | isVal e = do
+        frm <- peekM
+        case frm of
+            Just (FuncCall i es) -> do
+                _ :: Maybe Frame <- popM
+                ex <- genExample i es e
+                return $ (e, ex:exs)
+            _ -> do
+                e' <- runStepM le e
+                return (e', exs)
+runStepCollectingExamplesM le e exs = do
+    e' <- runStepM le e
+    return (e', exs)
+
+genExample :: HeapMonad m => Id -> [Expr] -> Expr -> m Example
+genExample i inp out = do
+    inp' <- mapM redArgs inp
+    out' <- redArgs out
+    return $ Example { func = i
+                     , input = map toVal inp'
+                     , output = toVal out' }
     where
-        rep !n' f a
-            | n' <= 0 = return a
-            | otherwise = rep (n' - 1) f =<< f a
+        toVal (Data dc) = DataVal dc
+        toVal (Lit l) = LitVal l
+        toVal _ = error "toVal: bad Expr"
 
 runStepM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> m Expr
-runStepM _ l@(Lit _) = do
-    frm <- popM
-    case frm of
-        Just (Bind i e) -> do
-            insertDefH (idName i) l
-            return e
-        Just (ApplyFrame _) -> error "runStepM: application to Lit"
-        Nothing -> return l
-runStepM _ dc@(Data _) = do
-    frm <- popM
-    case frm of
-        Just (Bind i e) -> do
-            insertDefH (idName i) dc
-            return e
-        Just (ApplyFrame _) -> error "runStepM: application to Lit"
-        Nothing -> return dc
-
 runStepM le v@(Var (Id n _)) = do
     r <- lookupH n
 
@@ -88,13 +132,22 @@ runStepM _ le@(Lam i e) = do
             insertDefH (idName i) ae
             return e
         Just (Bind _ _) -> error "runStepM: bind to Lam"
-        Nothing -> return le
-runStepM _ (App e e') = do
-    pushM (ApplyFrame e')
-    return e
+        _ -> return le
+runStepM _ a@(App _ _) = do
+    let (f:es) = unApp a    
+    mapM_ (pushM . ApplyFrame) $ reverse es
+    return f
 runStepM _ (Let (i, e) e') = do
     pushM (Bind i e')
     return e
+runStepM _ e = do -- We have a value
+    frm <- popM
+    case frm of
+        Just (Bind i e') -> do
+            insertDefH (idName i) e
+            return e'
+        Just (ApplyFrame _) -> error "runStepM: application to val"
+        _ -> return e
 
 popArgs :: StackMonad Frame m => Int -> m (Maybe [Expr])
 popArgs !n
