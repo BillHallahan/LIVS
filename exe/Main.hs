@@ -5,7 +5,10 @@ import LIVS.Core.LIVS
 
 import qualified LIVS.Language.Heap as H
 
+import LIVS.Interpreter.Interpreter
+
 import LIVS.Language.CallGraph
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
@@ -83,6 +86,9 @@ main = do
     ocamlEnv <- ocamlLanguageEnv
     lr <- liftIO $ livsCVC4 ocamlEnv "target_files/OCaml/ints.ml" graph livsH
     print lr
+
+    res <- run ocamlEnv 50 (App (Var (Id (Name "abs2" Nothing) (TyFun intType intType))) (Lit (LInt (-4)))) lr (mkNameGen [])
+    print res
 
     -- python <- getPython
     -- putStrLn "Got python"

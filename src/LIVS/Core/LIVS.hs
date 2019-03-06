@@ -68,7 +68,7 @@ livs' le gen fp cg es h (i@(Id n _):is) = do
                 then livs' le gen fp cg (nub $ re' ++ es) h' is
                 else error "livs': Incorrect guess"
 
-        _ -> livsUnSatUnknown i le gen fp cg (re' ++ es) h is
+        _ -> livsUnSatUnknown i le gen fp cg (nub $ re' ++ es) h is
         
 -- | Sometimes, the SyGuS solver may return UnSat, or Unknown.  In either case,
 -- it may be that previously synthesized functions had incorrect definitions.

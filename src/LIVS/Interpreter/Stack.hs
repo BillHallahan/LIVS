@@ -12,6 +12,7 @@ module LIVS.Interpreter.Stack ( Stack
                               , pop
                               , peek
 
+                              , stackT
                               , runStackT
                               , evalStackT
                               , runStackM
@@ -88,6 +89,9 @@ instance StackMonad b m => StackMonad b (NameGenT m) where
     pushM = lift . pushM
     popM = lift popM
     peekM = lift peekM
+
+stackT :: Monad m => (Stack b -> m (a, Stack b)) -> StackT b m a
+stackT = StackT . StateT
 
 runStackT :: Monad m => StackT b m a -> Stack b -> m (a, Stack b)
 runStackT (StackT ht) = runStateT ht

@@ -5,6 +5,7 @@
 module LIVS.Language.Monad.Heap ( HeapMonad (..)
                                 , HeapT
                                 , HeapM
+                                , heapT
 
                                 , runHeapT
                                 , evalHeapT
@@ -14,7 +15,8 @@ module LIVS.Language.Monad.Heap ( HeapMonad (..)
                                 , insertPrimitiveH
                                 , lookupH
                                 , mapH
-                                , mapMH ) where
+                                , mapMH
+                                , mapDefsMH ) where
 
 import LIVS.Language.Heap (Heap, HeapObj)
 import qualified LIVS.Language.Heap as H
@@ -52,6 +54,9 @@ instance NameGenMonad m => NameGenMonad (HeapT m) where
     freshNameM = lift . freshNameM
     unseededFreshNameM = lift unseededFreshNameM
 
+heapT :: Monad m => (Heap -> m (a, Heap)) -> HeapT m a
+heapT = HeapT . StateT
+
 runHeapT :: Monad m => HeapT m a -> Heap -> m (a, Heap)
 runHeapT (HeapT ht) = runStateT ht
 
@@ -82,6 +87,14 @@ mapMH :: HeapMonad m => (HeapObj -> m HeapObj) -> m ()
 mapMH f = do
     h <- getHeap
     putHeap =<< H.mapM f h
+
+mapDefsMH :: HeapMonad m => (Expr -> m Expr) -> m ()
+mapDefsMH f = do
+    h <- getHeap
+    putHeap =<< H.mapM f' h
+    where
+        f' (H.Def e) = return . H.Def =<< f e
+        f' p@(H.Primitive _) = return p
 
 liftHeap1 :: HeapMonad m => (a -> Heap -> Heap) -> a -> m ()
 liftHeap1 f x = do

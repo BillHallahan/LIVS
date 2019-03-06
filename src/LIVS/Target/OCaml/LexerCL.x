@@ -11,14 +11,17 @@ $alpha = [a-zA-Z]
 tokens:-
     \-$digit+                                           { word (TokenInt . read) }
     $digit+                                             { word (TokenInt . read) }
+    $alpha [$alpha $digit \_ \']*                       { word TokenName }
     $white+                                             ;
     \#                                                  ;
     \-                                                  ;
     \:                                                  ;
-    =                                                   ;
+    =                                                   { \_ _ -> return TokenEq }
     int                                                 ;
 {
-data Token = TokenInt Int
+data Token = TokenName String
+           | TokenInt Int
+           | TokenEq
            | TokenEOF
 
 word wr (_,_,_,input) len = return $ wr (take len input)

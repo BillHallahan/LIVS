@@ -11,11 +11,20 @@ import LIVS.Target.OCaml.LexerCL
 
 %token
     int         { TokenInt $$ }
+    tname        { TokenName $$ }
+    '='         { TokenEq }
 
 %%
 
-lit :: { Val }
-    : int { LitVal (LInt $1) }
+response :: { Val }
+         : name '=' val { $3 }
+
+val :: { Val }
+    : name { DataVal (DC $1 TYPE)}
+    | int { LitVal (LInt $1) }
+
+name :: { Name }
+	  : tname { Name $1 Nothing }
 
 {
 parseError :: [Token] -> a

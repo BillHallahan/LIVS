@@ -4,6 +4,7 @@
 module LIVS.Language.Monad.Naming ( NameGenMonad (..)
                                   , NameGenT
                                   , NameGenM
+                                  , nameGenT
 
                                   , runNameGenT
                                   , evalNameGenT
@@ -41,6 +42,9 @@ instance Monad m => NameGenMonad (NameGenT m) where
         let (n', ng') = freshName n ng
         put ng'
         return n'
+
+nameGenT :: Monad m => (NameGen -> m (a, NameGen)) -> NameGenT m a
+nameGenT = NameGenT . StateT
 
 runNameGenT :: Monad m => NameGenT m a -> NameGen -> m (a, NameGen)
 runNameGenT (NameGenT ngt) = runStateT ngt

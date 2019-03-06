@@ -1,7 +1,10 @@
+{-# LANGUAGE RankNTypes #-}
+
 module LIVS.Target.General.LanguageEnv ( Load
                                        , Def
                                        , Call
-                                       , LanguageEnv (..) ) where
+                                       , LanguageEnv (..)
+                                       , liftLanguageEnv ) where
 
 import LIVS.Language.Syntax
 
@@ -20,3 +23,10 @@ type Call m = Expr -> m Val
 data LanguageEnv m = LanguageEnv { load :: Load m
                                  , def :: Def m
                                  , call :: Call m }
+
+liftLanguageEnv :: (forall a . m a -> m' a) -> LanguageEnv m -> LanguageEnv m'
+liftLanguageEnv f (LanguageEnv { load = l, def = d, call = c }) =
+    LanguageEnv { load = \fp -> f $ l fp
+                , def = \i e -> f $ d i e
+                , call = \e -> f $ c e }
+                

@@ -8,18 +8,24 @@ import LIVS.Language.Typing
 import LIVS.Language.Monad.Heap
 import LIVS.Target.General.LanguageEnv
 
+import Data.Functor.Identity
+
 import Test.Tasty
 import Test.Tasty.HUnit
 
 interpreterTests :: TestTree
-interpreterTests = testGroup "Interpreter" [ ]
+interpreterTests = testGroup "Interpreter" [ run1 ]
 
--- run1 :: TestTree
--- run1 = testCase "Run Test 1"
---     $ assertBool "Correct run1" (run langEnv 100 e heap (mkNameGen []) == LitVal (LInt 4))
---     where
---         abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
---         e = App abs2 (Lit (LInt 4))
+run1 :: TestTree
+run1 = testCase "Run Test 1"
+    $ assertBool "Correct run1" 
+            (runWithIdentity (langEnv heap) 100 e heap (mkNameGen []) == Lit (LInt 4))
+    where
+        abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
+        e = App abs2 (Lit (LInt 4))
+
+runWithIdentity :: LanguageEnv Identity -> Int -> Expr ->  H.Heap -> NameGen -> Expr
+runWithIdentity le n e h ng = runIdentity (run le n e h ng)
 
 heap :: H.Heap
 heap = H.fromList
@@ -62,11 +68,11 @@ heap = H.fromList
       )
     ]
 
-langEnv :: HeapMonad m => LanguageEnv m
-langEnv = LanguageEnv { load = const $ return ()
-                      , def = const . const $ return ()
-                      , call = callPrim
-                      }
+langEnv :: Monad m => H.Heap -> LanguageEnv m
+langEnv h = LanguageEnv { load = const $ return ()
+                        , def = const . const $ return ()
+                        , call = \e -> return . fst $ runHeapM (callPrim e) h
+                        }
 
 callPrim :: HeapMonad m => Expr -> m Val
 callPrim (App (App (App (Var (Id (Name "ite" _) _)) b) e) e') =
@@ -75,9 +81,9 @@ callPrim (App (App (App (Var (Id (Name "ite" _) _)) b) e) e') =
             reduceToVal e
         Data (DC (Name "false" _) _) ->
             reduceToVal e'
-        _ -> error "callPrim: Unhandled expression"
+        _ -> error $ "callPrim: Unhandled expression from ite" ++ show b ++ "\n" ++ show e ++ "\n" ++ show e'
 callPrim (App (App (Var (Id (Name ">=" _) _)) (Lit (LInt l))) (Lit (LInt l')))
-    | l <= l' =
+    | l >= l' =
         return . DataVal $ DC (Name "true" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
     | otherwise =
         return . DataVal $ DC (Name "false" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
