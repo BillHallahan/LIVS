@@ -6,9 +6,10 @@ module LIVS.Core.LIVS ( Load
                       , livsCVC4
                       , livs ) where
 
+import LIVS.Interpreter.Interpreter
 import LIVS.Language.CallGraph
-import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
@@ -32,7 +33,7 @@ livs le gen fp cg h = do
     -- function's it calls, f_1...f_n.
     -- This is always possible, except in the case of mutual recursion, which we
     -- break arbitrarily
-    let ord = filter (not . flip H.isPrimitive h . idName) $ postOrderList cg
+    let ord = synthOrder h cg
 
     load le fp
     livs' le gen fp cg [] h ord
@@ -43,13 +44,14 @@ livs' _ _ _ _ _ h [] = return h
 livs' le gen fp cg es h (i@(Id n _):is) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- if re == [] then fuzzExamplesM le fp 2 i else return re
+    re' <- fuzzExamplesM le fp 2 i
+    let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable i cg h
         gram = S.map idName $ directlyCalls i cg
 
     -- Take a guess at the definition of the function
-    m <- gen relH gram re'
+    m <- gen relH gram re''
 
     case m of
         Sat m' -> do
@@ -57,19 +59,42 @@ livs' le gen fp cg es h (i@(Id n _):is) = do
                     Just r' -> r'
                     Nothing -> error "livs': No function definition found."
 
-            -- Check if our guess is correct.  If it is NOT correct,
-            -- it must be the case that we made an incorrect guess about some previous,
+            -- Get the examples that contradict the concrete implementation of the function
+            -- If there are any, it must be the case that we made an incorrect guess about some previous,
             -- component function
-            cor <- checkExamples le fp i r re'
+            inc <- incorrectSuspects le (map Suspect re'')
 
             let h' = H.insertDef n r h
+            
+            if null inc
+                then livs' le gen fp cg (nub $ re'' ++ es) h' is
+                else livsSatCheckIncorrect le gen fp cg  (nub $ re'' ++ es) h is inc
 
-            if cor
-                then livs' le gen fp cg (nub $ re' ++ es) h' is
-                else error "livs': Incorrect guess"
+        _ -> livsUnSatUnknown i le gen fp cg (nub $ re'' ++ es) h is
 
-        _ -> livsUnSatUnknown i le gen fp cg (nub $ re' ++ es) h is
-        
+-- | Takes a list of known incorrect counterexamples, and determines which
+-- function(s) need to be resynthesized.
+livsSatCheckIncorrect :: MonadRandom m => LanguageEnv m -> Gen m -> FilePath -> CallGraph -> [Example] -> H.Heap -> [Id] -> [IncorrectExample] -> m H.Heap
+livsSatCheckIncorrect le gen fp cg es h is exs = do
+    -- Run the example inputs in the interpreter, collecting the suspect
+    -- examples from function calls
+    let runCollecting = runCollectingExamples le 1000 h (mkNameGen [])
+    rs <- mapM (runCollecting) $ map (exampleFuncCall . iExample) exs
+
+    -- Figure out which suspect function calls are actually incorrect.
+    let maybe_incor_exs = concatMap snd rs
+    incor <- incorrectSuspects le maybe_incor_exs
+
+    -- figure out which functions are involved in the incorrect function calls
+    let bad_fs = map (func . iExample) incor
+        ord = synthOrder h cg
+        is' = filter (`elem` bad_fs) ord
+
+    -- If we can't blame any subcall, we intentionally error.
+    case null incor of
+        True -> error "livsSatCheckIncorrect"
+        False -> livs' le gen fp cg (map fixIncorrect incor ++ es) h (is' ++ is)
+
 -- | Sometimes, the SyGuS solver may return UnSat, or Unknown.  In either case,
 -- it may be that previously synthesized functions had incorrect definitions.
 -- However, because we don't even have a guess about the possible correct definition,
@@ -77,13 +102,11 @@ livs' le gen fp cg es h (i@(Id n _):is) = do
 livsUnSatUnknown :: MonadRandom m => 
         Id -> LanguageEnv m -> Gen m -> FilePath ->  CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
 livsUnSatUnknown i le gen fp cg es h is = do
-    let dc = filter (not . flip H.isPrimitive h . idName) 
+    let dc = filter (not . flip H.isPrimitive h . idName)
                                 $ S.toList $ directlyCalls i cg
         is' = dc ++ i:is
 
-    es' <- mapM (fuzzExamplesM le fp 2) dc
-
-    livs' le gen fp cg (es ++ concat es') h is'
+    livs' le gen fp cg es h is'
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
@@ -94,14 +117,20 @@ filterToReachable i cg =
     in
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
--- | Checks that the given synthesized function satisfies the examples
-checkExamples :: Monad m => LanguageEnv m -> FilePath -> Id -> Expr -> [Example] -> m Bool
-checkExamples le fp i e es = do
-    load le fp
-    def le i e
-    return . and =<< mapM (checkExample (call le) i) es
+-- | Takes a list of possibly incorrect examples, and returns only those that are really incorrect.
+incorrectSuspects :: Monad m => LanguageEnv m -> [SuspectExample] -> m [IncorrectExample]
+incorrectSuspects le es = return . onlyIncorrect =<< markSuspects le es
 
-checkExample :: Monad m => Call m -> Id -> Example -> m Bool
-checkExample ca i (Example { input = is, output = out}) = do
-    r <- ca . mkApp $ Var i:map valToExpr is
-    return $ r == out
+markSuspects :: Monad m => LanguageEnv m -> [SuspectExample] -> m [MarkedExample]
+markSuspects le = mapM (markSuspect le)
+
+-- | Takes a SuspectExample and check's whether it matches the real function.
+markSuspect :: Monad m => LanguageEnv m -> SuspectExample -> m MarkedExample
+markSuspect (LanguageEnv { call = ca }) (Suspect ex) = do
+    r <- ca $ exampleFuncCall ex
+    if r == output ex
+        then return $ MarkedCorrect ex
+        else return $ MarkedIncorrect ex r
+
+synthOrder :: H.Heap -> CallGraph -> [Id]
+synthOrder h = filter (not . flip H.isPrimitive h . idName) . postOrderList

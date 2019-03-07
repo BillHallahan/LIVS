@@ -72,6 +72,7 @@ test-suite test
                        , containers
                        , hashable
                        , livs
+                       , MonadRandom
                        , tasty >= 1.0
                        , tasty-hunit >= 0.10
                        , unordered-containers

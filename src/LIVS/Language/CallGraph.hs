@@ -60,7 +60,7 @@ reachable n (CallGraph cg ti tv) =
         Just v -> S.fromList . map ti $ G.reachable cg v
         Nothing -> S.empty
 
--- | Returns all Id's directally called by the given Id
+-- | Returns all Id's directly called by the given Id
 directlyCalls :: Id -> CallGraph -> S.HashSet Id
 directlyCalls i (CallGraph cg ti _) =
     S.fromList . map snd . filter ((==) i . fst) 

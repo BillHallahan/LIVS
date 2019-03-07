@@ -37,13 +37,13 @@ runEnv h ng s b = evalNameGenT (evalHeapT (evalStackT b s) h) ng
 getEnv :: Monad m => m a -> RunEnv m a
 getEnv a = lift . lift $ lift a
 
-run :: Monad m => LanguageEnv m -> Int -> Expr ->  H.Heap -> NameGen -> m Expr
-run le n e h ng = do
+run :: Monad m => LanguageEnv m -> Int -> H.Heap -> NameGen -> Expr ->  m Expr
+run le n h ng e = do
     let le' = liftLanguageEnv getEnv le
     runEnv h ng empty (runM le' n e)
 
-runCollectingExamples :: Monad m => LanguageEnv m -> Int -> Expr ->  H.Heap -> NameGen -> m (Expr, [Example])
-runCollectingExamples le n e h ng = do
+runCollectingExamples :: Monad m => LanguageEnv m -> Int -> H.Heap -> NameGen -> Expr -> m (Expr, [SuspectExample])
+runCollectingExamples le n h ng e = do
     let le' = liftLanguageEnv getEnv le
     runEnv h ng empty (runCollectingExamplesM le' n e)
 
@@ -60,7 +60,7 @@ runCollectingExamplesM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
                        => LanguageEnv m
                        -> Int -- ^ Number of steps to take.
                        -> Expr
-                       -> m (Expr, [Example])
+                       -> m (Expr, [SuspectExample])
 runCollectingExamplesM le n e = do
     mapDefsMH constAppNF
     e' <- constAppNF e
@@ -71,7 +71,7 @@ rep !n' f a
     | n' <= 0 = return a
     | otherwise = rep (n' - 1) f =<< f a
 
-runStepCollectingExamplesM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> [Example] -> m (Expr, [Example])
+runStepCollectingExamplesM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> [SuspectExample] -> m (Expr, [SuspectExample])
 runStepCollectingExamplesM le e@(App _ _) exs = do
     let (f:es) = unApp e
 
@@ -89,7 +89,7 @@ runStepCollectingExamplesM le e exs
             Just (FuncCall i es) -> do
                 _ :: Maybe Frame <- popM
                 ex <- genExample i es e
-                return $ (e, ex:exs)
+                return $ (e, Suspect ex:exs)
             _ -> do
                 e' <- runStepM le e
                 return (e', exs)

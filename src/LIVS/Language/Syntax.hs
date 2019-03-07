@@ -9,6 +9,9 @@ module LIVS.Language.Syntax ( Name (..)
                             , Type (..)
 
                             , Example (..)
+                            , SuspectExample (..)
+                            , MarkedExample (..)
+                            , IncorrectExample (..)
 
                             , exprToVal
                             , valToExpr
@@ -16,9 +19,19 @@ module LIVS.Language.Syntax ( Name (..)
 
                             , idName
                             , funcName
-                            , examplesForFunc ) where
+                            , examplesForFunc
+                            , exampleFuncCall
+                            , isCorrect
+                            , isIncorrect
+                            , mExample
+                            , correct
+                            , onlyCorrect
+                            , onlyIncorrect
+                            , iExample
+                            , fixIncorrect ) where
 
 import GHC.Generics (Generic)
+import Data.Foldable
 import Data.Hashable
 import Data.Maybe
 
@@ -95,3 +108,55 @@ funcName = idName . func
 -- | Filter a list of examples to only those relevant to the given function
 examplesForFunc :: Name -> [Example] -> [Example]
 examplesForFunc n = filter (\e -> n == funcName e)
+
+exampleFuncCall :: Example -> Expr
+exampleFuncCall ex = foldl' App (Var (func ex)) $ map valToExpr (input ex)
+
+-- | An "example" which may or may not be satisfied by the actual code.
+-- Often produced by deriving the Example from interpreting the IR.
+newtype SuspectExample = Suspect { sExample :: Example } deriving (Eq, Show, Read, Generic)
+
+instance Hashable SuspectExample
+
+-- | Used to split "Examples" between those known to be correct and thus known
+-- to be incorrect.
+data MarkedExample = MarkedCorrect Example
+                   | MarkedIncorrect Example Val -- ^ An incorrect example, and the correct output
+                   deriving (Eq, Show, Read, Generic)
+
+instance Hashable MarkedExample
+
+data IncorrectExample = Incorrect Example Val -- ^ An incorrect example, and the correct output
+                        deriving (Eq, Show, Read, Generic)
+
+instance Hashable IncorrectExample
+
+isCorrect :: MarkedExample -> Bool
+isCorrect (MarkedCorrect _) = True
+isCorrect _ = False
+
+isIncorrect :: MarkedExample -> Bool
+isIncorrect = not . isCorrect
+
+mExample :: MarkedExample -> Example
+mExample (MarkedCorrect ex) = ex
+mExample (MarkedIncorrect ex _) = ex
+
+-- | Modifies the output of an Incorrect Example, to correct it
+correct :: MarkedExample -> Example
+correct (MarkedCorrect ex) = ex
+correct (MarkedIncorrect ex r) = ex { output = r }
+
+onlyCorrect :: [MarkedExample] -> [Example]
+onlyCorrect = map mExample . filter (isCorrect)
+
+onlyIncorrect :: [MarkedExample] -> [IncorrectExample]
+onlyIncorrect [] = []
+onlyIncorrect (MarkedCorrect _:xs) = onlyIncorrect xs
+onlyIncorrect (MarkedIncorrect ex r:xs) = Incorrect ex r:onlyIncorrect xs
+
+fixIncorrect :: IncorrectExample -> Example
+fixIncorrect (Incorrect ex r) = ex { output = r}
+
+iExample :: IncorrectExample -> Example
+iExample (Incorrect ex _) = ex
