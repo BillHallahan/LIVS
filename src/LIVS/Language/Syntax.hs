@@ -79,6 +79,7 @@ isVal = isJust . exprToVal
 type Binding = (Id, Expr)
 
 data Lit = LInt Int
+         | LFloat Float
            deriving (Eq, Show, Read, Generic)
 
 instance Hashable Lit

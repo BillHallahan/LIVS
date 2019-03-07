@@ -10,9 +10,15 @@ import Language.Typing
 import Language.Monad.Naming
 import LIVS.LIVS
 
+import Target.JavaScript
+
 main :: IO ()
-main = defaultMain
-       =<< return tests
+main = do
+  targets <- targetTests
+  defaultMain $ testGroup "all" [
+      targets
+   -- , tests
+    ]
 
 tests :: TestTree
 tests =  testGroup "Tests" [ interpreterTests
@@ -22,3 +28,8 @@ tests =  testGroup "Tests" [ interpreterTests
                            , typingTests
                            , monadNamingTests
                            , livsTests ]
+
+targetTests :: IO TestTree
+targetTests = do 
+   j <- javascriptTests
+   return $ testGroup "Targets" [ j ]
