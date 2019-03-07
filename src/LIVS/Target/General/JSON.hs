@@ -13,5 +13,8 @@ toValue :: Value -> Val
 toValue = \case
   Number n -> LitVal (fromMaybe (LFloat $ toRealFloat n) (LInt <$> toBoundedInteger n))
   String t -> LitVal (LString $ T.unpack t)
-  _ -> undefined
+  Object o -> undefined
+  Array a  -> undefined
+  Bool b   -> undefined
+  Null     -> undefined
 

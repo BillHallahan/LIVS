@@ -17,7 +17,7 @@ main = do
   targets <- targetTests
   defaultMain $ testGroup "all" [
       targets
-   -- , tests
+    , tests
     ]
 
 tests :: TestTree
