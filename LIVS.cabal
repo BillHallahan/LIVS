@@ -35,6 +35,7 @@ library
                        , LIVS.Sygus.ToSygus
                        , LIVS.Target.General.LanguageEnv
                        , LIVS.Target.General.Process
+                       , LIVS.Target.General.JSON
                        , LIVS.Target.JavaScript.Interface
                        , LIVS.Target.OCaml.Interface
                        , LIVS.Target.OCaml.LexerCL
@@ -56,6 +57,7 @@ library
                        , attoparsec
                        , bytestring
                        , scientific
+                       , text
   ghc-options:         -O2 -Wall
   hs-source-dirs:      src
   default-language:    Haskell2010

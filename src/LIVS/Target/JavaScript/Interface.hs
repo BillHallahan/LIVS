@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module LIVS.Target.JavaScript.Interface ( 
           JavaScriptREPL
         , jsLanguageEnv
@@ -18,10 +16,9 @@ import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
+import LIVS.Target.General.JSON
 
 import Data.List
-import Data.Maybe
-import Data.Scientific
 
 import Data.Attoparsec.ByteString
 import Data.Aeson
@@ -50,12 +47,6 @@ callJavaScript js e = do
       Fail _ _ _ -> error "Bad parse"
       Partial _ -> error "Why does this happen?"
       Done _ v -> return $ toValue v
-
--- | convert the JSON object to the homemade data type
-toValue :: Value -> Val
-toValue = \case
-  Number n -> LitVal (fromMaybe (LFloat $ toRealFloat n) (LInt <$> toBoundedInteger n))
-  _ -> undefined
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do

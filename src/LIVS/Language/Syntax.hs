@@ -80,6 +80,7 @@ type Binding = (Id, Expr)
 
 data Lit = LInt Int
          | LFloat Float
+         | LString String
            deriving (Eq, Show, Read, Generic)
 
 instance Hashable Lit
