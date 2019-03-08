@@ -10,6 +10,8 @@ module LIVS.Language.CallGraph ( CallGraph
                                , reachable
                                , directlyCalls
                                , postOrderList
+                               , postOrderListAfter
+                               , path
                                , findVert) where
 
 import LIVS.Language.Syntax
@@ -68,10 +70,19 @@ directlyCalls i (CallGraph cg ti _) =
 
 -- | Gives a list of Id's in post-order
 postOrderList :: CallGraph -> [Id]
-postOrderList = nub . concatMap (reverse . postOrderList') . dfs
-    where
-        postOrderList' :: CallTree -> [Id]
-        postOrderList' ct = vert ct:concatMap postOrderList' (trees ct)
+postOrderList (CallGraph cg ti _) = reverse . map ti $ G.topSort cg
+
+-- | The same as postOrderListTree, except cuts off the beginning of each branch
+-- up to the first occurence of an element in the input list
+postOrderListAfter ::  [Id] -> CallGraph -> [Id]
+postOrderListAfter is cg = filter (\i1 -> any (path cg i1) is) . postOrderList $ cg
+
+-- | Returns true if the second Id reachable from the first
+path :: CallGraph -> Id -> Id -> Bool
+path (CallGraph g _ tv) i1 i2 =
+    case (tv i1, tv i2) of
+        (Just i1', Just i2') -> G.path g i1' i2'
+        _ -> False
 
 findVert :: Id -> CallGraph -> Maybe CallTree
 findVert i g

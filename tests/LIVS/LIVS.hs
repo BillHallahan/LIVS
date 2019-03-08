@@ -16,6 +16,8 @@ import Data.HashSet as HS
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Debug.Trace
+
 livsTests :: TestTree
 livsTests = testGroup "LIVS" [ livsSatCheckIncorrect1
                              , livsSatCheckIncorrect2 ]
@@ -40,20 +42,26 @@ livsSatCheckIncorrect1 = testCase "livsSatCheckIncorrect Test 1"
 livsSatCheckIncorrect2 :: TestTree
 livsSatCheckIncorrect2 = testCase "livsSatCheckIncorrect Test 2"
     $ assertBool "Correct to-synthesize list from livsSatCheckIncorrect"
-        (snd livsSatCheckIncorrect1_2 == [abs2, f])
+        (let
+            (_, r) = livsSatCheckIncorrect1_2
+        in
+        trace (show r) r == [abs2, f, g] || r == [abs2, g, f])
     where
         f = Id (Name "f" Nothing) (TyFun intType intType)
+        g = Id (Name "g" Nothing) (TyFun intType intType)
         abs2 = Id (Name "abs2" Nothing) (TyFun intType intType)
 
-
+-- | This is used by both livsSatCheckIncorrect1 and livsSatCheckIncorrect2
+-- Two heaps are used: correctHeap corresponds to actual function definitions,
+-- while h is the synthesized guessed version.  correctHeap is used, along with
+-- the interpreter, as a ground truth, so that we can check that we correctly
+-- identify needed examples and which functions to resynthesize 
 livsSatCheckIncorrect1_2 :: ([Example], [Id])
 livsSatCheckIncorrect1_2 =
     runIdentity (livsSatCheckIncorrect (langEnvInterpFallBack correctHeap)
                                             callGraphAbsC [] h [] exs)
     where
-        callGraphAbsC = createCallGraph $
-            ( f
-            , [ abs2 ]):callGraphAbs'
+        callGraphAbsC = createCallGraph $ [(f, [ abs2 ]), (g, [abs2])]
 
         correctHeap = H.fromList 
             [ ( Name "abs2" Nothing
@@ -133,6 +141,7 @@ livsSatCheckIncorrect1_2 =
             ]
 
         f = Id (Name "f" Nothing) (TyFun intType intType)
+        g = Id (Name "g" Nothing) (TyFun intType intType)
         abs2 = Id (Name "abs2" Nothing) (TyFun intType intType)
 
         exs = [ Example { func = f

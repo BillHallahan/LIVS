@@ -18,7 +18,10 @@ callGraphTests = testGroup "Call Graph" [ dfs1
                                         , findVert1
                                         , findVert2
                                         , postOrderList1
-                                        , postOrderList2 ]
+                                        , postOrderList2
+                                        , postOrderListAfter1
+                                        , postOrderListAfter2
+                                        , postOrderListAfter3 ]
 
 dfs1 :: TestTree
 dfs1 = testCase "DFS Test 1"
@@ -57,6 +60,34 @@ postOrderList' i1 i2 g =
     in
     elemIndex i1 ord < elemIndex i2 ord
 
+postOrderListAfter1 :: TestTree
+postOrderListAfter1 = testCase "postOrderListAfter 1"
+    $ assertBool "Correct postOrderListAfter1"
+        (let
+            ord = postOrderListAfter [toId "x"] graph1
+         in
+         toId "f" `elem` ord && toId "g" `elem` ord && toId "x" `elem` ord
+        )
+
+postOrderListAfter2 :: TestTree
+postOrderListAfter2 = testCase "postOrderListAfter 2"
+    $ assertBool "Correct postOrderListAfter1"
+        (let
+            ord = postOrderListAfter [toId "x"] graph1
+         in
+         toId "h" `notElem` ord && toId "y" `notElem` ord
+                && toId "z" `notElem` ord
+        )
+
+postOrderListAfter3 :: TestTree
+postOrderListAfter3 = testCase "postOrderListAfter 3"
+    $ assertBool "Correct postOrderListAfter3"
+        (let
+            ord = postOrderListAfter [toId "g"] graph4
+         in
+         toId "g" `elem` ord && toId "f" `elem` ord && toId "h" `elem` ord
+        )
+
 findVert1 :: TestTree 
 findVert1 = testCase "findVert Test 1"
     $ assertBool "Correct findVert" (testFindVert (toId "g") graph1)
@@ -86,6 +117,12 @@ graph2 = createCallGraph
 
 graph3 :: CallGraph
 graph3 = createCallGraph [(toId "f", [toId "e"])]
+
+graph4 :: CallGraph
+graph4 = createCallGraph
+    [ (toId "f", [toId "g"])
+    , (toId "h", [toId "g"])]
+
 
 toId :: String -> Id
 toId n = Id (Name n Nothing) (TyFun intType intType)

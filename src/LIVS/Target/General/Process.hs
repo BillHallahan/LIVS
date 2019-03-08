@@ -60,9 +60,7 @@ runProcess (Process (h_in, _, _)) = hPutStr h_in
 
 readProcess :: Process -> IO String
 readProcess (Process (_, h_out, _)) = do
-    print "runing"
     r <- hWaitForInput h_out (-1)
-    print r
     if r then do
         out <- getChars h_out
         _ <- evaluate (length out)

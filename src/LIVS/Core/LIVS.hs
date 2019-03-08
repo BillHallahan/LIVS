@@ -60,18 +60,6 @@ livs' le gen fp cg es h (i@(Id n _):is) = do
                     Just r' -> r'
                     Nothing -> error "livs': No function definition found."
 
-            -- Get the examples that contradict the concrete implementation of the function
-            -- If there are any, it must be the case that we made an incorrect guess about some previous,
-            -- -- component function
-            -- inc <- incorrectSuspects le (map Suspect re'')
-
-            -- let h' = H.insertDef n r h
-            
-            -- if null inc
-            --     then livs' le gen fp cg (nub $ re'' ++ es) h' is
-            --     else do
-            --         (es', is') <- livsSatCheckIncorrect le cg  (nub $ re'' ++ es) h' is inc
-            --         livs' le gen fp cg  es' h is'
             let h' = H.insertDef n r h
 
             (es', is') <- livsSatCheckIncorrect le cg  (nub $ re'' ++ es) h' is re''
@@ -93,16 +81,11 @@ livsSatCheckIncorrect le cg es h is exs = do
     let maybe_incor_exs = concatMap snd rs
     incor <- incorrectSuspects le maybe_incor_exs
 
-    -- figure out which functions are involved in the incorrect function calls
+    -- Figure out which functions are involved in the incorrect function calls
     let bad_fs = map (func . iExample) incor
-        ord = synthOrder h cg
-        is' = filter (`elem` bad_fs) ord
+        is' = synthOrderAfter h bad_fs cg
 
     return (map fixIncorrect incor ++ es, is' ++ is)
-    -- If we can't blame any subcall, we intentionally error.
-    -- case null incor of
-    --     True -> error "livsSatCheckIncorrect"
-    --     False -> return (map fixIncorrect incor ++ es, is' ++ is)
 
 -- | Sometimes, the SyGuS solver may return UnSat, or Unknown.  In either case,
 -- it may be that previously synthesized functions had incorrect definitions.
@@ -143,3 +126,7 @@ markSuspect (LanguageEnv { call = ca }) (Suspect ex) = do
 
 synthOrder :: H.Heap -> CallGraph -> [Id]
 synthOrder h = filter (not . flip H.isPrimitive h . idName) . postOrderList
+
+synthOrderAfter :: H.Heap -> [Id] -> CallGraph -> [Id]
+synthOrderAfter h is =
+    filter (not . flip H.isPrimitive h . idName) . postOrderListAfter is
