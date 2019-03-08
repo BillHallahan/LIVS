@@ -1,9 +1,12 @@
 module Helpers.Language ( heapPrim
-                        , heapAbs2
+                        , heapAbs
+                        , callGraphAbs
+                        , callGraphAbs'
                         , iteId
                         , gteId
                         , subId) where
 
+import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
@@ -15,8 +18,8 @@ heapPrim = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun in
                       , (Name ">=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                       , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
 
-heapAbs2 :: H.Heap
-heapAbs2 = H.fromList
+heapAbs :: H.Heap
+heapAbs = H.fromList
     [ ( Name "abs2" Nothing
       , H.Def 
             (Lam 
@@ -65,6 +68,18 @@ heapAbs2 = H.fromList
       , H.Primitive (TyFun intType (TyFun intType intType))
       )
     ]
+
+callGraphAbs :: CallGraph
+callGraphAbs = createCallGraph callGraphAbs'
+
+callGraphAbs' :: [ (Id, [Id])]
+callGraphAbs' =
+    [ ( Id (Name "abs2" Nothing) (TyFun intType intType)
+      , [subId, gteId, iteId])
+    , ( Id (Name "abs3" Nothing) (TyFun intType intType)
+      , [Id (Name "abs2" Nothing) (TyFun intType intType)])
+    ]
+
 
 iteId :: Id
 iteId = Id (Name "ite" Nothing) (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))

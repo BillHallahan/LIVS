@@ -4,6 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module LIVS.Interpreter.Interpreter ( RunEnv
+                                    , Frame (..)
                                     , run
                                     , runCollectingExamples
                                     , runM
@@ -125,14 +126,14 @@ runStepM le v@(Var (Id n _)) = do
                     return . valToExpr =<< call le e
                 Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
-runStepM _ le@(Lam i e) = do
+runStepM _ lam_e@(Lam i e) = do
     frm <- popM
     case frm of
         Just (ApplyFrame ae) -> do
             insertDefH (idName i) ae
             return e
         Just (Bind _ _) -> error "runStepM: bind to Lam"
-        _ -> return le
+        _ -> return lam_e
 runStepM _ a@(App _ _) = do
     let (f:es) = unApp a    
     mapM_ (pushM . ApplyFrame) $ reverse es

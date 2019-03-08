@@ -4,7 +4,8 @@ module LIVS.Core.LIVS ( Load
                       , Call
                       , Gen
                       , livsCVC4
-                      , livs ) where
+                      , livs
+                      , livsSatCheckIncorrect) where
 
 import LIVS.Interpreter.Interpreter
 import LIVS.Language.CallGraph
@@ -61,25 +62,32 @@ livs' le gen fp cg es h (i@(Id n _):is) = do
 
             -- Get the examples that contradict the concrete implementation of the function
             -- If there are any, it must be the case that we made an incorrect guess about some previous,
-            -- component function
-            inc <- incorrectSuspects le (map Suspect re'')
+            -- -- component function
+            -- inc <- incorrectSuspects le (map Suspect re'')
 
-            let h' = H.insertDef n r h
+            -- let h' = H.insertDef n r h
             
-            if null inc
-                then livs' le gen fp cg (nub $ re'' ++ es) h' is
-                else livsSatCheckIncorrect le gen fp cg  (nub $ re'' ++ es) h is inc
+            -- if null inc
+            --     then livs' le gen fp cg (nub $ re'' ++ es) h' is
+            --     else do
+            --         (es', is') <- livsSatCheckIncorrect le cg  (nub $ re'' ++ es) h' is inc
+            --         livs' le gen fp cg  es' h is'
+            let h' = H.insertDef n r h
 
-        _ -> livsUnSatUnknown i le gen fp cg (nub $ re'' ++ es) h is
+            (es', is') <- livsSatCheckIncorrect le cg  (nub $ re'' ++ es) h' is re''
+            livs' le gen fp cg  es' h' is'
 
--- | Takes a list of known incorrect counterexamples, and determines which
--- function(s) need to be resynthesized.
-livsSatCheckIncorrect :: MonadRandom m => LanguageEnv m -> Gen m -> FilePath -> CallGraph -> [Example] -> H.Heap -> [Id] -> [IncorrectExample] -> m H.Heap
-livsSatCheckIncorrect le gen fp cg es h is exs = do
+
+        _ -> livs' le gen fp cg (nub $ re'' ++ es) h $ livsUnSatUnknown cg h i is
+
+-- | Takes a list of examples, and determines which functions (if any) need to
+-- be resynthesized, and which new examples should be used when doing so.
+livsSatCheckIncorrect :: Monad m => LanguageEnv m -> CallGraph -> [Example] -> H.Heap -> [Id] -> [Example] -> m ([Example], [Id])
+livsSatCheckIncorrect le cg es h is exs = do
     -- Run the example inputs in the interpreter, collecting the suspect
     -- examples from function calls
     let runCollecting = runCollectingExamples le 1000 h (mkNameGen [])
-    rs <- mapM (runCollecting) $ map (exampleFuncCall . iExample) exs
+    rs <- mapM (runCollecting) $ map exampleFuncCall exs
 
     -- Figure out which suspect function calls are actually incorrect.
     let maybe_incor_exs = concatMap snd rs
@@ -90,23 +98,24 @@ livsSatCheckIncorrect le gen fp cg es h is exs = do
         ord = synthOrder h cg
         is' = filter (`elem` bad_fs) ord
 
+    return (map fixIncorrect incor ++ es, is' ++ is)
     -- If we can't blame any subcall, we intentionally error.
-    case null incor of
-        True -> error "livsSatCheckIncorrect"
-        False -> livs' le gen fp cg (map fixIncorrect incor ++ es) h (is' ++ is)
+    -- case null incor of
+    --     True -> error "livsSatCheckIncorrect"
+    --     False -> return (map fixIncorrect incor ++ es, is' ++ is)
 
 -- | Sometimes, the SyGuS solver may return UnSat, or Unknown.  In either case,
 -- it may be that previously synthesized functions had incorrect definitions.
 -- However, because we don't even have a guess about the possible correct definition,
 -- we simply return to and add examples for all functions directly called in the call graph.
-livsUnSatUnknown :: MonadRandom m => 
-        Id -> LanguageEnv m -> Gen m -> FilePath ->  CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
-livsUnSatUnknown i le gen fp cg es h is = do
-    let dc = filter (not . flip H.isPrimitive h . idName)
+-- The returned list of id's is the functions which must be revisted.
+livsUnSatUnknown :: CallGraph -> H.Heap -> Id -> [Id] -> [Id]
+livsUnSatUnknown cg h i is =
+    let
+        dc = filter (not . flip H.isPrimitive h . idName)
                                 $ S.toList $ directlyCalls i cg
-        is' = dc ++ i:is
-
-    livs' le gen fp cg es h is'
+    in
+    dc ++ i:is
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
