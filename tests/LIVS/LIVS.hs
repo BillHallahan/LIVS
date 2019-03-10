@@ -16,8 +16,6 @@ import Data.HashSet as HS
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Debug.Trace
-
 livsTests :: TestTree
 livsTests = testGroup "LIVS" [ livsSatCheckIncorrect1
                              , livsSatCheckIncorrect2 ]
@@ -45,7 +43,7 @@ livsSatCheckIncorrect2 = testCase "livsSatCheckIncorrect Test 2"
         (let
             (_, r) = livsSatCheckIncorrect1_2
         in
-        trace (show r) r == [abs2, f, g] || r == [abs2, g, f])
+        r == [abs2, f, g] || r == [abs2, g, f])
     where
         f = Id (Name "f" Nothing) (TyFun intType intType)
         g = Id (Name "g" Nothing) (TyFun intType intType)
@@ -59,7 +57,7 @@ livsSatCheckIncorrect2 = testCase "livsSatCheckIncorrect Test 2"
 livsSatCheckIncorrect1_2 :: ([Example], [Id])
 livsSatCheckIncorrect1_2 =
     runIdentity (livsSatCheckIncorrect (langEnvInterpFallBack correctHeap)
-                                            callGraphAbsC [] h [] exs)
+                                            callGraphAbsC [] h exs)
     where
         callGraphAbsC = createCallGraph $ [(f, [ abs2 ]), (g, [abs2])]
 

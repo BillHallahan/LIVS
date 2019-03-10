@@ -11,12 +11,10 @@ import Control.Monad.Random
 
 fuzzExamplesM :: MonadRandom m => 
                  LanguageEnv m
-              -> FilePath
               -> Int -- ^ How many examples to fuzz
               -> Id -- ^ A function call
               -> m [Example] -- ^ A fuzzed input/output example
-fuzzExamplesM le fp n i = do
-    load le fp
+fuzzExamplesM le n i = do
     mapM (\_ -> fuzzExampleM (call le) i) [1..n]
 
 fuzzExampleM :: MonadRandom m => 
