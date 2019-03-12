@@ -14,7 +14,8 @@ astTests = testGroup "AST" [ children1
                            , children2
                            , children3
                            , children4
-                           , children5 ]
+                           , children5
+                           , children6 ]
 
 data E = M (Maybe E)
        | EitherE (Either E E)
@@ -22,7 +23,13 @@ data E = M (Maybe E)
        | B E E
        | T
        | I Int
+       | SymInt WrapInt
+       | SymE WrapE
        deriving Eq
+
+data Wrap a = Wrap a deriving Eq
+type WrapInt = Wrap Int
+type WrapE = Wrap E
 
 children1 :: TestTree
 children1 = testCase "Children Test 1"
@@ -43,5 +50,9 @@ children4 = testCase "Children Test 4"
 children5 :: TestTree
 children5 = testCase "Children Test 5"
     $ assertBool "Children AST" (children (I 8) == [])
+
+children6 :: TestTree
+children6 = testCase "Children Test 6"
+    $ assertBool "Children AST" (children (SymE (Wrap (A T))) == [A T])
 
 $(derivingASTWithContainers ''E)

@@ -164,7 +164,21 @@ varBangTypeToBangType (_, n, t) = (n, t)
 tyConData :: Dec -> (Name, [TyVarBndr], [Con])
 tyConData (DataD _ nm tyVars _ cs _) = (nm, tyVars, cs)
 tyConData (NewtypeD _ nm tyVars _ c _) = (nm, tyVars, [c])
-tyConData _ = error "derivingAST: tyCon may not be a type synonym."
+tyConData _ = error "tyConData: tyCon may not be a type synonym."
+
+tyConDataWithTySyn :: Dec -> Q [(Name, [TyVarBndr], [Con])]
+tyConDataWithTySyn (DataD _ nm tyVars _ cs _) = return [(nm, tyVars, cs)]
+tyConDataWithTySyn (NewtypeD _ nm tyVars _ c _) = return [(nm, tyVars, [c])]
+tyConDataWithTySyn (TySynD _ _ t) = do
+    let ns = typeToNames t
+    cs <- mapM (\n -> do
+            rt <- reify n
+            case rt of
+                TyConI rt' ->  
+                    tyConDataWithTySyn rt'
+                _ -> return []) ns
+    return $ concat cs
+tyConDataWithTySyn _ = error "tyConData: tyCon may not be a type synonym."
 
 concatLists :: [Exp] -> Exp
 concatLists = foldl (\e1 e2 -> (VarE '(++)) `AppE` e1 `AppE` e2) (ConE '[])
@@ -189,8 +203,9 @@ collectReqTypes :: [Con] -> Q [TH.Name]
 collectReqTypes = collectReqTypes' S.empty
 
 collectReqTypes' :: S.Set Type -> [Con] -> Q [TH.Name]
-collectReqTypes' collected [] =
-    return . nub . concatMap typeToNames $ S.toList collected
+collectReqTypes' collected [] = do
+    let coll' = concatMap typeToNames $ S.toList collected
+    return . nub . concat =<< mapM splitTySyn coll'
 collectReqTypes' collected (c:cs) = do
     case c of
         (NormalC _ fieldTypes) -> do
@@ -203,7 +218,8 @@ collectReqTypes' collected (c:cs) = do
                             tycon <- reify tn
                             case tycon of
                                 TyConI tyCon' -> do
-                                    let (_, _, cs') = tyConData tyCon'
+                                    res <- tyConDataWithTySyn tyCon'
+                                    let cs' = concat . (\(_, _, x) -> x )$ unzip3 res
                                     return cs'
                                 PrimTyConI _ _ _ -> return []
                                 _ -> error $ "collectReqTypes': Bad") tns
@@ -222,4 +238,18 @@ typeToNames :: Type -> [TH.Name]
 typeToNames (AppT t1 t2) = typeToNames t1 ++ typeToNames t2
 typeToNames (VarT n) = []
 typeToNames (ConT n) = [n]
-typeToNames t = error "typeToNames: Bad type in typeToNames"
+typeToNames ListT = []
+typeToNames t = error $ "typeToNames: Bad type in typeToNames" ++ show t
+
+-- | Decomposes type synonyms into a list of component data and newtypes.
+-- Returns data and newtypes unchanged
+splitTySyn :: TH.Name -> Q [TH.Name]
+splitTySyn ty = do
+    tyCon <- reify ty
+    case tyCon of
+        TyConI tyCon' ->
+            case tyCon' of
+                DataD _ _ _ _ _ _ -> return [ty]
+                NewtypeD _ _ _ _ _ _ -> return [ty]
+                TySynD _ _ t -> return . concat =<< mapM splitTySyn (typeToNames t)
+        PrimTyConI _ _ _ -> return []
