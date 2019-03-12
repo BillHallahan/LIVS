@@ -6,6 +6,7 @@ import qualified LIVS.Language.Heap as H
 
 import LIVS.Interpreter.Interpreter
 
+import LIVS.Language.AST
 import LIVS.Language.CallGraph
 import LIVS.Language.Naming
 import LIVS.Language.Syntax

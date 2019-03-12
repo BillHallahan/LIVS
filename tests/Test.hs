@@ -3,6 +3,7 @@ module Main where
 import Test.Tasty
 
 import Interpreter.Interpreter
+import Language.AST
 import Language.CallGraph
 import Language.Expr
 import Language.Naming
@@ -22,6 +23,7 @@ main = do
 
 tests :: TestTree
 tests =  testGroup "Tests" [ interpreterTests
+                           , astTests
                            , callGraphTests
                            , exprTests
                            , namingTests
