@@ -9,13 +9,16 @@ module LIVS.Language.AST ( AST (..)
                          , evalContainedASTs
 
                          , derivingAST
-                         , derivingASTContainer ) where
+                         , derivingASTContainer
+                         , derivingASTWithContainers ) where
 
 import Language.Haskell.TH as TH
 import Language.Haskell.TH.Syntax as TH
 
 import Control.Monad
+import Data.List
 import Data.Maybe
+import qualified Data.Set as S
 
 class AST t where
     children :: t -> [t]
@@ -82,35 +85,51 @@ fieldChildren tcn (n, (_, t)) = do
     case t of
         a@(AppT _ _) -> return . Just =<< varE 'containedASTs `appE` (varE n)
         ConT tcn' | tcn == tcn' -> return . Just =<< listE [varE n]
-                  | otherwise ->
-                        return . Just =<< varE 'containedASTs `appE` (varE n)
+                  | otherwise -> do
+                        b <- isLifted tcn'
+                        case b of
+                            True -> return . Just =<< varE 'containedASTs `appE` (varE n)
+                            False -> return Nothing
         (VarT _) -> return . Just =<< varE 'containedASTs `appE` (varE n)
         _ -> return Nothing
+    where
+        isLifted tn = do
+            r <- reify tn
+            case r of
+                PrimTyConI _ _ b -> return $ not b
+                _ -> return True
 
 derivingASTContainer :: TH.Name -- ^ The name of the datatype to walk 
                      -> TH.Name -- ^ The name of the AST datatype to extract
                      -> Q [Dec]
-derivingASTContainer ty ty_ex = do
-    (TyConI tyCon) <- reify ty
-    let (tyConName, tyVars, cs) = tyConData tyCon 
+derivingASTContainer ty ty_ex =
+    withTyConI ty [] $ \tyCon -> do -- (TyConI tyCon) <- reify ty
+        let (tyConName, tyVars, cs) = tyConData tyCon
+        tyApp <- applyTypes tyConName tyVars
 
-    (TyConI tyConEx) <- reify ty_ex
-    let (tyConNameEx, tyVarsEx, _) = tyConData tyConEx
+        (TyConI tyConEx) <- reify ty_ex
+        let (tyConNameEx, tyVarsEx, _) = tyConData tyConEx
+        tyExApp <- applyTypes tyConNameEx tyVarsEx
 
-    let instanceType = conT ''ASTContainer
-                        `appT` applyTypes tyConName tyVars
-                        `appT` applyTypes tyConNameEx tyVarsEx
-    let consInstanceType =
-            if null tyVars
-                then instanceType
-                else forallT [] 
-                        (mapM (\tv -> conT ''ASTContainer `appT` (toType tv) `appT` (conT tyConNameEx) ) tyVars) 
-                        instanceType 
+        inst_exists <- isInstance ''ASTContainer [tyApp, tyExApp]
 
-    sequence [instanceD (return []) consInstanceType [genContainedASTs tyConNameEx cs]]
-    where
-        toType (PlainTV name) = varT name
-        toType (KindedTV name _) = varT name
+        case inst_exists of
+            False -> do
+                let instanceType = conT ''ASTContainer
+                                    `appT` return tyApp
+                                    `appT` return tyExApp
+                let consInstanceType =
+                        if null tyVars
+                            then instanceType
+                            else forallT [] 
+                                    (mapM (\tv -> conT ''ASTContainer `appT` (toType tv) `appT` (conT tyConNameEx) ) tyVars) 
+                                    instanceType
+
+                sequence [instanceD (return []) consInstanceType [genContainedASTs tyConNameEx cs]]
+                where
+                    toType (PlainTV name) = varT name
+                    toType (KindedTV name _) = varT name
+            True -> return []
 
 genContainedASTs :: TH.Name -> [Con] -> Q Dec
 genContainedASTs tcn cs = do funD 'containedASTs (map (genContainedASTsClause tcn) cs)
@@ -149,3 +168,58 @@ tyConData _ = error "derivingAST: tyCon may not be a type synonym."
 
 concatLists :: [Exp] -> Exp
 concatLists = foldl (\e1 e2 -> (VarE '(++)) `AppE` e1 `AppE` e2) (ConE '[])
+
+-- | Derive an instance of AST, along with all ASTContainers required for that instance
+derivingASTWithContainers :: TH.Name -- ^ The name of the datatype to walk 
+                          -> Q [Dec]
+derivingASTWithContainers ty = do
+    d_ast  <- derivingAST ty
+
+    -- Determine which types we need to derive ASTContainers for
+    (TyConI tyCon) <- reify ty
+    let (tn, tn_vars, cs) = tyConData tyCon
+    tn' <- applyTypes tn tn_vars
+    req <- collectReqTypes cs
+
+    d_ast_c <- return . concat =<< mapM (flip derivingASTContainer ty) req
+
+    return $ d_ast ++ d_ast_c
+
+collectReqTypes :: [Con] -> Q [TH.Name]
+collectReqTypes = collectReqTypes' S.empty
+
+collectReqTypes' :: S.Set Type -> [Con] -> Q [TH.Name]
+collectReqTypes' collected [] =
+    return . nub . concatMap typeToNames $ S.toList collected
+collectReqTypes' collected (c:cs) = do
+    case c of
+        (NormalC _ fieldTypes) -> do
+            let new_ft = filter (`S.notMember` collected) . map snd $ fieldTypes
+                collected' = foldr S.insert collected new_ft
+
+                tns = concatMap typeToNames new_ft
+            
+            css <- mapM (\tn -> do
+                            tycon <- reify tn
+                            case tycon of
+                                TyConI tyCon' -> do
+                                    let (_, _, cs') = tyConData tyCon'
+                                    return cs'
+                                PrimTyConI _ _ _ -> return []
+                                _ -> error $ "collectReqTypes': Bad") tns
+
+            collectReqTypes' collected' $ cs ++ concat css
+
+withTyConI :: TH.Name -> a -> (Dec -> Q a) -> Q a
+withTyConI ty def f = do
+    t <- reify ty
+    case t of
+        TyConI d -> f d
+        PrimTyConI _ _ _ -> return def
+        _ -> error "withTyConI: Bad Name"
+
+typeToNames :: Type -> [TH.Name]
+typeToNames (AppT t1 t2) = typeToNames t1 ++ typeToNames t2
+typeToNames (VarT n) = []
+typeToNames (ConT n) = [n]
+typeToNames t = error "typeToNames: Bad type in typeToNames"

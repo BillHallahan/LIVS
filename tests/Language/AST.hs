@@ -13,13 +13,15 @@ astTests :: TestTree
 astTests = testGroup "AST" [ children1
                            , children2
                            , children3
-                           , children4 ]
+                           , children4
+                           , children5 ]
 
 data E = M (Maybe E)
        | EitherE (Either E E)
        | A E
        | B E E
        | T
+       | I Int
        deriving Eq
 
 children1 :: TestTree
@@ -38,6 +40,8 @@ children4 :: TestTree
 children4 = testCase "Children Test 4"
     $ assertBool "Children AST" (children (EitherE (Right (B T T))) == [B T T])
 
-$(derivingAST ''E)
-$(derivingASTContainer ''Either ''E)
-$(derivingASTContainer ''Maybe ''E)
+children5 :: TestTree
+children5 = testCase "Children Test 5"
+    $ assertBool "Children AST" (children (I 8) == [])
+
+$(derivingASTWithContainers ''E)
