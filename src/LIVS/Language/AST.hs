@@ -7,6 +7,7 @@ module LIVS.Language.AST ( AST (..)
                          , evalChildren
                          , eval
                          , evalContainedASTs
+                         , evalASTs
 
                          , derivingAST
                          , derivingASTContainer
@@ -23,7 +24,7 @@ import qualified Data.Set as S
 class AST t where
     children :: t -> [t]
 
-class ASTContainer c t where
+class AST t => ASTContainer c t where
     containedASTs :: c -> [t]
 
 instance ASTContainer c t => ASTContainer [c] t where
@@ -51,6 +52,10 @@ eval f t = go t
 -- combine the results.
 evalContainedASTs :: (ASTContainer t e, Monoid a) => (e -> a) -> t -> a
 evalContainedASTs f = mconcat . map f . containedASTs
+
+-- | Runs `eval` on all the ASTs in the container, and uses mappend to results.
+evalASTs :: (ASTContainer t e, Monoid a) => (e -> a) -> t -> a
+evalASTs f = evalContainedASTs (eval f)
 
 --------------------------------------------
 -- Template Haskell

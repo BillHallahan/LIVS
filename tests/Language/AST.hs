@@ -25,6 +25,7 @@ data E = M (Maybe E)
        | I Int
        | SymInt WrapInt
        | SymE WrapE
+       | L [E]
        deriving Eq
 
 data Wrap a = Wrap a deriving Eq
@@ -54,5 +55,10 @@ children5 = testCase "Children Test 5"
 children6 :: TestTree
 children6 = testCase "Children Test 6"
     $ assertBool "Children AST" (children (SymE (Wrap (A T))) == [A T])
+
+children7 :: TestTree
+children7 = testCase "Children Test 7"
+    $ assertBool "Children AST" (children (L [A T, B T (I 3)]) == [A T, B T (I 3)])
+
 
 $(derivingASTWithContainers ''E)

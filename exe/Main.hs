@@ -16,12 +16,19 @@ import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.ToSygus
 
+import LIVS.Target.JavaScript.Extract
 import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
 
 main :: IO ()
 main = do
+    jsast <- parseJS "target_files/JavaScript/math.js"
+    case jsast of
+        Left _ -> return ()
+        Right jsast' -> do
+            print $ extractFunctions jsast'
+
     let h = H.fromList [ (Name "add" Nothing, H.Def $ Lam 
                                 (Id (Name "x" Nothing) intType) 
                                 (Lam 
