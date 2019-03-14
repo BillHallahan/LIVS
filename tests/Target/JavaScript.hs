@@ -22,7 +22,7 @@ run = do
 
 callConstFxn :: IO Val
 callConstFxn = do
-  j <- jsLanguageEnv 
+  j <- jsLanguageEnv
   (call j) testFxn
 
 testFxn :: Expr

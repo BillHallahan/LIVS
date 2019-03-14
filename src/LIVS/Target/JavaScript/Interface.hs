@@ -44,7 +44,8 @@ extractFileJavaScript fp = do
         Right jsast' -> return $ Ext.extractFunctions jsast'
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
-loadFileJavaScript js p = runJavaScript js $ ".load " ++ p ++ "\n"
+loadFileJavaScript js p = do
+    runJavaScript js $ ".load " ++ p ++ "\n"
 
 defJavaScript :: JavaScriptREPL -> Id -> Expr -> IO ()
 defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n

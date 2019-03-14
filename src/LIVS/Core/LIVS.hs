@@ -46,6 +46,7 @@ livs con le gen fp cg h = do
     -- break arbitrarily
     let ord = synthOrder h cg
 
+    load le fp
     livs' con le gen cg [] h ord
 
 livs' :: (MonadIO m, MonadRandom m) => 

@@ -62,6 +62,7 @@ runProcess (Process (h_in, _, _)) = hPutStr h_in
 
 readProcess :: Process -> IO String
 readProcess (Process (_, h_out, _)) = do
+    print "Before wait"
     r <- hWaitForInput h_out (-1)
     print "After wait"
     if r then do

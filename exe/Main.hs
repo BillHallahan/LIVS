@@ -37,20 +37,44 @@ main = do
 
 synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
-    ids <- extract lenv fp
+    putStrLn $ "fp = " ++ fp
+    load lenv fp
+    -- r <- call lenv testFxn
+    
+    -- print r
 
-    whenLoud (putStrLn "Verbose")
+    return ()
 
-    let cg = createCallGraph ids
-        heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
+    -- ids <- extract lenv fp
+
+    -- whenLoud (putStrLn "Verbose")
+
+    -- let cg = createCallGraph ids
+    --     heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+    --                       , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
 
 
-    lr <- livsCVC4 (toLIVSConfigNames heap config) lenv fp cg heap
+    -- lr <- livsCVC4 (toLIVSConfigNames heap config) lenv fp cg heap
 
-    print lr
+    -- print lr
 
+-- testFxn :: Expr
+-- testFxn = 
+--   App 
+--     (App
+--         (Var (Id (Name "add" Nothing) TYPE))
+--         (Lit $ LInt 4)
+--     )
+--     (Lit $ LInt 1)
 
+testFxn :: Expr
+testFxn = 
+  App (
+    Lam 
+      (Id (Name "x" Nothing) (intType))
+      (Lit $ LInt 3)
+    )
+    (Lit $ LInt 0)
 
     -- jsast <- parseJS "target_files/JavaScript/math.js"
     -- case jsast of
