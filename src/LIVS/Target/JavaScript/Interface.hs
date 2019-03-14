@@ -45,7 +45,8 @@ extractFileJavaScript fp = do
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = do
-    runJavaScript js $ ".load " ++ p ++ "\n"
+    _ <- runAndReadJavaScript js $ "LOAD " ++ p ++ "\n" -- ".load " ++ p ++ "\n"
+    return ()
 
 defJavaScript :: JavaScriptREPL -> Id -> Expr -> IO ()
 defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
@@ -53,9 +54,8 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
     print $ toJavaScriptCall e
-    putStrLn "Before"
     r <- runAndReadJavaScript js (toJavaScriptCall e)
-    putStrLn "After"
+    print r
     case parse json $ B.pack r of
       Fail _ _ _ -> error "Bad parse"
       Partial _ -> error "Why does this happen?"
@@ -63,7 +63,7 @@ callJavaScript js e = do
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do
-    pr <- getProcess "node" []
+    pr <- getProcess "node" ["language_interface/nodeREPL.js"] -- []
     return $ JavaScriptREPL pr
 
 runAndReadJavaScript :: JavaScriptREPL -> String -> IO String
@@ -97,7 +97,7 @@ toJavaScriptExpr e@(App _ _)
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = "(" ++ toJavaScriptExpr e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr e2 ++ ") "
     | otherwise = 
-        "console.log(" ++ toJavaScriptExpr (appCenter e) ++ "("
+        "(" ++ toJavaScriptExpr (appCenter e) ++ "("
             ++ (concat . intersperse ", " . map toJavaScriptExpr $ appArgs e) ++ ")) "
 toJavaScriptExpr (Let (i, b) e) =
     toJavaScriptId i ++ " = " ++ toJavaScriptExpr b ++ " in " ++ toJavaScriptExpr e

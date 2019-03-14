@@ -39,13 +39,13 @@ main = do
 synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     putStrLn $ "fp = " ++ fp
-    print =<< getFileSystemEncoding
-    setFileSystemEncoding char8
-    print =<< getFileSystemEncoding
+    -- print =<< getFileSystemEncoding
+    -- setFileSystemEncoding char8
+    -- print =<< getFileSystemEncoding
     load lenv fp
-    -- r <- call lenv testFxn
+    r <- call lenv testFxn
     
-    -- print r
+    print r
 
     return ()
 
