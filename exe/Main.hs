@@ -24,6 +24,7 @@ import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans
+import GHC.IO.Encoding
 import System.Console.CmdArgs
 import System.Environment
 
@@ -38,6 +39,9 @@ main = do
 synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     putStrLn $ "fp = " ++ fp
+    print =<< getFileSystemEncoding
+    setFileSystemEncoding char8
+    print =<< getFileSystemEncoding
     load lenv fp
     -- r <- call lenv testFxn
     
