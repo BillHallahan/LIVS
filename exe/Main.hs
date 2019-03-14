@@ -24,9 +24,7 @@ import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans
-import GHC.IO.Encoding
 import System.Console.CmdArgs
-import System.Environment
 
 main :: IO ()
 main = do
@@ -42,25 +40,28 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     -- print =<< getFileSystemEncoding
     -- setFileSystemEncoding char8
     -- print =<< getFileSystemEncoding
-    load lenv fp
-    r <- call lenv testFxn
+    -- load lenv fp
+    -- r <- call lenv testFxn
     
-    print r
+    -- print r
 
-    return ()
+    -- return ()
 
-    -- ids <- extract lenv fp
+    ids <- extract lenv fp
 
-    -- whenLoud (putStrLn "Verbose")
+    whenLoud (putStrLn "Verbose")
 
-    -- let cg = createCallGraph ids
-    --     heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-    --                       , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
+    let cg = createCallGraph ids
+        heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
 
+    let config' = toLIVSConfigNames heap config
 
-    -- lr <- livsCVC4 (toLIVSConfigNames heap config) lenv fp cg heap
+    print $ core_funcs config'
 
-    -- print lr
+    lr <- livsCVC4 config' lenv fp cg heap
+
+    print lr
 
 -- testFxn :: Expr
 -- testFxn = 

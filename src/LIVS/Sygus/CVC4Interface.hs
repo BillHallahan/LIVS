@@ -30,7 +30,6 @@ runSygusWithGrammar cg h hsr es = do
     let form = toSygusWithGrammar cg h hsr es
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
-    liftIO $ putStrLn m
     return . parseSMT (H.map' typeOf h) . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS

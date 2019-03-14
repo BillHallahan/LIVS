@@ -11,5 +11,5 @@ function cube(n) {
 }
 
 function quadruple(n) {
-    square(n) * square(n)
+    return square(n) * square(n)
 }

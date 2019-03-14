@@ -53,9 +53,7 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
-    print $ toJavaScriptCall e
     r <- runAndReadJavaScript js (toJavaScriptCall e)
-    print r
     case parse json $ B.pack r of
       Fail _ _ _ -> error "Bad parse"
       Partial _ -> error "Why does this happen?"

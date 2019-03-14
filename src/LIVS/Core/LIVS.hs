@@ -66,7 +66,7 @@ livsStep con le gen fuzz cg es h i@(Id n _) = do
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
-        gram = S.map idName $ directlyCalls i cg
+        gram = S.union (S.fromList $ core_funcs con) (S.map idName $ directlyCalls i cg)
 
     -- Take a guess at the definition of the function
     m <- gen relH gram re''
