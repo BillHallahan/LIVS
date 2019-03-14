@@ -1,6 +1,7 @@
 module LIVS.Target.JavaScript.Interface ( 
           JavaScriptREPL
         , jsLanguageEnv
+        , extractFileJavaScript
         , loadFileJavaScript
         , defJavaScript
         , callJavaScript
@@ -17,6 +18,7 @@ import LIVS.Language.Syntax
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
 import LIVS.Target.General.JSON
+import qualified LIVS.Target.JavaScript.Extract as Ext
 
 import Data.List
 
@@ -29,9 +31,17 @@ newtype JavaScriptREPL = JavaScriptREPL Process
 jsLanguageEnv :: IO (LanguageEnv IO)
 jsLanguageEnv = do
     js <- initJavaScriptREPL
-    return $ LanguageEnv { load = loadFileJavaScript js
+    return $ LanguageEnv { extract = extractFileJavaScript
+                         , load = loadFileJavaScript js
                          , def = defJavaScript js
                          , call = callJavaScript js }
+
+extractFileJavaScript :: FilePath -> IO [ (Id, [Id]) ]
+extractFileJavaScript fp = do
+    jsast <- Ext.parseJS fp
+    case jsast of
+        Left e -> error $ show e
+        Right jsast' -> return $ Ext.extractFunctions jsast'
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = runJavaScript js $ ".load " ++ p ++ "\n"
@@ -42,7 +52,9 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
     print $ toJavaScriptCall e
+    putStrLn "Before"
     r <- runAndReadJavaScript js (toJavaScriptCall e)
+    putStrLn "After"
     case parse json $ B.pack r of
       Fail _ _ _ -> error "Bad parse"
       Partial _ -> error "Why does this happen?"
@@ -57,12 +69,7 @@ runAndReadJavaScript :: JavaScriptREPL -> String -> IO String
 runAndReadJavaScript (JavaScriptREPL js) = runAndReadProcess js
 
 runJavaScript :: JavaScriptREPL -> String -> IO ()
-runJavaScript (JavaScriptREPL js) s = do
-    runProcess js s
-    -- JavaScript gives output even when just defining a function, so we clean that
-    -- up here
-    _ <- readProcess js
-    return ()
+runJavaScript (JavaScriptREPL js) s = runProcess js s
 
 closeJavaScript :: JavaScriptREPL -> IO ()
 closeJavaScript (JavaScriptREPL js) = closeProcess js "process.exit()\n"
@@ -89,8 +96,8 @@ toJavaScriptExpr e@(App _ _)
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = "(" ++ toJavaScriptExpr e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr e2 ++ ") "
     | otherwise = 
-        "console.log(" ++ toJavaScriptExpr (appCenter e) ++ " "
-            ++ (concat . intersperse " " . map toJavaScriptExpr $ appArgs e) ++ ") "
+        "console.log(" ++ toJavaScriptExpr (appCenter e) ++ "("
+            ++ (concat . intersperse ", " . map toJavaScriptExpr $ appArgs e) ++ ")) "
 toJavaScriptExpr (Let (i, b) e) =
     toJavaScriptId i ++ " = " ++ toJavaScriptExpr b ++ " in " ++ toJavaScriptExpr e
 

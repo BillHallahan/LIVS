@@ -52,7 +52,9 @@ getProcessHandles pr = do
 
 runAndReadProcess :: Process -> String -> IO String
 runAndReadProcess pr s = do
+    print "Before run"
     runProcess pr s
+    print "After run"
     readProcess pr
 
 runProcess :: Process -> String -> IO ()
@@ -61,6 +63,7 @@ runProcess (Process (h_in, _, _)) = hPutStr h_in
 readProcess :: Process -> IO String
 readProcess (Process (_, h_out, _)) = do
     r <- hWaitForInput h_out (-1)
+    print "After wait"
     if r then do
         out <- getChars h_out
         _ <- evaluate (length out)

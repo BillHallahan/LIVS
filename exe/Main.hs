@@ -2,12 +2,13 @@ module Main where
 
 import LIVS.Core.LIVS
 
-import qualified LIVS.Language.Heap as H
+import LIVS.Config.Config
 
 import LIVS.Interpreter.Interpreter
 
 import LIVS.Language.AST
 import LIVS.Language.CallGraph
+import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
@@ -16,85 +17,113 @@ import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.ToSygus
 
+import LIVS.Target.General.LanguageEnv
+import LIVS.Target.JavaScript.Interface
 import LIVS.Target.JavaScript.Extract
 import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
+import Control.Monad.Trans
+import System.Console.CmdArgs
+import System.Environment
 
 main :: IO ()
 main = do
-    jsast <- parseJS "target_files/JavaScript/math.js"
-    case jsast of
-        Left _ -> return ()
-        Right jsast' -> do
-            print $ extractFunctions jsast'
+    config <- cmdArgs livsConfig
 
-    let h = H.fromList [ (Name "add" Nothing, H.Def $ Lam 
-                                (Id (Name "x" Nothing) intType) 
-                                (Lam 
-                                    (Id (Name "y" Nothing) intType) 
-                                    (App 
-                                        (App 
-                                            (Var (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))))
-                                            (Var (Id (Name "y" Nothing) intType))
-                                        )
-                                        (Var (Id (Name "x" Nothing) intType))
-                                    )
-                                ))
-                        , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))]
-        cg = createCallGraph
-            [ (Id (Name "add" Nothing) (TyFun intType (TyFun intType intType)), [Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))])
-            , (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType)), []) ]
+    jsEnv <- jsLanguageEnv
 
-    let form = toSygus cg h examples
+    synth config jsEnv
 
-    putStrLn form
+synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
+synth config@(LIVSConfig { code_file = fp }) lenv = do
+    ids <- extract lenv fp
 
-    putStrLn ""
+    whenLoud (putStrLn "Verbose")
 
-    -- cvc4 <- getCVC4
-    -- putStrLn "Right before"
-    -- r <- runAndReadCVC4 cvc4 form
-    -- putStrLn "Right after"
+    let cg = createCallGraph ids
+        heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
 
-    r <- runCVC4WithFile form
 
-    putStrLn r
+    lr <- livsCVC4 (toLIVSConfigNames heap config) lenv fp cg heap
 
-    let l = lexSMT r
-    putStrLn $ show l
-
-    -- closeCVC4 cvc4
-
-    -- mapM_ (putStrLn . uncurry toPythonExpr) . H.toList $ H.filter H.isDef h
-    -- mapM_ (putStrLn . toPythonExpr "f") p
-
-    ocaml <- getOCaml
-    putStrLn "Got ocaml"
-
-    mapM_ (\(n, hObj) -> case hObj of
-                        H.Def e -> runOCaml ocaml $ toOCamlDef n e
-                        _ -> return ()) . H.toList $ H.filter H.isDefObj h
-    putStrLn "Ran ocaml"
-
-    -- print (OCaml.parse . OCaml.lexer $ r1)
-    -- putStrLn "Ran ocaml 2"
-    -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
-    -- print (OCaml.parse . OCaml.lexer $ r2)
-
-    let livsH = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                           , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                           , (Name "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
-                           , (Name ">=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
-                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
-
-    putStrLn "HERE"
-    ocamlEnv <- ocamlLanguageEnv
-    lr <- liftIO $ livsCVC4 ocamlEnv "target_files/OCaml/ints.ml" graph livsH
     print lr
 
-    res <- runCollectingExamples ocamlEnv 100 lr (mkNameGen []) (App (Var (Id (Name "abs4" Nothing) (TyFun intType intType))) (Lit (LInt (-4))))
-    print res
+
+
+    -- jsast <- parseJS "target_files/JavaScript/math.js"
+    -- case jsast of
+    --     Left _ -> return ()
+    --     Right jsast' -> do
+    --         print $ extractFunctions jsast'
+
+    -- let h = H.fromList [ (Name "add" Nothing, H.Def $ Lam 
+    --                             (Id (Name "x" Nothing) intType) 
+    --                             (Lam 
+    --                                 (Id (Name "y" Nothing) intType) 
+    --                                 (App 
+    --                                     (App 
+    --                                         (Var (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))))
+    --                                         (Var (Id (Name "y" Nothing) intType))
+    --                                     )
+    --                                     (Var (Id (Name "x" Nothing) intType))
+    --                                 )
+    --                             ))
+    --                     , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))]
+    --     cg = createCallGraph
+    --         [ (Id (Name "add" Nothing) (TyFun intType (TyFun intType intType)), [Id (Name "+" Nothing) (TyFun intType (TyFun intType intType))])
+    --         , (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType)), []) ]
+
+    -- let form = toSygus cg h examples
+
+    -- putStrLn form
+
+    -- putStrLn ""
+
+    -- -- cvc4 <- getCVC4
+    -- -- putStrLn "Right before"
+    -- -- r <- runAndReadCVC4 cvc4 form
+    -- -- putStrLn "Right after"
+
+    -- r <- runCVC4WithFile form
+
+    -- putStrLn r
+
+    -- let l = lexSMT r
+    -- putStrLn $ show l
+
+    -- -- closeCVC4 cvc4
+
+    -- -- mapM_ (putStrLn . uncurry toPythonExpr) . H.toList $ H.filter H.isDef h
+    -- -- mapM_ (putStrLn . toPythonExpr "f") p
+
+    -- ocaml <- getOCaml
+    -- putStrLn "Got ocaml"
+
+    -- mapM_ (\(n, hObj) -> case hObj of
+    --                     H.Def e -> runOCaml ocaml $ toOCamlDef n e
+    --                     _ -> return ()) . H.toList $ H.filter H.isDefObj h
+    -- putStrLn "Ran ocaml"
+
+    -- -- print (OCaml.parse . OCaml.lexer $ r1)
+    -- -- putStrLn "Ran ocaml 2"
+    -- -- r2 <- runAndReadOCaml ocaml ("add 2 3;;\n")
+    -- -- print (OCaml.parse . OCaml.lexer $ r2)
+
+    -- let livsH = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+    --                        , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+    --                        , (Name "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+    --                        , (Name ">=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+    --                        , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
+
+    -- putStrLn "HERE"
+    -- ocamlEnv <- ocamlLanguageEnv
+    -- lr <- liftIO $ livsCVC4 ocamlEnv "target_files/OCaml/ints.ml" graph livsH
+    -- print lr
+
+    -- res <- runCollectingExamples ocamlEnv 100 lr (mkNameGen []) (App (Var (Id (Name "abs4" Nothing) (TyFun intType intType))) (Lit (LInt (-4))))
+    -- print res
 
     -- python <- getPython
     -- putStrLn "Got python"

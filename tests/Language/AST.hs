@@ -15,7 +15,8 @@ astTests = testGroup "AST" [ children1
                            , children3
                            , children4
                            , children5
-                           , children6 ]
+                           , children6
+                           , children7 ]
 
 data E = M (Maybe E)
        | EitherE (Either E E)

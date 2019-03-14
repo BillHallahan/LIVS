@@ -11,6 +11,7 @@ module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
 
 import LIVS.Language.AST
 import LIVS.Language.Syntax
+import LIVS.Language.Typing
 
 import Language.JavaScript.Parser
 import Language.JavaScript.Parser.AST
@@ -35,20 +36,12 @@ extractCalledFunctionsStmt :: ASTContainer c JSStatement => c -> [Id]
 extractCalledFunctionsStmt = evalASTs extractCalledFunctionsStmt'
 
 extractCalledFunctionsStmt' :: JSStatement -> [Id]
--- extractCalledFunctionsStmt' (JSMethodCall e _ args _ _) =
---     case jsExpressionToName e of
---         Just n -> [nameCLToId n args]
---         Nothing -> [] 
 extractCalledFunctionsStmt' _ = []
 
 extractCalledFunctionsExpr :: ASTContainer c JSExpression => c -> [Id]
 extractCalledFunctionsExpr = evalASTs extractCalledFunctionsExpr'
 
 extractCalledFunctionsExpr' :: JSExpression -> [Id]
--- extractCalledFunctionsExpr' (JSCallExpression e _ args _) =
---     case jsExpressionToName e of
---         Just n -> [nameCLToId n args]
---         Nothing -> []
 extractCalledFunctionsExpr' (JSMemberExpression e _ args _) =
     case jsExpressionToName e of
         Just n -> [nameCLToId n args]
@@ -58,7 +51,7 @@ extractCalledFunctionsExpr' _ = []
 nameCLToId :: Name -> JSCommaList a -> Id
 nameCLToId n args =
     let
-        jsident = TyCon (Name "JSIdentifier" Nothing) TYPE
+        jsident = intType -- TyCon (Name "JSIdentifier" Nothing) TYPE
         t = foldr TyFun jsident $ replicate (commaListLength args) jsident
     in
     Id n t
