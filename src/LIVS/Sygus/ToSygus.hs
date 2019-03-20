@@ -6,6 +6,7 @@ import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as HM
@@ -16,31 +17,44 @@ import Data.Maybe
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
-toSygus :: CallGraph -> H.Heap -> [Example] -> String
-toSygus cg h = toSygusWithGrammar cg h (HS.fromList $ H.keys h)
+toSygus :: CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> String
+toSygus cg h tenv = toSygusWithGrammar cg h tenv (HS.fromList $ H.keys h)
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis. The passed Name's restricts the grammar to only
 -- directly use the names in the Set.
-toSygusWithGrammar :: CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> String
-toSygusWithGrammar cg h hsr es =
+toSygusWithGrammar :: CallGraph
+                   -> H.Heap
+                   -> T.TypeEnv
+                   -> HS.HashSet Name
+                   -> [Example]
+                   -> String
+toSygusWithGrammar cg h tenv hsr es =
     let
+        tspec = toSygusTypeEnv tenv
+
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
         post = map idName $ postOrderList cg
         h' = H.mapWithKeyDefs' toSygusFunExpr h
-        hf = concat . intersperse "\n" $ mapMaybe (flip HM.lookup h') post
+        hf = intercalate "\n" $ mapMaybe (flip HM.lookup h') post
 
         ls = map LInt [0..2]
 
+        -- We narrow the heap to the allowable functions that are directly
+        -- used in the function definition, but add selector functions and
+        -- data constructors, to allow types to be passed between different
+        -- sorts of data constructors
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
-        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n ls it ot) fs
+        hr' = T.mergeConstructors tenv hr
+        hr'' = T.mergeSelectors tenv hr'
+        fspec = concatMap (\(n, it, ot) -> genSynthFun hr'' n ls it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
-    "(set-logic SLIA)\n" ++ hf ++ "\n" ++ fspec ++ "\n"
+    "(set-logic SLIA)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n"
         ++ constraints ++ "\n(check-synth)"
 
 toSygusExample :: Example -> String
@@ -72,6 +86,7 @@ toSygusExpr (Let (i, b) e) =
 toSygusVal :: Val -> String
 toSygusVal (DataVal dc) = toSygusDC dc
 toSygusVal (LitVal dc) = toSygusLit dc
+toSygusVal (AppVal v1 v2) = "(" ++ toSygusVal v1 ++ " " ++ toSygusVal v2 ++ ")"
 
 toSygusDC :: DC -> String
 toSygusDC (DC n _) = nameToString n
@@ -106,7 +121,8 @@ genSynthFun h n ls it ot =
 
         vs' = map (uncurry Id) $ zip vs it
 
-        sit = concatMap (\(i, t) -> "(" ++ nameToString (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
+        sit = concatMap (\(i, t) -> 
+            "(" ++ nameToString (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
 
         rts = nub . map returnType $ H.elems h
@@ -156,3 +172,22 @@ sygusGrammar' t =
 typeSymbol :: Type -> String
 typeSymbol (TyCon n _) = "nt" ++ nameToString n
 typeSymbol _ = error $ "typeSymbol: Bad type."
+
+toSygusTypeEnv :: T.TypeEnv -> String
+toSygusTypeEnv = intercalate " " . map (uncurry toSygusTypeEnv') . T.toList
+
+toSygusTypeEnv' :: Name -> T.ADTSpec -> String
+toSygusTypeEnv' n (T.ADTSpec ts) =
+    let
+        ts' = intercalate " " $ map (toSygusSelectorDC) ts
+    in
+    "(declare-datatype " ++ nameToString n ++ " (" ++ ts' ++ "))" 
+
+toSygusSelectorDC :: T.SelectorDC -> String
+toSygusSelectorDC (T.SelectorDC n nt) =
+    "(" ++ nameToString n ++ " "
+        ++ intercalate " " (map toSygusNamedType nt) ++ ")"
+
+toSygusNamedType :: T.NamedType -> String
+toSygusNamedType (T.NamedType n t) =
+    "(" ++ nameToString n ++ " " ++ toSygusType t ++ ")"

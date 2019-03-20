@@ -11,6 +11,7 @@ import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 
 import LIVS.Sygus.CVC4Interface
@@ -20,6 +21,7 @@ import LIVS.Sygus.ToSygus
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.JavaScript.Interface
 import LIVS.Target.JavaScript.Extract
+import LIVS.Target.JavaScript.JSIdentifier
 import LIVS.Target.OCaml.Interface
 
 import Control.Monad.IO.Class
@@ -59,7 +61,18 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     print $ core_funcs config'
 
-    lr <- livsCVC4 config' lenv fp cg heap
+    -- let tenv = T.fromList
+    --                 [ ( Name "IntList" Nothing
+    --                   , T.ADTSpec [ T.SelectorDC (Name "Nil" Nothing) []
+    --                               , T.SelectorDC (Name "Cons" Nothing)
+    --                                 [ T.NamedType (Name "val" Nothing) (TyCon (Name "Int" Nothing) TYPE)
+    --                                 , T.NamedType (Name "xs" Nothing) (TyCon (Name "IntList" Nothing) TYPE)]
+    --                               ]
+    --                   )
+    --                 ]
+    let tenv = jsTypeEnv
+
+    lr <- livsCVC4 config' lenv fp cg heap tenv
 
     print lr
 

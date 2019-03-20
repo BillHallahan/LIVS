@@ -14,6 +14,7 @@ import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
 import LIVS.Sygus.ToSygus
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
@@ -22,12 +23,12 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => CallGraph -> H.Heap -> [Example] -> m Result
-runSygus cg h = runSygusWithGrammar cg h (HS.fromList $ H.keys h)
+runSygus :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m Result
+runSygus cg h tenv = runSygusWithGrammar cg h tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar cg h hsr es = do
-    let form = toSygusWithGrammar cg h hsr es
+runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar cg h tenv hsr es = do
+    let form = toSygusWithGrammar cg h tenv hsr es
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
     return . parseSMT (H.map' typeOf h) . lexSMT $ m

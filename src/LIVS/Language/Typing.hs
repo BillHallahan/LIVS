@@ -31,6 +31,10 @@ instance Typed Expr where
 instance Typed Val where
     typeOf (DataVal dc) = typeOf dc
     typeOf (LitVal l) = typeOf l
+    typeOf a@(AppVal v1 _) =
+        case typeOf v1 of
+            TyFun _ t2 -> t2
+            _ -> error $ "Bad type." ++ show a
 
 instance Typed Lit where
     typeOf (LInt _) = intType

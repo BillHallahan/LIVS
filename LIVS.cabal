@@ -25,6 +25,7 @@ library
                        , LIVS.Language.Heap
                        , LIVS.Language.Naming
                        , LIVS.Language.Syntax
+                       , LIVS.Language.TypeEnv
                        , LIVS.Language.Typing
                        , LIVS.Language.Monad.Heap
                        , LIVS.Language.Monad.Naming
@@ -40,6 +41,7 @@ library
                        , LIVS.Target.General.JSON
                        , LIVS.Target.JavaScript.Extract
                        , LIVS.Target.JavaScript.Interface
+                       , LIVS.Target.JavaScript.JSIdentifier
                        , LIVS.Target.OCaml.Interface
                        , LIVS.Target.OCaml.LexerCL
                        , LIVS.Target.OCaml.ParserCL

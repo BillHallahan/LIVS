@@ -16,6 +16,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , exprToVal
                             , valToExpr
                             , isVal
+                            , mkAppVal
 
                             , idName
                             , funcName
@@ -60,6 +61,7 @@ instance Hashable Expr
 
 data Val = DataVal DC
          | LitVal Lit
+         | AppVal Val Val
          deriving (Eq, Show, Read, Generic)
 
 instance Hashable Val
@@ -67,14 +69,22 @@ instance Hashable Val
 exprToVal :: Expr -> Maybe Val
 exprToVal (Data dc) = Just $ DataVal dc
 exprToVal (Lit l) = Just $ LitVal l
+exprToVal (App e1 e2) = do
+    v1 <- exprToVal e1
+    v2 <- exprToVal e2
+    return $ AppVal v1 v2
 exprToVal _ = Nothing
 
 valToExpr :: Val -> Expr
 valToExpr (DataVal dc) = Data dc
 valToExpr (LitVal l) = Lit l
+valToExpr (AppVal v1 v2) = App (valToExpr v1) (valToExpr v2)
 
 isVal :: Expr -> Bool
 isVal = isJust . exprToVal
+
+mkAppVal :: [Val] -> Val
+mkAppVal = foldl1 AppVal
 
 type Binding = (Id, Expr)
 

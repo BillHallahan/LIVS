@@ -14,6 +14,7 @@ import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.Result
@@ -25,21 +26,22 @@ import qualified Data.HashSet as S
 import Data.List
 
 -- Generates code satisfying a set of examples
-type Gen m = H.Heap -> S.HashSet Name -> [Example] -> m Result
+type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
 -- Generates (typically random) inputs to a function
 type Fuzz m = LanguageEnv m 
+           -> T.TypeEnv
            -> Int -- ^ How many examples to fuzz
            -> Id -- ^ A function call
            -> m [Example]
 
 livsCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> m H.Heap
+         => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
 livsCVC4 con le fp cg = livs con le (runSygusWithGrammar cg) fp cg
 
 livs :: (MonadIO m, MonadRandom m)
-     => LIVSConfigNames -> LanguageEnv m -> Gen m -> FilePath -> CallGraph -> H.Heap -> m H.Heap
-livs con le gen fp cg h = do
+     => LIVSConfigNames -> LanguageEnv m -> Gen m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+livs con le gen fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
     -- This is always possible, except in the case of mutual recursion, which we
@@ -47,29 +49,29 @@ livs con le gen fp cg h = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le gen cg [] h ord
+    livs' con le gen cg [] tenv h ord
 
 livs' :: (MonadIO m, MonadRandom m) => 
-        LIVSConfigNames -> LanguageEnv m -> Gen m -> CallGraph -> [Example] -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ _ h [] = return h
-livs' con le gen cg es h (i:is) = do
+        LIVSConfigNames -> LanguageEnv m -> Gen m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ _ _ h [] = return h
+livs' con le gen cg es tenv h (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
-    (h', es', is') <- livsStep con le gen fuzzExamplesM cg es h i
-    livs' con le gen cg es' h' (is' ++ is)
+    (h', es', is') <- livsStep con le gen fuzzExamplesM cg es tenv h i
+    livs' con le gen cg es' tenv h' (is' ++ is)
 
 livsStep :: Monad m => 
-        LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
-livsStep con le gen fuzz cg es h i@(Id n _) = do
+        LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
+livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- fuzz le 2 i
+    re' <- fuzz le tenv 2 i
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
         gram = S.union (S.fromList $ core_funcs con) (S.map idName $ directlyCalls i cg)
 
     -- Take a guess at the definition of the function
-    m <- gen relH gram re''
+    m <- gen relH tenv gram re''
 
     case m of
         Sat m' -> do

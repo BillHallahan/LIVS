@@ -86,7 +86,7 @@ toJavaScriptCall e = toJavaScriptExpr e ++ ";\n"
 
 toJavaScriptExpr :: Expr -> String
 toJavaScriptExpr (Var i) = toJavaScriptId i
-toJavaScriptExpr (Data (DC n _)) = nameToString n
+toJavaScriptExpr (Data (DC n _)) = ""
 toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"
 toJavaScriptExpr e@(App _ _)
