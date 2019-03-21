@@ -1,5 +1,5 @@
 function firstWord(word) {
-  return word.substring(0, word.indexOf(0));
+  return word.substring(0, word.indexOf(" ",0));
 }
 
 function replaceAll(target, search, replace) {

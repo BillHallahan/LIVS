@@ -1,17 +1,14 @@
 (set-logic SLIA)
 
-(define-fun firstWord  ((s String)) String (str.substr s 0 (str.indexof s " " 1)))
-(define-fun replaceAll ((s String) (o String) (n String)) String (str.replace (str.replace s o n) o n))
+; (define-fun firstWord  ((s String)) String (str.substr s 0 (str.indexof s " " 1)))
 
 (synth-fun f ((name String)) String
     ((Start String (ntString))
-     (ntString String (name "Hey"
+     (ntString String (name " "
                        (str.++ ntString ntString)
                        (str.replace ntString ntString ntString)
                        (str.at ntString ntInt)
                        (int.to.str ntInt)
-                       (firstWord ntString)
-                       (replaceAll ntString ntString ntString)
                        (str.substr ntString ntInt ntInt)))
       (ntInt Int (0 1
                   (+ ntInt ntInt)
@@ -27,8 +24,8 @@
 
 (declare-var name String)
  
-(constraint (= (f "Hello World Hello") "Hey World Hey"))
-(constraint (= (f "Hello Moon") "Hey Moon"))
+(constraint (= (f "Hello World Hello") "Hello"))
+(constraint (= (f "Hello Moon") "Hello"))
  
 (check-synth)
 
