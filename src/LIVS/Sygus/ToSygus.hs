@@ -93,6 +93,7 @@ toSygusDC (DC n _) = nameToString n
 
 toSygusLit :: Lit -> String
 toSygusLit (LInt i) = show i
+toSygusLit (LString s) = show s
 
 toSygusType :: Type -> String
 toSygusType (TyCon n _) = nameToString n

@@ -1,6 +1,7 @@
 module LIVS.Language.Typing ( Typed (..)
                             , PresType (..)
                             , intType
+                            , stringType
                             , boolType
                             , exampleFuncType
 
@@ -38,6 +39,7 @@ instance Typed Val where
 
 instance Typed Lit where
     typeOf (LInt _) = intType
+    typeOf (LString _) = stringType
 
 instance Typed DC where
     typeOf (DC _ t) = t
@@ -54,6 +56,9 @@ instance Typed PresType where
 
 intType :: Type
 intType = TyCon (Name "Int" Nothing) TYPE
+
+stringType :: Type
+stringType = TyCon (Name "String" Nothing) TYPE
 
 boolType :: Type
 boolType = TyCon (Name "Bool" Nothing) TYPE

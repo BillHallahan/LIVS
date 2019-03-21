@@ -54,10 +54,19 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
     r <- runAndReadJavaScript js (toJavaScriptCall e)
-    case parse json $ B.pack r of
-      Fail _ _ _ -> error "Bad parse"
+    print $ toJavaScriptCall e
+    print r
+
+    case parse json $ B.pack $ map repSnglWithDbl r of
+      Fail i _ err -> error $ "Bad parse\n" ++ show i ++ "\n" ++ err
       Partial _ -> error "Why does this happen?"
       Done _ v -> return $ toValue v
+    where
+        -- | JavaScript outputs JSON with single quotes, but Aeson
+        -- expects double quotes
+        repSnglWithDbl '\'' = '\"'
+        repSnglWithDbl c = c
+
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do
@@ -86,7 +95,10 @@ toJavaScriptCall e = toJavaScriptExpr e ++ ";\n"
 
 toJavaScriptExpr :: Expr -> String
 toJavaScriptExpr (Var i) = toJavaScriptId i
-toJavaScriptExpr (Data (DC n _)) = ""
+toJavaScriptExpr (Data dc)
+    | dc == trueDC = "true"
+    | dc == falseDC = "false"
+    | otherwise = ""
 toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"
 toJavaScriptExpr e@(App _ _)
@@ -105,6 +117,7 @@ toJavaScriptId (Id n _) = nameToString n
 
 toJavaScriptLit :: Lit -> String
 toJavaScriptLit (LInt i) = show i
+toJavaScriptLit (LString s) = show s
 
 operators :: [Name]
 operators = [ Name "+" Nothing

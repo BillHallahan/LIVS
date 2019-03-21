@@ -52,7 +52,6 @@ extractCalledFunctionsExpr' _ = []
 nameCLToId :: Name -> JSCommaList a -> Id
 nameCLToId n args =
     let
-        -- jsident = intType
         jsident = jsIdentType
         t = foldr TyFun jsident $ replicate (commaListLength args) jsident
     in

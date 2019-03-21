@@ -13,13 +13,39 @@ jsIdentType = TyCon (jsIdentName) TYPE
 jsIntDCName :: Name
 jsIntDCName = Name "JSInt" Nothing
 
+jsIntDC :: DC
+jsIntDC = DC jsIntDCName (TyFun intType jsIdentType)
+
 jsIntSelectorName :: Name
 jsIntSelectorName = Name "jsInt" Nothing
+
+jsStringDCName :: Name
+jsStringDCName = Name "JSString" Nothing
+
+jsStringDC :: DC
+jsStringDC = DC jsStringDCName (TyFun stringType jsIdentType)
+
+jsStringSelectorName :: Name
+jsStringSelectorName = Name "jsString" Nothing
+
+jsBoolDCName :: Name
+jsBoolDCName = Name "JSBool" Nothing
+
+jsBoolDC :: DC
+jsBoolDC = DC jsBoolDCName (TyFun boolType jsIdentType)
+
+jsBoolSelectorName :: Name
+jsBoolSelectorName = Name "jsBool" Nothing
 
 jsTypeEnv :: T.TypeEnv
 jsTypeEnv = T.fromList
     [ ( jsIdentName
       , T.ADTSpec
-            [ T.SelectorDC jsIntDCName [ T.NamedType jsIntSelectorName intType ] ]
+            [ T.SelectorDC jsIntDCName [ T.NamedType jsIntSelectorName intType ]
+            , T.SelectorDC jsStringDCName
+                [ T.NamedType jsStringSelectorName stringType ]
+            , T.SelectorDC jsBoolDCName
+                [ T.NamedType jsBoolSelectorName boolType ]
+            ]
       )
     ]

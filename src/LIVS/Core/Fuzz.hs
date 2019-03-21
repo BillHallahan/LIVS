@@ -38,6 +38,8 @@ fuzzExampleM ca tenv i = do
 fuzzValM :: MonadRandom m => T.TypeEnv -> Type -> m Val
 fuzzValM tenv t
     | t == intType = return . LitVal . LInt =<< getRandomR (-100 * 100, 100 * 100)
+    | t == stringType = return . LitVal . LString =<< randomString
+    | t == boolType = fromListConst [DataVal trueDC, DataVal falseDC]
     | TyCon n _ <- t
     , Just specs <- T.lookup n tenv = do
         sel@(T.SelectorDC _ nt) <- fromListConst $ T.selectors specs
@@ -49,6 +51,11 @@ fuzzValM tenv t
 
         return $ mkAppVal (DataVal dc:vs)
     | otherwise = error "fuzz: We cannot fuzz values of the given type."
+
+randomString :: MonadRandom m => m String
+randomString = do
+    n <- getRandomR (0, 4)
+    return . take n =<< getRandoms
 
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
