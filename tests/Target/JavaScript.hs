@@ -2,6 +2,7 @@ module Target.JavaScript (javascriptTests) where
 
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.JavaScript.Interface
+import LIVS.Target.JavaScript.JSIdentifier
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
@@ -18,7 +19,7 @@ run = do
     v <- callConstFxn 
     return $ testCase "Run JS Test 1"
               $ assertBool "Correct run1" 
-                (v == LitVal (LInt 3))
+                (v == AppVal (DataVal jsIntDC) (LitVal (LInt 3)))
 
 callConstFxn :: IO Val
 callConstFxn = do
