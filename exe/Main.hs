@@ -55,7 +55,10 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let cg = createCallGraph ids
         heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType)) ]
+                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
+                          , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
+                          , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType) ]
 
     let config' = toLIVSConfigNames heap config
 

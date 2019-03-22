@@ -13,9 +13,12 @@ module LIVS.Language.TypeEnv ( TypeEnv
                              , selectorDCToDC
 
                              , mergeConstructors
-                             , mergeSelectors ) where
+                             , mergeSelectorsAndTesters
+                             , mergeSelectors
+                             , mergeTesters ) where
 
 import qualified LIVS.Language.Heap as H
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
@@ -84,6 +87,9 @@ mergeConstructors tenv h =
             case selectorDCToDC n sel of
                 DC n t -> H.insertPrimitive n t
 
+mergeSelectorsAndTesters :: TypeEnv -> H.Heap -> H.Heap
+mergeSelectorsAndTesters tenv = mergeSelectors tenv . mergeTesters tenv
+
 -- | Merges the selectors from a TypeEnv into a Heap, as Primitives
 mergeSelectors :: TypeEnv -> H.Heap -> H.Heap
 mergeSelectors tenv h =
@@ -102,3 +108,22 @@ mergeSelectors tenv h =
                 ins_names_tys = map (\(NamedType n' t') -> (n', TyFun t t')) nt
             in
             foldr (uncurry H.insertPrimitive) h' ins_names_tys
+
+mergeTesters :: TypeEnv -> H.Heap -> H.Heap
+mergeTesters tenv h =
+    let
+        sels = map (\(n, spec) -> (n, selectors spec)) $ toList tenv
+    in
+    foldr (uncurry mergeTester) h sels
+    where
+        mergeTester  :: Name -> [SelectorDC] -> H.Heap -> H.Heap
+        mergeTester n sels h' = foldr (mergeTester' n) h' sels
+
+        mergeTester' :: Name -> SelectorDC -> H.Heap -> H.Heap
+        mergeTester' tn (SelectorDC dcn _) h' =
+            let
+                t = TyCon tn TYPE
+                ins_name = Name ("is" ++ nameToString dcn) Nothing
+                func_ty = TyFun t boolType
+            in
+            H.insertPrimitive ins_name func_ty  h'

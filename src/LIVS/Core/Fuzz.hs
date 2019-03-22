@@ -55,7 +55,7 @@ fuzzValM tenv t
 randomString :: MonadRandom m => m String
 randomString = do
     n <- getRandomR (0, 4)
-    return . take n =<< getRandoms
+    return . take n =<< getRandomRs ('a','z')
 
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))

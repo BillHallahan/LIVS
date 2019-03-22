@@ -55,7 +55,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
         findName s = find (\(Name n _) -> n == s) ns
 
 coreFuncs :: [String]
-coreFuncs = ["+", "*"]
+coreFuncs = ["+", "*", "ite", "int.to.str", "str.++"]
 
 class Monad m => LIVSConfigMonad m cf where
     askConfig :: m (LIVSConfig cf)

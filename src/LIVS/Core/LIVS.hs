@@ -59,7 +59,7 @@ livs' con le gen cg es tenv h (i:is) = do
     (h', es', is') <- livsStep con le gen fuzzExamplesM cg es tenv h i
     livs' con le gen cg es' tenv h' (is' ++ is)
 
-livsStep :: Monad m => 
+livsStep :: MonadIO m => 
         LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
 livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
     -- Get examples
@@ -78,6 +78,8 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
             let r = case HM.lookup n m' of
                     Just r' -> r'
                     Nothing -> error "livs': No function definition found."
+
+            liftIO $ whenLoud (putStrLn $ "Synthesized " ++ show r)
 
             let h' = H.insertDef n r h
 

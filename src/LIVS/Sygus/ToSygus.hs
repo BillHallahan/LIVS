@@ -49,7 +49,7 @@ toSygusWithGrammar cg h tenv hsr es =
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
         hr' = T.mergeConstructors tenv hr
-        hr'' = T.mergeSelectors tenv hr'
+        hr'' = T.mergeSelectorsAndTesters tenv hr'
         fspec = concatMap (\(n, it, ot) -> genSynthFun hr'' n ls it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
@@ -181,8 +181,9 @@ toSygusTypeEnv' :: Name -> T.ADTSpec -> String
 toSygusTypeEnv' n (T.ADTSpec ts) =
     let
         ts' = intercalate " " $ map (toSygusSelectorDC) ts
+        testers = intercalate "\n" $ map (toSygusTesters n) ts
     in
-    "(declare-datatype " ++ nameToString n ++ " (" ++ ts' ++ "))" 
+    "(declare-datatype " ++ nameToString n ++ " (" ++ ts' ++ "))\n" ++ testers
 
 toSygusSelectorDC :: T.SelectorDC -> String
 toSygusSelectorDC (T.SelectorDC n nt) =
@@ -192,3 +193,11 @@ toSygusSelectorDC (T.SelectorDC n nt) =
 toSygusNamedType :: T.NamedType -> String
 toSygusNamedType (T.NamedType n t) =
     "(" ++ nameToString n ++ " " ++ toSygusType t ++ ")"
+
+toSygusTesters :: Name -> T.SelectorDC -> String
+toSygusTesters tn (T.SelectorDC n _) =
+   toSygusTester tn n
+
+toSygusTester :: Name -> Name -> String
+toSygusTester tn dcn = 
+    "(define-fun is" ++ nameToString dcn ++ " ((i " ++ nameToString tn ++ ")) Bool ((_ is " ++ nameToString dcn ++ ") i))"
