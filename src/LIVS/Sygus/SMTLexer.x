@@ -17,7 +17,7 @@ tokens:-
     define\-fun                                         { const TokenDefineFun }
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
-    [$alpha $symbs] [$alpha $digit $symbs \_ \']*       { TokenName }
+    [$alpha $symbs] [$alpha $digit $symbs \. \_ \']*    { TokenName }
     $digit+                                             { TokenInt . read }
 
 {
