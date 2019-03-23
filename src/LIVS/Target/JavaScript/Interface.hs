@@ -19,6 +19,7 @@ import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
 import LIVS.Target.General.JSON
 import qualified LIVS.Target.JavaScript.Extract as Ext
+import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
 
@@ -58,7 +59,9 @@ callJavaScript js e = do
     print r
 
     case parse json $ B.pack $ map repSnglWithDbl r of
-      Fail i _ err -> error $ "Bad parse\n" ++ show i ++ "\n" ++ err
+      Fail _ _ _
+        | 'N':'a':'N':_ <- r -> return $ DataVal jsNaNDC
+      Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
       Partial _ -> error "Why does this happen?"
       Done _ v -> return $ toValue v
     where
@@ -98,6 +101,7 @@ toJavaScriptExpr (Var i) = toJavaScriptId i
 toJavaScriptExpr (Data dc)
     | dc == trueDC = "true"
     | dc == falseDC = "false"
+    | dc == jsNaNDC = "NaN"
     | otherwise = ""
 toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"

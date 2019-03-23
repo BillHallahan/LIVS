@@ -54,7 +54,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     whenLoud (putStrLn "Verbose")
 
     let cg = createCallGraph ids
-        heap = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+        heap = H.fromList [ (Name "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
+                          , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
                           , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))

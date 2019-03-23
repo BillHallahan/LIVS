@@ -37,6 +37,12 @@ jsBoolDC = DC jsBoolDCName (TyFun boolType jsIdentType)
 jsBoolSelectorName :: Name
 jsBoolSelectorName = Name "jsBool" Nothing
 
+jsNaNDCName :: Name
+jsNaNDCName = Name "NaN" Nothing
+
+jsNaNDC :: DC
+jsNaNDC = DC jsNaNDCName jsIdentType
+
 jsTypeEnv :: T.TypeEnv
 jsTypeEnv = T.fromList
     [ ( jsIdentName
@@ -46,6 +52,7 @@ jsTypeEnv = T.fromList
                 [ T.NamedType jsStringSelectorName stringType ]
             , T.SelectorDC jsBoolDCName
                 [ T.NamedType jsBoolSelectorName boolType ]
+            , T.SelectorDC jsNaNDCName []
             ]
       )
     ]
