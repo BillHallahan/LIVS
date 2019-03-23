@@ -140,10 +140,14 @@ runStepM _ lam_e@(Lam i e) = do
             return e
         Just (Bind _ _) -> error "runStepM: bind to Lam"
         _ -> return lam_e
-runStepM _ a@(App _ _) = do
-    let (f:es) = unApp a    
+runStepM _ a@(App _ _)
+    | f:es <- unApp a 
+    , notData f = do
     mapM_ (pushM . ApplyFrame) $ reverse es
     return f
+    where
+        notData (Data _) = False
+        notData _ = True
 runStepM _ (Let (i, e) e') = do
     pushM (Bind i e')
     return e
@@ -153,7 +157,9 @@ runStepM _ e = do -- We have a value
         Just (Bind i e') -> do
             insertDefH (idName i) e
             return e'
-        Just (ApplyFrame _) -> error "runStepM: application to val"
+        Just (ApplyFrame e')
+            | Data _:_ <- unApp e -> return $ App e e'
+        Just (ApplyFrame _) -> error "runStepM: application to non-DataCon val"
         _ -> return e
 
 popArgs :: StackMonad Frame m => Int -> m (Maybe [Expr])
