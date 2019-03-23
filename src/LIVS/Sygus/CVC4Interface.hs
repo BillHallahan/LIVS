@@ -1,6 +1,7 @@
 module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runSygus
                                 , runSygusWithGrammar
+                                , runCVC4OnString
                                 , runCVC4WithFile
 
                                 , getCVC4
@@ -19,6 +20,7 @@ import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
 import Control.Monad.IO.Class
+import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
@@ -32,6 +34,13 @@ runSygusWithGrammar cg h tenv hsr es = do
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form
     return . parseSMT (H.map' typeOf h) . lexSMT $ m
+
+runCVC4OnString :: MonadIO m => String -> m Result
+runCVC4OnString s = do
+    liftIO $ putStrLn s
+    m <- liftIO $ runCVC4WithFile s
+    return . parseSMT (M.empty) . lexSMT $ m
+
 
 runCVC4WithFile :: String -- SyGuS
                 -> IO String

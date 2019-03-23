@@ -56,7 +56,7 @@ livsSatCheckIncorrect2 = testCase "livsSatCheckIncorrect Test 2"
 -- identify needed examples and which functions to resynthesize 
 livsSatCheckIncorrect1_2 :: ([Example], [Id])
 livsSatCheckIncorrect1_2 =
-    runIdentity (livsSatCheckIncorrect (langEnvInterpFallBack correctHeap)
+    runIdentity (livsSatCheckIncorrect (langEnvInterpFallBack correctHeap) (callPrimExprM correctHeap)
                                             callGraphAbsC [] h exs)
     where
         callGraphAbsC = createCallGraph $ [(f, [ abs2 ]), (g, [abs2])]

@@ -1,5 +1,8 @@
 module LIVS.Sygus.ToSygus ( toSygus 
-                          , toSygusWithGrammar) where
+                          , toSygusWithGrammar
+                          , toSygusFunExpr
+                          , toSygusExpr
+                          , toSygusType) where
 
 import LIVS.Language.CallGraph
 import LIVS.Language.Expr

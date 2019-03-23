@@ -83,7 +83,7 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
 
             let h' = H.insertDef n r h
 
-            (es', is') <- livsSatCheckIncorrect le cg  (nub $ re'' ++ es) h' re''
+            (es', is') <- livsSatCheckIncorrect le evalPrimitive cg  (nub $ re'' ++ es) h' re''
             return (h', es', is')
 
 
@@ -93,11 +93,11 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
 
 -- | Takes a list of examples, and determines which functions (if any) need to
 -- be resynthesized, and which new examples should be used when doing so.
-livsSatCheckIncorrect :: Monad m => LanguageEnv m -> CallGraph -> [Example] -> H.Heap -> [Example] -> m ([Example], [Id])
-livsSatCheckIncorrect le cg es h exs = do
+livsSatCheckIncorrect :: Monad m => LanguageEnv m -> EvalPrimitive m -> CallGraph -> [Example] -> H.Heap -> [Example] -> m ([Example], [Id])
+livsSatCheckIncorrect le ep cg es h exs = do
     -- Run the example inputs in the interpreter, collecting the suspect
     -- examples from function calls
-    let runCollecting = runCollectingExamples le 1000 h (mkNameGen [])
+    let runCollecting = runCollectingExamples ep 1000 h (mkNameGen [])
     rs <- mapM (runCollecting) $ map exampleFuncCall exs
 
     -- Figure out which suspect function calls are actually incorrect.

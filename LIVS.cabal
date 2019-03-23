@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:       LIVS.Config.Config
+                       , LIVS.Interpreter.EvalPrimitive
                        , LIVS.Interpreter.Interpreter
                        , LIVS.Interpreter.Stack
                        , LIVS.Language.AST
