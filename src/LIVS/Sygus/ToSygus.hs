@@ -161,16 +161,19 @@ sygusGrammar t@(TyCon n _) h ls vs =
     ++ concat (intersperse " " vs') ++ "\n"
     ++ sc
     ++ "))"
-sygusGrammar _ _ _ _ = error $ "sygusGrammar: Bad type."
+sygusGrammar t _ _ _ = error $ "sygusGrammar: Bad type." ++ show t
 
 sygusGrammar' :: Type -> H.Heap -> String
 sygusGrammar' t =
     concat . H.mapWithKey'
         (\n e -> 
             let
-                ts = concat . intersperse " " . map typeSymbol $ argTypes e
+                at = argTypes e
+                ts = concat . intersperse " " $ map typeSymbol at
             in
-            "(" ++ nameToString n ++ " " ++ ts ++ ")\n")
+            case at of
+                [] -> nameToString n ++ "\n"
+                _ -> "(" ++ nameToString n ++ " " ++ ts ++ ")\n")
         . H.filter (\e -> t == returnType e)
 
 typeSymbol :: Type -> String

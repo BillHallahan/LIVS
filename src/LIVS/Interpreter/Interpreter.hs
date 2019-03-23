@@ -43,13 +43,11 @@ getEnv a = lift . lift $ lift a
 
 run :: Monad m => EvalPrimitive m -> Int -> H.Heap -> NameGen -> Expr ->  m Expr
 run ep n h ng e = do
-    -- let le' = liftLanguageEnv getEnv le
     let ep' = liftEvalPrimitive getEnv ep
     runEnv h ng empty (runM ep' n e)
 
 runCollectingExamples :: Monad m => EvalPrimitive m -> Int -> H.Heap -> NameGen -> Expr -> m (Expr, [SuspectExample])
 runCollectingExamples ep n h ng e = do
-    -- let le' = liftLanguageEnv getEnv le
     let ep' = liftEvalPrimitive getEnv ep
     runEnv h ng empty (runCollectingExamplesM ep' n e)
 
@@ -129,7 +127,6 @@ runStepM ep v@(Var (Id n _)) = do
                     ars'' <- mapM redArgs ars'
                     let e = mkApp (v:ars'')
                     ep e
-                    -- return . valToExpr =<< call le e
                 Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
 runStepM _ lam_e@(Lam i e) = do

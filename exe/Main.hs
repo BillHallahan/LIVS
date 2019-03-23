@@ -59,7 +59,10 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
                           , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
-                          , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType) ]
+                          , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
+                          , (Name "\"true\"" Nothing, H.Primitive $ stringType)
+                          , (Name "\"false\"" Nothing, H.Primitive $ stringType)
+                          , (Name "\"NaN\"" Nothing, H.Primitive $ stringType) ]
 
     let config' = toLIVSConfigNames heap config
 

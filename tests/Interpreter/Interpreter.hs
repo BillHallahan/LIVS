@@ -19,6 +19,7 @@ import Test.Tasty.HUnit
 
 interpreterTests :: TestTree
 interpreterTests = testGroup "Interpreter" [ run1
+                                           , run2
                                            , runCollectingExamples1
                                            , runCollectingExamples2
                                            , runCollectingExamples3 ]
@@ -30,6 +31,19 @@ run1 = testCase "Run Test 1"
     where
         abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
         e = App abs2 (Lit (LInt 4))
+
+run2 :: TestTree
+run2 = testCase "Run Test 2"
+    $ assertBool "Correct run2" 
+            (runWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) callE == Lit (LInt 1))
+    where
+        e = Lam 
+              (Id (Name "x1" Nothing) intType) 
+              (Lam 
+                  (Id (Name "x2" Nothing) intType) 
+                  (Var (Id (Name "x1" Nothing) intType))
+              )
+        callE = App (App e (Lit (LInt 1))) (Lit (LInt 2))
 
 runCollectingExamples1 :: TestTree
 runCollectingExamples1 = testCase "runCollectingExamples Test 1"
