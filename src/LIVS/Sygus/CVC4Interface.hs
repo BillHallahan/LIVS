@@ -2,7 +2,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runSygus
                                 , runSygusWithGrammar
                                 , runCVC4OnString
-                                , runCVC4SMT2OnString
+                                , runSMT2WithGrammar
                                 , runCVC4WithFile
 
                                 , getCVC4
@@ -43,16 +43,15 @@ runCVC4OnString s = do
     liftIO $ print m
     return . parseSMT (M.empty) . lexSMT $ m
 
-runCVC4SMT2OnString :: MonadIO m => String -> m Result
-runCVC4SMT2OnString s = do
+runSMT2WithGrammar :: MonadIO m => H.Heap -> String -> m Result
+runSMT2WithGrammar h s = do
     liftIO $ putStrLn s
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
     m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", "10000", "--produce-model"]
     liftIO $ print m
-    return . parseSMT (M.empty) . lexSMT $ m
-
+    return . parseSMT (H.map' typeOf h) . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
                 -> String
