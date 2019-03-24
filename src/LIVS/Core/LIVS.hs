@@ -101,7 +101,10 @@ livsSatCheckIncorrect le ep cg es h exs = do
     rs <- mapM (runCollecting) $ map exampleFuncCall exs
 
     -- Figure out which suspect function calls are actually incorrect.
-    let maybe_incor_exs = concatMap snd rs
+    -- It is not possible for an SMTLIB primitive to be incorrect, so we filter
+    -- those out.
+    let maybe_incor_exs =
+            filter (not . flip H.isPrimitive h . idName . func . sExample) $ concatMap snd rs
     incor <- incorrectSuspects le maybe_incor_exs
 
     -- Figure out which functions are involved in the incorrect function calls

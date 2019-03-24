@@ -27,8 +27,6 @@ import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.State.Lazy
 
-import Debug.Trace
-
 data Frame = ApplyFrame Expr
            | Bind Id Expr -- ^ An Id from a Let Binding, and the continuation
            | FuncCall Id [Expr] -- ^ Records a previous function call's name and input arguments.
@@ -111,9 +109,9 @@ genExample i inp out = do
                      , input = map toVal inp'
                      , output = toVal out' }
     where
-        toVal (Data dc) = DataVal dc
-        toVal (Lit l) = LitVal l
-        toVal _ = error "toVal: bad Expr"
+        toVal e = case exprToVal e of
+            Just v -> v
+            Nothing -> error "toVal: bad Expr"
 
 runStepM :: (StackMonad Frame m, HeapMonad m) => EvalPrimitive m -> Expr -> m Expr
 runStepM ep v@(Var (Id n _)) = do
@@ -128,7 +126,7 @@ runStepM ep v@(Var (Id n _)) = do
                 Just ars' -> do
                     ars'' <- mapM redArgs ars'
                     let e = mkApp (v:ars'')
-                    trace ("ars' = " ++ show ars' ++ "\nars'' = " ++ show ars'') ep e
+                    ep e
                 Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
 runStepM _ lam_e@(Lam i e) = do

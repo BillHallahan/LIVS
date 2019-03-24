@@ -55,8 +55,8 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
     r <- runAndReadJavaScript js (toJavaScriptCall e)
-    print $ toJavaScriptCall e
-    print r
+    putStrLn $ toJavaScriptCall e
+    putStrLn $ "r = " ++ r
 
     case parse json $ B.pack $ map repSnglWithDbl r of
       Fail _ _ _

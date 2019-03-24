@@ -45,12 +45,10 @@ runCVC4OnString s = do
 
 runSMT2WithGrammar :: MonadIO m => H.Heap -> String -> m Result
 runSMT2WithGrammar h s = do
-    liftIO $ putStrLn s
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
     m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", "10000", "--produce-model"]
-    liftIO $ print m
     return . parseSMT (H.map' typeOf h) . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
