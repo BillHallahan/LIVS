@@ -79,7 +79,16 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     --                 ]
     let tenv = jsTypeEnv
 
-    lr <- livsCVC4 config' lenv fp cg heap tenv
+    -- We want type constructors, selectors and testers to be available in the
+    -- SyGuS grammar, so we add them to the heap and the list of grammatical
+    -- elements to always be included
+    let config'' = addCoreFuncs config'
+                    (T.constructorNames tenv ++ T.selectorNames tenv ++ T.testerNames tenv)
+
+    let heap' = T.mergeConstructors tenv heap
+        heap'' = T.mergeSelectorsAndTesters tenv heap'
+
+    lr <- livsCVC4 config'' lenv fp cg heap'' tenv
 
     print lr
 

@@ -27,6 +27,8 @@ import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.State.Lazy
 
+import Debug.Trace
+
 data Frame = ApplyFrame Expr
            | Bind Id Expr -- ^ An Id from a Let Binding, and the continuation
            | FuncCall Id [Expr] -- ^ Records a previous function call's name and input arguments.
@@ -126,7 +128,7 @@ runStepM ep v@(Var (Id n _)) = do
                 Just ars' -> do
                     ars'' <- mapM redArgs ars'
                     let e = mkApp (v:ars'')
-                    ep e
+                    trace ("ars' = " ++ show ars' ++ "\nars'' = " ++ show ars'') ep e
                 Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
 runStepM _ lam_e@(Lam i e) = do
@@ -176,7 +178,7 @@ redArgs :: HeapMonad m => Expr -> m Expr
 redArgs v@(Var (Id n _)) = do
     r <- lookupH n
     case r of
-        Just (H.Def e) -> return e
+        Just (H.Def e) -> redArgs e
         _ -> return v
 redArgs (Lam i e) = return . Lam i =<< redArgs e
 redArgs (App e1 e2) = do

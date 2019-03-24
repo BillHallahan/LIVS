@@ -5,6 +5,7 @@ module LIVS.Interpreter.EvalPrimitive ( EvalPrimitive
                                       , liftEvalPrimitive) where
 
 import LIVS.Language.Syntax
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.Result
@@ -15,14 +16,17 @@ import qualified Data.HashMap.Lazy as HM
 
 type EvalPrimitive m = Expr -> m Expr
 
-evalPrimitive :: MonadIO m => Expr -> m Expr
-evalPrimitive e = do
+evalPrimitive :: MonadIO m => T.TypeEnv -> Expr -> m Expr
+evalPrimitive tenv e = do
+    let tspec = toSygusTypeEnv tenv
+
     let x = Name "x" Nothing
 
     let s = toSygusExpr e
-        set_x = "(define-var x " ++ toSygusType (typeOf e) ++ ")\n" ++
-                    "(assert (= x" ++ s ++ "))"
-    m <- runCVC4OnString $ "(set-logic ALL_SUPPORTED)\n" ++ set_x
+        set_x = tspec ++ "\n(declare-fun x () " ++ toSygusType (typeOf e) ++ ")\n" ++
+                    "(assert (= x " ++ s ++ "))"
+
+    m <- runCVC4SMT2OnString $ "(set-logic ALL_SUPPORTED)\n" ++ set_x ++ "\n(check-sat)\n(get-value (x))"
 
     case m of
         Sat m' -> case HM.lookup x m' of

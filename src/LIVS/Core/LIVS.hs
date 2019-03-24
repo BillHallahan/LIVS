@@ -83,7 +83,7 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
 
             let h' = H.insertDef n r h
 
-            (es', is') <- livsSatCheckIncorrect le evalPrimitive cg  (nub $ re'' ++ es) h' re''
+            (es', is') <- livsSatCheckIncorrect le (evalPrimitive tenv) cg  (nub $ re'' ++ es) h' re''
             return (h', es', is')
 
 

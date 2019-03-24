@@ -12,6 +12,9 @@ module LIVS.Language.TypeEnv ( TypeEnv
 
                              , selectorDCToDC
 
+                             , constructorNames
+                             , selectorNames
+                             , testerNames
                              , mergeConstructors
                              , mergeSelectorsAndTesters
                              , mergeSelectors
@@ -65,11 +68,27 @@ toList = M.toList . unTypeEnv
 
 -- SelectorDC Functions
 
+selectorDCName :: SelectorDC -> Name
+selectorDCName (SelectorDC n _) = n
+
+selectorDCNamedTypes :: SelectorDC -> [NamedType]
+selectorDCNamedTypes (SelectorDC _ nt) = nt
+
 selectorDCToDC :: Name -> SelectorDC -> DC
 selectorDCToDC tn (SelectorDC n nt) =
     DC n . mkTyFun $ map namedTypeType nt ++ [TyCon tn TYPE]
 
 -- Various
+
+constructorNames :: TypeEnv -> [Name]
+constructorNames = map selectorDCName . concatMap selectors . elems
+
+selectorNames :: TypeEnv -> [Name]
+selectorNames =
+    map namedTypeName . concatMap selectorDCNamedTypes . concatMap selectors . elems
+
+testerNames :: TypeEnv -> [Name]
+testerNames = map testerName . map selectorDCName . concatMap selectors . elems
 
 -- | Merges the constructors from a TypeEnv into a Heap, as Primitives
 mergeConstructors :: TypeEnv -> H.Heap -> H.Heap
@@ -85,7 +104,7 @@ mergeConstructors tenv h =
         mergeConstructor' :: Name -> SelectorDC -> H.Heap -> H.Heap
         mergeConstructor' n sel =
             case selectorDCToDC n sel of
-                DC n t -> H.insertPrimitive n t
+                DC dcn t -> H.insertPrimitive dcn t
 
 mergeSelectorsAndTesters :: TypeEnv -> H.Heap -> H.Heap
 mergeSelectorsAndTesters tenv = mergeSelectors tenv . mergeTesters tenv
@@ -109,6 +128,7 @@ mergeSelectors tenv h =
             in
             foldr (uncurry H.insertPrimitive) h' ins_names_tys
 
+-- | Merges the testers from a TypeEnv into a Heap, as Primitives
 mergeTesters :: TypeEnv -> H.Heap -> H.Heap
 mergeTesters tenv h =
     let
@@ -123,7 +143,10 @@ mergeTesters tenv h =
         mergeTester' tn (SelectorDC dcn _) h' =
             let
                 t = TyCon tn TYPE
-                ins_name = Name ("is" ++ nameToString dcn) Nothing
+                ins_name = testerName dcn
                 func_ty = TyFun t boolType
             in
             H.insertPrimitive ins_name func_ty  h'
+
+testerName :: Name -> Name
+testerName dcn = Name ("is" ++ nameToString dcn) Nothing

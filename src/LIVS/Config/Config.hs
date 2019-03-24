@@ -13,6 +13,7 @@ module LIVS.Config.Config ( LIVSConfig (..)
 
                           , livsConfig
                           , toLIVSConfigNames
+                          , addCoreFuncs
                           , livsConfigT
                           , runLIVSConfigT
                           , runLIVSConfigM
@@ -56,6 +57,9 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
 
 coreFuncs :: [String]
 coreFuncs = ["=", "+", "*", "ite", "int.to.str", "str.++", "\"true\"", "\"false\"", "\"NaN\""]
+
+addCoreFuncs :: LIVSConfig cf -> [cf] -> LIVSConfig cf
+addCoreFuncs config@(LIVSConfig { core_funcs = cf }) xs = config { core_funcs = cf ++ xs}
 
 class Monad m => LIVSConfigMonad m cf where
     askConfig :: m (LIVSConfig cf)

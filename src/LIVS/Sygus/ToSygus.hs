@@ -1,5 +1,6 @@
 module LIVS.Sygus.ToSygus ( toSygus 
                           , toSygusWithGrammar
+                          , toSygusTypeEnv
                           , toSygusFunExpr
                           , toSygusExpr
                           , toSygusType) where
@@ -51,9 +52,7 @@ toSygusWithGrammar cg h tenv hsr es =
         -- sorts of data constructors
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
-        hr' = T.mergeConstructors tenv hr
-        hr'' = T.mergeSelectorsAndTesters tenv hr'
-        fspec = concatMap (\(n, it, ot) -> genSynthFun hr'' n ls it ot) fs
+        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n ls it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
