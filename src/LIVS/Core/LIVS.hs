@@ -64,7 +64,7 @@ livsStep :: MonadIO m =>
 livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- fuzz le tenv 2 i
+    re' <- fuzz le tenv (fuzz_num con) i
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
