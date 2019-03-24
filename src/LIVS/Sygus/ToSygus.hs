@@ -94,7 +94,9 @@ toSygusDC :: DC -> String
 toSygusDC (DC n _) = nameToString n
 
 toSygusLit :: Lit -> String
-toSygusLit (LInt i) = show i
+toSygusLit (LInt i)
+    | i >= 0 = show i
+    | otherwise = "(- " ++ show (-i) ++ ")"
 toSygusLit (LString s) = show s
 
 toSygusType :: Type -> String
