@@ -33,6 +33,7 @@ import System.Console.CmdArgs.Verbosity
 
 data LIVSConfig cf =
     LIVSConfig { code_file :: String
+               , seed :: Maybe Int -- ^ The seed for the random number gerator
                , fuzz_num :: Int -- ^ The number of examples to fuzz
                , core_funcs :: [cf] -- ^ Functions that are always available in synthesis
                } deriving (Data, Typeable)
@@ -44,6 +45,7 @@ livsConfig :: LIVSConfigCL
 livsConfig =
     LIVSConfig {
           code_file = "" &= help "A code file, containing component functions." &= explicit &= name "code-file" &= typFile -- &= argPos 0
+        , seed = Nothing &= help "A seed for the random number generator."
         , fuzz_num = 3 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-name"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
         } &= verbosity

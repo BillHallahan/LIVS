@@ -27,10 +27,15 @@ import LIVS.Target.OCaml.Interface
 import Control.Monad.IO.Class
 import Control.Monad.Trans
 import System.Console.CmdArgs
+import System.Random
 
 main :: IO ()
 main = do
     config <- cmdArgs livsConfig
+
+    case seed config of
+        Just s -> setStdGen $ mkStdGen s
+        Nothing -> return ()
 
     jsEnv <- jsLanguageEnv
 
