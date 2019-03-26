@@ -1,12 +1,18 @@
--- Language Independence Via Synthesis
+-- The general Language Independence Via Synthesis (LIVS) algorithm.
+-- Guarantees that the generated SMTLIB functions satisfy the input/output pairs.
+-- However, offers no guarantee that the translation back to the real language
+-- preserves the input/output pairs
 module LIVS.Core.LIVS ( Load
                       , Def
                       , Call
                       , Gen
+                      , Fuzz
                       , livsCVC4
                       , livs
+                      , livs'
                       , livsStep
-                      , livsSatCheckIncorrect) where
+                      , livsSatCheckIncorrect
+                      , incorrectSuspects) where
 
 import LIVS.Config.Config
 import LIVS.Interpreter.Interpreter
@@ -28,7 +34,7 @@ import Data.List
 -- Generates code satisfying a set of examples
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
--- Generates (typically random) inputs to a function
+-- Generates inputs to a function
 type Fuzz m = LanguageEnv m 
            -> T.TypeEnv
            -> Int -- ^ How many examples to fuzz
@@ -37,11 +43,11 @@ type Fuzz m = LanguageEnv m
 
 livsCVC4 :: (MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livsCVC4 con le fp cg = livs con le (runSygusWithGrammar cg) fp cg
+livsCVC4 con le fp cg = livs con le (runSygusWithGrammar cg) fuzzExamplesM fp cg
 
 livs :: (MonadIO m, MonadRandom m)
-     => LIVSConfigNames -> LanguageEnv m -> Gen m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livs con le gen fp cg h tenv = do
+     => LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+livs con le gen fuzz fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
     -- This is always possible, except in the case of mutual recursion, which we
@@ -49,15 +55,15 @@ livs con le gen fp cg h tenv = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le gen cg [] tenv h ord
+    livs' con le gen fuzz cg [] tenv h ord
 
 livs' :: (MonadIO m, MonadRandom m) => 
-        LIVSConfigNames -> LanguageEnv m -> Gen m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ _ _ h [] = return h
-livs' con le gen cg es tenv h (i:is) = do
+        LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ _ _ _ h [] = return h
+livs' con le gen fuzz cg es tenv h (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
-    (h', es', is') <- livsStep con le gen fuzzExamplesM cg es tenv h i
-    livs' con le gen cg es' tenv h' (is' ++ is)
+    (h', es', is') <- livsStep con le gen fuzz cg es tenv h i
+    livs' con le gen fuzz cg es' tenv h' (is' ++ is)
 
 livsStep :: MonadIO m => 
         LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])

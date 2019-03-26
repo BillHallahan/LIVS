@@ -1,6 +1,7 @@
 module Main where
 
 import LIVS.Core.LIVS
+import LIVS.Core.LIVSSynth
 
 import LIVS.Config.Config
 
@@ -81,6 +82,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let heap' = T.mergeConstructors tenv heap
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
-    lr <- livsCVC4 config'' lenv fp cg heap'' tenv
+    lr <- livsSynthCVC4 config'' lenv fp cg heap'' tenv synth_ex
+    -- lr <- livsCVC4 config'' lenv fp cg heap'' tenv
 
     print lr
