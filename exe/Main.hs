@@ -24,6 +24,8 @@ import LIVS.Target.JavaScript.Extract
 import LIVS.Target.JavaScript.JSIdentifier
 import LIVS.Target.OCaml.Interface
 
+import LIVS.UI.Parse
+
 import Control.Monad.IO.Class
 import Control.Monad.Trans
 import System.Console.CmdArgs
@@ -44,6 +46,10 @@ main = do
 synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     putStrLn $ "fp = " ++ fp
+
+    synth_ex <- examplesFromFile jsJSONToVal fp
+
+    print synth_ex
 
     ids <- extract lenv fp
 
