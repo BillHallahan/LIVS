@@ -18,6 +18,7 @@ parseExample' :: (String -> Val) -> String -> String -> Maybe Example
 parseExample' stv call out
     | f:ars <- words call =
         let
+            -- Aeson requires the newline to parse values
             arsV = map stv $ map (++ "\n") ars
             outV = stv (out ++ "\n")
 
