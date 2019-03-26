@@ -47,6 +47,7 @@ library
                        , LIVS.Target.OCaml.LexerCL
                        , LIVS.Target.OCaml.ParserCL
                        , LIVS.Target.Python.Interface
+                       , LIVS.UI.Parse
   -- other-modules:       
   -- other-extensions:    
   build-depends:         array
@@ -67,6 +68,7 @@ library
                        , text
                        , template-haskell
                        , language-javascript >= 0.6.0.10
+                       , regex-compat
                        , unix
   ghc-options:         -O2 -Wall
                        -- -ddump-splices

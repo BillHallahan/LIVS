@@ -20,4 +20,3 @@ toValue = \case
   Array a  -> undefined
   Bool b   -> undefined
   Null     -> undefined
-
