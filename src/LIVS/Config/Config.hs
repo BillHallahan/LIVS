@@ -29,7 +29,6 @@ import Data.Functor.Identity
 import Data.List
 import Data.Maybe
 import System.Console.CmdArgs
-import System.Console.CmdArgs.Verbosity
 
 data LIVSConfig cf =
     LIVSConfig { code_file :: String

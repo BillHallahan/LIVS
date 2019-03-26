@@ -43,7 +43,6 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
     h'' <- livs' con le gen fuzz cg exs tenv h' is
 
     -- Check that the synthesized functions work in the real language
-
     mapM_ (\i -> case H.lookup (idName i) h'' of
                     Just (H.Def e) -> def le i e
                     _ -> error "livsSynth: No definition found") is

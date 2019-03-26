@@ -108,3 +108,15 @@ test-suite test
                        -threaded
                        -- -ddump-splices
   type:                exitcode-stdio-1.0
+  other-modules:         Helpers.Interpreter
+                       , Helpers.Language
+                       , Interpreter.Interpreter
+                       , LIVS.LIVS
+                       , Language.AST
+                       , Language.CallGraph
+                       , Language.Expr
+                       , Language.Monad.Naming
+                       , Language.Naming
+                       , Language.Typing
+                       , Target.JavaScript
+                       , UI.Parse

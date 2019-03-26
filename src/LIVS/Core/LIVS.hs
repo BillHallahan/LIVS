@@ -45,7 +45,7 @@ livsCVC4 :: (MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
 livsCVC4 con le fp cg = livs con le (runSygusWithGrammar cg) fuzzExamplesM fp cg
 
-livs :: (MonadIO m, MonadRandom m)
+livs :: MonadIO m
      => LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
 livs con le gen fuzz fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
@@ -57,7 +57,7 @@ livs con le gen fuzz fp cg h tenv = do
     load le fp
     livs' con le gen fuzz cg [] tenv h ord
 
-livs' :: (MonadIO m, MonadRandom m) => 
+livs' :: MonadIO m => 
         LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
 livs' _ _ _ _ _ _ _ h [] = return h
 livs' con le gen fuzz cg es tenv h (i:is) = do

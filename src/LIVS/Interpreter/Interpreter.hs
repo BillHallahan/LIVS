@@ -23,7 +23,6 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 import LIVS.Language.Monad.Heap
 import LIVS.Language.Monad.Naming
-import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.State.Lazy
 
