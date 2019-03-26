@@ -12,6 +12,7 @@ module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
 import LIVS.Language.AST
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
+import LIVS.Target.JavaScript.JSIdentifier
 
 import Language.JavaScript.Parser
 import Language.JavaScript.Parser.AST
@@ -51,7 +52,7 @@ extractCalledFunctionsExpr' _ = []
 nameCLToId :: Name -> JSCommaList a -> Id
 nameCLToId n args =
     let
-        jsident = intType -- TyCon (Name "JSIdentifier" Nothing) TYPE
+        jsident = jsIdentType
         t = foldr TyFun jsident $ replicate (commaListLength args) jsident
     in
     Id n t

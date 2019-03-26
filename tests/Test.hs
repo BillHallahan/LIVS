@@ -10,6 +10,7 @@ import Language.Naming
 import Language.Typing
 import Language.Monad.Naming
 import LIVS.LIVS
+import UI.Parse
 
 import Target.JavaScript
 
@@ -29,7 +30,8 @@ tests =  testGroup "Tests" [ interpreterTests
                            , namingTests
                            , typingTests
                            , monadNamingTests
-                           , livsTests ]
+                           , livsTests
+                           , uiParseTests ]
 
 targetTests :: IO TestTree
 targetTests = do 

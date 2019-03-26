@@ -13,3 +13,5 @@ function cube(n) {
 function quadruple(n) {
     return square(n) * square(n)
 }
+
+//@pbe (constraint (= (f 2) 4))

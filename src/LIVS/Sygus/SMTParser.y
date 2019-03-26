@@ -23,6 +23,7 @@ import qualified Data.HashMap.Lazy as HM
     unsat       { TokenUnSat }
     unknown     { TokenUnknown }
     smtName     { TokenName $$ }
+    string      { TokenString $$ }
     int         { TokenInt $$ }
     defineFun   { TokenDefineFun }
     '('         { TokenOpenParen }
@@ -34,6 +35,7 @@ import qualified Data.HashMap.Lazy as HM
 
 res :: { Result }
      : unsat defFuns { Sat $ HM.fromList $2 }
+     | sat '(' model ')' { Sat $ HM.fromList $3 }
      | sat { UnSat }
      | unknown { Unknown }
 
@@ -74,10 +76,18 @@ expr :: { Expr }
      | name {% do
                 i <-idM $1
                 return $ Var i }
+     | string { Lit (LString $1) }
      | int { Lit (LInt $1) }
 
 name :: { Name }
      : smtName { Name $1 Nothing}
+
+model :: { [(Name, Expr)] }
+      : model '(' modelVal ')' { $3:$1 }
+      | {- empty -} { [] }
+
+modelVal :: { (Name, Expr) }
+         : name expr { ($1, $2) }
 
 {
 data Parser = Parser { types :: HM.HashMap Name Type}

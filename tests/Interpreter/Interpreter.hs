@@ -19,6 +19,7 @@ import Test.Tasty.HUnit
 
 interpreterTests :: TestTree
 interpreterTests = testGroup "Interpreter" [ run1
+                                           , run2
                                            , runCollectingExamples1
                                            , runCollectingExamples2
                                            , runCollectingExamples3 ]
@@ -26,16 +27,29 @@ interpreterTests = testGroup "Interpreter" [ run1
 run1 :: TestTree
 run1 = testCase "Run Test 1"
     $ assertBool "Correct run1" 
-            (runWithIdentity (langEnv heapAbs) 100 heapAbs (mkNameGen []) e == Lit (LInt 4))
+            (runWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) e == Lit (LInt 4))
     where
         abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
         e = App abs2 (Lit (LInt 4))
+
+run2 :: TestTree
+run2 = testCase "Run Test 2"
+    $ assertBool "Correct run2" 
+            (runWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) callE == Lit (LInt 1))
+    where
+        e = Lam 
+              (Id (Name "x1" Nothing) intType) 
+              (Lam 
+                  (Id (Name "x2" Nothing) intType) 
+                  (Var (Id (Name "x1" Nothing) intType))
+              )
+        callE = App (App e (Lit (LInt 1))) (Lit (LInt 2))
 
 runCollectingExamples1 :: TestTree
 runCollectingExamples1 = testCase "runCollectingExamples Test 1"
     $ assertBool "Correct examples in runCollectingExamples1" 
             (let
-                exs = HS.fromList (snd $ runCollectingExamplesWithIdentity (langEnv heapAbs) 100 heapAbs (mkNameGen []) e)
+                exs = HS.fromList (snd $ runCollectingExamplesWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) e)
             in
             (Suspect abs2Ex) `HS.member` exs && (Suspect iteEx) `HS.member` exs
             )
@@ -56,7 +70,7 @@ runCollectingExamples2 :: TestTree
 runCollectingExamples2 = testCase "runCollectingExamples Test 2"
     $ assertBool "Correct number of examples in runCollectingExamples2" 
             (let
-                exs = snd $ runCollectingExamplesWithIdentity (langEnv heapAbs) 100 heapAbs (mkNameGen []) e
+                exs = snd $ runCollectingExamplesWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) e
             in
             length exs == 5
             )
@@ -68,7 +82,7 @@ runCollectingExamples3 :: TestTree
 runCollectingExamples3 = testCase "runCollectingExamples Test 3"
     $ assertBool "Correct examples in runCollectingExamples3"
             (let
-                exs = HS.fromList (snd $ runCollectingExamplesWithIdentity (langEnv h) 100 h (mkNameGen []) e)
+                exs = HS.fromList (snd $ runCollectingExamplesWithIdentity (callPrimExprM h) 100 h (mkNameGen []) e)
             in
             (Suspect idEx) `HS.member` exs
             )
@@ -111,8 +125,8 @@ runCollectingExamples3 = testCase "runCollectingExamples Test 3"
                        , input = [ LitVal (LInt (-3)) ]
                        , output = LitVal (LInt (-3)) }
 
-runWithIdentity :: LanguageEnv Identity -> Int -> H.Heap -> NameGen -> Expr -> Expr
-runWithIdentity le n h ng e = runIdentity (run le n h ng e)
+runWithIdentity :: EvalPrimitive Identity -> Int -> H.Heap -> NameGen -> Expr -> Expr
+runWithIdentity ep n h ng e = runIdentity (run ep n h ng e)
 
-runCollectingExamplesWithIdentity :: LanguageEnv Identity -> Int -> H.Heap -> NameGen -> Expr ->  (Expr, [SuspectExample])
-runCollectingExamplesWithIdentity le n h ng e = runIdentity (runCollectingExamples le n h ng e)
+runCollectingExamplesWithIdentity :: EvalPrimitive Identity -> Int -> H.Heap -> NameGen -> Expr ->  (Expr, [SuspectExample])
+runCollectingExamplesWithIdentity ep n h ng e = runIdentity (runCollectingExamples ep n h ng e)

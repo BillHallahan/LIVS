@@ -1,6 +1,7 @@
 module LIVS.Language.Typing ( Typed (..)
                             , PresType (..)
                             , intType
+                            , stringType
                             , boolType
                             , exampleFuncType
 
@@ -31,9 +32,14 @@ instance Typed Expr where
 instance Typed Val where
     typeOf (DataVal dc) = typeOf dc
     typeOf (LitVal l) = typeOf l
+    typeOf a@(AppVal v1 _) =
+        case typeOf v1 of
+            TyFun _ t2 -> t2
+            _ -> error $ "Bad type." ++ show a
 
 instance Typed Lit where
     typeOf (LInt _) = intType
+    typeOf (LString _) = stringType
 
 instance Typed DC where
     typeOf (DC _ t) = t
@@ -50,6 +56,9 @@ instance Typed PresType where
 
 intType :: Type
 intType = TyCon (Name "Int" Nothing) TYPE
+
+stringType :: Type
+stringType = TyCon (Name "String" Nothing) TYPE
 
 boolType :: Type
 boolType = TyCon (Name "Bool" Nothing) TYPE

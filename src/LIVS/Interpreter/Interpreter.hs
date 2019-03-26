@@ -5,13 +5,16 @@
 
 module LIVS.Interpreter.Interpreter ( RunEnv
                                     , Frame (..)
+                                    , EvalPrimitive
                                     , run
                                     , runCollectingExamples
                                     , runM
                                     , runStepM
                                     , runCollectingExamplesM
-                                    , runStepCollectingExamplesM ) where
+                                    , runStepCollectingExamplesM
+                                    , evalPrimitive ) where
 
+import LIVS.Interpreter.EvalPrimitive
 import LIVS.Interpreter.Stack
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
@@ -38,42 +41,42 @@ runEnv h ng s b = evalNameGenT (evalHeapT (evalStackT b s) h) ng
 getEnv :: Monad m => m a -> RunEnv m a
 getEnv a = lift . lift $ lift a
 
-run :: Monad m => LanguageEnv m -> Int -> H.Heap -> NameGen -> Expr ->  m Expr
-run le n h ng e = do
-    let le' = liftLanguageEnv getEnv le
-    runEnv h ng empty (runM le' n e)
+run :: Monad m => EvalPrimitive m -> Int -> H.Heap -> NameGen -> Expr ->  m Expr
+run ep n h ng e = do
+    let ep' = liftEvalPrimitive getEnv ep
+    runEnv h ng empty (runM ep' n e)
 
-runCollectingExamples :: Monad m => LanguageEnv m -> Int -> H.Heap -> NameGen -> Expr -> m (Expr, [SuspectExample])
-runCollectingExamples le n h ng e = do
-    let le' = liftLanguageEnv getEnv le
-    runEnv h ng empty (runCollectingExamplesM le' n e)
+runCollectingExamples :: Monad m => EvalPrimitive m -> Int -> H.Heap -> NameGen -> Expr -> m (Expr, [SuspectExample])
+runCollectingExamples ep n h ng e = do
+    let ep' = liftEvalPrimitive getEnv ep
+    runEnv h ng empty (runCollectingExamplesM ep' n e)
 
 runM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
-     => LanguageEnv m
+     => EvalPrimitive m
      -> Int -- ^ Number of steps to take.
      -> Expr
      -> m Expr
-runM le n e = do
+runM ep n e = do
     mapDefsMH constAppNF
-    rep n (runStepM le) =<< constAppNF e
+    rep n (runStepM ep) =<< constAppNF e
 
 runCollectingExamplesM :: (StackMonad Frame m, HeapMonad m, NameGenMonad m)
-                       => LanguageEnv m
+                       => EvalPrimitive m
                        -> Int -- ^ Number of steps to take.
                        -> Expr
                        -> m (Expr, [SuspectExample])
-runCollectingExamplesM le n e = do
+runCollectingExamplesM ep n e = do
     mapDefsMH constAppNF
     e' <- constAppNF e
-    rep n (uncurry (runStepCollectingExamplesM le)) (e', [])
+    rep n (uncurry (runStepCollectingExamplesM ep)) (e', [])
 
 rep :: Monad m => Int -> (a -> m a) -> a -> m a
 rep !n' f a
     | n' <= 0 = return a
     | otherwise = rep (n' - 1) f =<< f a
 
-runStepCollectingExamplesM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> [SuspectExample] -> m (Expr, [SuspectExample])
-runStepCollectingExamplesM le e@(App _ _) exs = do
+runStepCollectingExamplesM :: (StackMonad Frame m, HeapMonad m) => EvalPrimitive m -> Expr -> [SuspectExample] -> m (Expr, [SuspectExample])
+runStepCollectingExamplesM ep e@(App _ _) exs = do
     let (f:es) = unApp e
 
     -- If we are calling a function, record the function and the inputs on the stack
@@ -81,9 +84,9 @@ runStepCollectingExamplesM le e@(App _ _) exs = do
         Var f' -> pushM $ FuncCall f' es
         _ -> return ()
 
-    e' <- runStepM le e
+    e' <- runStepM ep e
     return (e', exs)
-runStepCollectingExamplesM le e exs
+runStepCollectingExamplesM ep e exs
     | isVal e = do
         frm <- peekM
         case frm of
@@ -92,10 +95,10 @@ runStepCollectingExamplesM le e exs
                 ex <- genExample i es e
                 return $ (e, Suspect ex:exs)
             _ -> do
-                e' <- runStepM le e
+                e' <- runStepM ep e
                 return (e', exs)
-runStepCollectingExamplesM le e exs = do
-    e' <- runStepM le e
+runStepCollectingExamplesM ep e exs = do
+    e' <- runStepM ep e
     return (e', exs)
 
 genExample :: HeapMonad m => Id -> [Expr] -> Expr -> m Example
@@ -106,12 +109,12 @@ genExample i inp out = do
                      , input = map toVal inp'
                      , output = toVal out' }
     where
-        toVal (Data dc) = DataVal dc
-        toVal (Lit l) = LitVal l
-        toVal _ = error "toVal: bad Expr"
+        toVal e = case exprToVal e of
+            Just v -> v
+            Nothing -> error "toVal: bad Expr"
 
-runStepM :: (StackMonad Frame m, HeapMonad m) => LanguageEnv m -> Expr -> m Expr
-runStepM le v@(Var (Id n _)) = do
+runStepM :: (StackMonad Frame m, HeapMonad m) => EvalPrimitive m -> Expr -> m Expr
+runStepM ep v@(Var (Id n _)) = do
     r <- lookupH n
 
     case r of
@@ -123,7 +126,7 @@ runStepM le v@(Var (Id n _)) = do
                 Just ars' -> do
                     ars'' <- mapM redArgs ars'
                     let e = mkApp (v:ars'')
-                    return . valToExpr =<< call le e
+                    ep e
                 Nothing -> error "runStepM: insufficient arguments for primitive"
         Nothing -> return v
 runStepM _ lam_e@(Lam i e) = do
@@ -134,10 +137,14 @@ runStepM _ lam_e@(Lam i e) = do
             return e
         Just (Bind _ _) -> error "runStepM: bind to Lam"
         _ -> return lam_e
-runStepM _ a@(App _ _) = do
-    let (f:es) = unApp a    
+runStepM _ a@(App _ _)
+    | f:es <- unApp a 
+    , notData f = do
     mapM_ (pushM . ApplyFrame) $ reverse es
     return f
+    where
+        notData (Data _) = False
+        notData _ = True
 runStepM _ (Let (i, e) e') = do
     pushM (Bind i e')
     return e
@@ -147,7 +154,9 @@ runStepM _ e = do -- We have a value
         Just (Bind i e') -> do
             insertDefH (idName i) e
             return e'
-        Just (ApplyFrame _) -> error "runStepM: application to val"
+        Just (ApplyFrame e')
+            | Data _:_ <- unApp e -> return $ App e e'
+        Just (ApplyFrame _) -> error "runStepM: application to non-DataCon val"
         _ -> return e
 
 popArgs :: StackMonad Frame m => Int -> m (Maybe [Expr])
@@ -167,7 +176,7 @@ redArgs :: HeapMonad m => Expr -> m Expr
 redArgs v@(Var (Id n _)) = do
     r <- lookupH n
     case r of
-        Just (H.Def e) -> return e
+        Just (H.Def e) -> redArgs e
         _ -> return v
 redArgs (Lam i e) = return . Lam i =<< redArgs e
 redArgs (App e1 e2) = do

@@ -1,6 +1,8 @@
 module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runSygus
                                 , runSygusWithGrammar
+                                , runCVC4OnString
+                                , runSMT2WithGrammar
                                 , runCVC4WithFile
 
                                 , getCVC4
@@ -14,34 +16,53 @@ import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
 import LIVS.Sygus.ToSygus
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
 import Control.Monad.IO.Class
+import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => CallGraph -> H.Heap -> [Example] -> m Result
-runSygus cg h = runSygusWithGrammar cg h (HS.fromList $ H.keys h)
+runSygus :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m Result
+runSygus cg h tenv = runSygusWithGrammar cg h tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar cg h hsr es = do
-    let form = toSygusWithGrammar cg h hsr es
+runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar cg h tenv hsr es = do
+    let form = toSygusWithGrammar cg h tenv hsr es
     liftIO $ putStrLn form
-    m <- liftIO $ runCVC4WithFile form
+    m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
+    return . parseSMT (H.map' typeOf h) . lexSMT $ m
+
+runCVC4OnString :: MonadIO m => String -> m Result
+runCVC4OnString s = do
+    liftIO $ putStrLn s
+    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus", "--tlimit", "10000"]
+    liftIO $ print m
+    return . parseSMT (M.empty) . lexSMT $ m
+
+runSMT2WithGrammar :: MonadIO m => H.Heap -> String -> m Result
+runSMT2WithGrammar h s = do
+    -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
+    -- has a number in it, so we write the SMT to a text file, and use --lang to tell
+    -- CVC4 that it is SMTLIB
+    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", "10000", "--produce-model"]
     return . parseSMT (H.map' typeOf h) . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
+                -> String
+                -> [String]
                 -> IO String
-runCVC4WithFile sygus =
-    withSystemTempFile "cvc4_sygus.sy"
+runCVC4WithFile sygus ext ars =
+    withSystemTempFile ("cvc4_input" ++ ext)
         (\fp h -> do
             hPutStr h sygus
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            runProcessOnce "cvc4" [fp, "--lang", "sygus", "--tlimit", "10000"])
+            runProcessOnce "cvc4" (fp:ars))
 
 newtype CVC4 = CVC4 Process
 

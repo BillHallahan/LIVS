@@ -7,7 +7,7 @@ module LIVS.Sygus.SMTLexer ( Token (..)
 
 $digit = 0-9
 $alpha = [a-zA-Z]
-$symbs = [\+ \- \* \> \=]
+$symbs = [\+ \- \* \> \= \. \_ \']
 
 tokens:-
     $white+                                             ;
@@ -17,7 +17,8 @@ tokens:-
     define\-fun                                         { const TokenDefineFun }
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
-    [$alpha $symbs] [$alpha $digit $symbs \_ \']*       { TokenName }
+    [$alpha $symbs] [$alpha $digit $symbs ]*            { TokenName }
+    \" [$alpha $digit $symbs ]* \"                      { TokenString }
     $digit+                                             { TokenInt . read }
 
 {
@@ -26,6 +27,7 @@ data Token = TokenSat
            | TokenUnknown
            | TokenName String
            | TokenInt Int
+           | TokenString String
            | TokenDefineFun
            | TokenOpenParen
            | TokenCloseParen

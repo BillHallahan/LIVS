@@ -5,6 +5,7 @@ module LIVS.Target.JavaScript.Interface (
         , loadFileJavaScript
         , defJavaScript
         , callJavaScript
+        , jsJSONToVal
         , initJavaScriptREPL
         , runAndReadJavaScript
         , runJavaScript
@@ -19,6 +20,7 @@ import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
 import LIVS.Target.General.JSON
 import qualified LIVS.Target.JavaScript.Extract as Ext
+import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
 
@@ -54,10 +56,24 @@ defJavaScript js (Id n _) = runJavaScript js . toJavaScriptDef n
 callJavaScript :: JavaScriptREPL -> Expr -> IO Val
 callJavaScript js e = do
     r <- runAndReadJavaScript js (toJavaScriptCall e)
-    case parse json $ B.pack r of
-      Fail _ _ _ -> error "Bad parse"
+    putStrLn $ toJavaScriptCall e
+    putStrLn $ "r = " ++ r
+
+    return $ jsJSONToVal r
+
+jsJSONToVal :: String -> Val
+jsJSONToVal s =
+    case parse json $ B.pack $ map repSnglWithDbl s of
+      Fail _ _ _
+        | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
+      Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
       Partial _ -> error "Why does this happen?"
-      Done _ v -> return $ toValue v
+      Done _ v -> toValue v
+    where
+        -- | JavaScript outputs JSON with single quotes, but Aeson
+        -- expects double quotes
+        repSnglWithDbl '\'' = '\"'
+        repSnglWithDbl c = c
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do
@@ -86,7 +102,11 @@ toJavaScriptCall e = toJavaScriptExpr e ++ ";\n"
 
 toJavaScriptExpr :: Expr -> String
 toJavaScriptExpr (Var i) = toJavaScriptId i
-toJavaScriptExpr (Data (DC n _)) = nameToString n
+toJavaScriptExpr (Data dc)
+    | dc == trueDC = "true"
+    | dc == falseDC = "false"
+    | dc == jsNaNDC = "NaN"
+    | otherwise = ""
 toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"
 toJavaScriptExpr e@(App _ _)
@@ -105,6 +125,7 @@ toJavaScriptId (Id n _) = nameToString n
 
 toJavaScriptLit :: Lit -> String
 toJavaScriptLit (LInt i) = show i
+toJavaScriptLit (LString s) = show s
 
 operators :: [Name]
 operators = [ Name "+" Nothing

@@ -1,6 +1,11 @@
 module Helpers.Interpreter ( langEnv
                            , langEnvInterpFallBack
-                           , callPrim ) where
+                           , callPrimExprM
+                           , callPrimExpr
+                           , callPrim
+                           , callPrimInterpFallBackExprM
+                           , callPrimInterpFallBackExpr
+                           , callPrimInterpFallBack ) where
 
 import LIVS.Interpreter.Interpreter
 import LIVS.Interpreter.Stack
@@ -23,6 +28,18 @@ langEnvInterpFallBack h = LanguageEnv { load = const $ return ()
                                       , call = \e -> return . fst
                                             $ runHeapM (callPrimInterpFallBack e) h
                                       }
+
+callPrimInterpFallBackExprM :: Monad m => H.Heap -> Expr -> m Expr
+callPrimInterpFallBackExprM h e = return $ evalHeapM (callPrimInterpFallBackExpr e) h
+
+callPrimInterpFallBackExpr :: HeapMonad m => Expr -> m Expr
+callPrimInterpFallBackExpr e = return . valToExpr =<< callPrimInterpFallBack e
+
+callPrimExprM :: Monad m => H.Heap -> Expr -> m Expr
+callPrimExprM h e = return $ evalHeapM (callPrimExpr e) h
+
+callPrimExpr :: HeapMonad m => Expr -> m Expr
+callPrimExpr e = return . valToExpr =<< callPrim e
 
 callPrim :: HeapMonad m => Expr -> m Val
 callPrim e = do
@@ -51,12 +68,12 @@ callPrim' _ = return Nothing
 -- | Runs callPrim, but falls back on running the intepreter if needed.
 callPrimInterpFallBack :: HeapMonad m => Expr -> m Val
 callPrimInterpFallBack e = do
-    le <- return . langEnv =<< getHeap
     r <- callPrim' e
     case r of
         Just r' -> return r'
         Nothing -> do
-            e' <- runEnvTest (mkNameGen []) empty (runM le 1000 e)
+            h <- getHeap
+            e' <- runEnvTest (mkNameGen []) empty (runM (\e -> return . fst $ runHeapM (callPrimExpr e) h) 1000 e)
             case exprToVal e' of
                 Just v -> return v
                 Nothing -> error "callPrimInterpFallBack: Did not reduce to Val"
