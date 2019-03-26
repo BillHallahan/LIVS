@@ -31,10 +31,10 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
 import Data.List
 
--- Generates code satisfying a set of examples
+-- | Generates code satisfying a set of examples
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
--- Generates inputs to a function
+-- | Generates inputs to a function
 type Fuzz m = LanguageEnv m 
            -> T.TypeEnv
            -> Int -- ^ How many examples to fuzz

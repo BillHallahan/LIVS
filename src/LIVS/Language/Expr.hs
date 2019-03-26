@@ -2,6 +2,7 @@ module LIVS.Language.Expr ( trueDC
                           , falseDC
                           , mkLams
                           , leadingLams
+                          , stripLeadingLams
                           , mkApp
                           , unApp
                           , appCenter
@@ -22,6 +23,10 @@ mkLams is e = foldr Lam e is
 leadingLams :: Expr -> [Id]
 leadingLams (Lam i e) = i:leadingLams e
 leadingLams _ = []
+
+stripLeadingLams :: Expr -> Expr
+stripLeadingLams (Lam _ e) = stripLeadingLams e
+stripLeadingLams e = e
 
 mkApp :: [Expr] -> Expr
 mkApp = foldl1 App

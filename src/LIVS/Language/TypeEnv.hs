@@ -10,7 +10,10 @@ module LIVS.Language.TypeEnv ( TypeEnv
                              , fromList
                              , toList
 
+                             , typeNamesAndSelectorDCs
+                             , selectorDCName
                              , selectorDCToDC
+                             , selectorDCs
 
                              , constructorNames
                              , selectorNames
@@ -78,17 +81,23 @@ selectorDCToDC :: Name -> SelectorDC -> DC
 selectorDCToDC tn (SelectorDC n nt) =
     DC n . mkTyFun $ map namedTypeType nt ++ [TyCon tn TYPE]
 
+selectorDCs :: TypeEnv -> [SelectorDC]
+selectorDCs = concatMap selectors . elems
+
+typeNamesAndSelectorDCs :: TypeEnv -> [(Name, SelectorDC)]
+typeNamesAndSelectorDCs = concatMap (\(n, ADTSpec sdc) -> zip (repeat n) sdc) . toList
+
 -- Various
 
 constructorNames :: TypeEnv -> [Name]
-constructorNames = map selectorDCName . concatMap selectors . elems
+constructorNames = map selectorDCName . selectorDCs
 
 selectorNames :: TypeEnv -> [Name]
 selectorNames =
-    map namedTypeName . concatMap selectorDCNamedTypes . concatMap selectors . elems
+    map namedTypeName . concatMap selectorDCNamedTypes . selectorDCs
 
 testerNames :: TypeEnv -> [Name]
-testerNames = map testerName . map selectorDCName . concatMap selectors . elems
+testerNames = map testerName . map selectorDCName . selectorDCs
 
 -- | Merges the constructors from a TypeEnv into a Heap, as Primitives
 mergeConstructors :: TypeEnv -> H.Heap -> H.Heap

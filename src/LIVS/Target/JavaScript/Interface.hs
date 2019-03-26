@@ -47,7 +47,7 @@ extractFileJavaScript fp = do
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = do
-    _ <- runAndReadJavaScript js $ "LOAD " ++ p ++ "\n" -- ".load " ++ p ++ "\n"
+    _ <- runAndReadJavaScript js $ "LOAD " ++ p ++ "\n"
     return ()
 
 defJavaScript :: JavaScriptREPL -> Id -> Expr -> IO ()
@@ -77,7 +77,7 @@ jsJSONToVal s =
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do
-    pr <- getProcess "node" ["language_interface/nodeREPL.js"] -- []
+    pr <- getProcess "node" ["language_interface/nodeREPL.js"]
     return $ JavaScriptREPL pr
 
 runAndReadJavaScript :: JavaScriptREPL -> String -> IO String
@@ -93,9 +93,9 @@ toJavaScriptDef :: Name -> Expr -> String
 toJavaScriptDef n e =
     let
         args = concat . intersperse " " . map toJavaScriptId $ leadingLams e
-        e' = toJavaScriptExpr e
+        e' = toJavaScriptExpr $ stripLeadingLams e
     in
-        nameToString n ++ " = function (" ++ args ++ ") = {\n\t" ++ e' ++ "\n}"
+        nameToString n ++ " = function (" ++ args ++ ") {\n\t" ++ e' ++ "\n}"
 
 toJavaScriptCall :: Expr -> String
 toJavaScriptCall e = toJavaScriptExpr e ++ ";\n"
@@ -111,7 +111,7 @@ toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"
 toJavaScriptExpr e@(App _ _)
     | App (App (App (Var (Id (Name "ite" _) _)) e1) e2) e3 <- e =
-        "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "}"
+        "if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "}"
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = "(" ++ toJavaScriptExpr e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr e2 ++ ") "
     | otherwise = 
@@ -131,5 +131,6 @@ operators :: [Name]
 operators = [ Name "+" Nothing
             , Name "-" Nothing
             , Name "*" Nothing
+            , Name "=" Nothing
             , Name ">=" Nothing
             , Name "<=" Nothing ]

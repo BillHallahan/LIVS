@@ -7,11 +7,13 @@ module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
+import qualified LIVS.Language.TypeEnv as T
 import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 
 import Control.Monad.State.Lazy
 import qualified Data.HashMap.Lazy as HM
+import Data.List
 }
 
 %name parse1
@@ -71,11 +73,9 @@ exprs_rev :: { [Expr] }
 
 expr :: { Expr }
      : '(' name exprs ')' {% do
-                                i <- idM $2 
-                                return $ mkApp (Var i:$3) }
-     | name {% do
-                i <-idM $1
-                return $ Var i }
+                                e <- varOrData $2 
+                                return $ mkApp (e:$3) }
+     | name {% varOrData $1 }
      | string { Lit (LString $1) }
      | int { Lit (LInt $1) }
 
@@ -90,22 +90,23 @@ modelVal :: { (Name, Expr) }
          : name expr { ($1, $2) }
 
 {
-data Parser = Parser { types :: HM.HashMap Name Type}
+data Parser = Parser { types :: HM.HashMap Name Type
+                     , type_env :: T.TypeEnv }
 
 newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Monad)
 
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parseSMT :: HM.HashMap Name Type -> [Token] -> Result
-parseSMT m t = fst $ runParserM m (parse1 t)
+parseSMT :: HM.HashMap Name Type -> T.TypeEnv -> [Token] -> Result
+parseSMT m tenv t = fst $ runParserM m tenv (parse1 t)
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."
 
 -- Helpers for the monad
-runParserM :: HM.HashMap Name Type -> ParserM a -> (a, Parser)
-runParserM m (ParserM p) = runState p (Parser { types = m })
+runParserM :: HM.HashMap Name Type -> T.TypeEnv -> ParserM a -> (a, Parser)
+runParserM m tenv (ParserM p) = runState p (Parser { types = m, type_env = tenv })
 
 setTypes :: HM.HashMap Name Type -> ParserM ()
 setTypes m = do
@@ -123,10 +124,25 @@ setType n t = do
 getType :: Name -> ParserM (Maybe Type)
 getType n = return . HM.lookup n =<< getTypes
 
+getTypeEnv :: ParserM (T.TypeEnv)
+getTypeEnv = return . type_env =<< get
+
+getTypeNamesAndSelectorDCs :: ParserM [(Name, T.SelectorDC)]
+getTypeNamesAndSelectorDCs = return . T.typeNamesAndSelectorDCs =<< getTypeEnv
+
 idM :: Name -> ParserM Id
 idM n = do
     t <- getType n
     case t of
         Just t' -> return (Id n t')
         Nothing -> return (Id n TYPE)
+
+varOrData :: Name -> ParserM Expr
+varOrData n = do
+    sdcs <- getTypeNamesAndSelectorDCs
+    case find (\dc -> n == T.selectorDCName (snd dc)) sdcs of
+        Just (tn, dc') -> return . Data $ T.selectorDCToDC tn dc'
+        Nothing -> do
+            i <- idM n
+            return $ Var i
 }

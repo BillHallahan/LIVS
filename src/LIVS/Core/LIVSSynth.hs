@@ -17,11 +17,13 @@ import LIVS.Target.General.LanguageEnv
 import Control.Monad.Random
 import Data.List
 
+import LIVS.Target.JavaScript.Interface
+
 livsSynthCVC4 :: (MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
 livsSynthCVC4 con le fp cg = livsSynth con le (runSygusWithGrammar cg) fuzzExamplesM fp cg
 
-livsSynth :: (MonadIO m, MonadRandom m)
+livsSynth :: MonadIO m
           => LIVSConfigNames
           -> LanguageEnv m
           -> Gen m
@@ -40,14 +42,20 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
     let is = nub $ map func exs
 
     -- Synthesize based on the user provided examples
-    h'' <- livs' con le gen fuzz cg exs tenv h' is
+    h'' <- livs' con le gen fuzzFake cg exs tenv h' is
 
     -- Check that the synthesized functions work in the real language
     mapM_ (\i -> case H.lookup (idName i) h'' of
-                    Just (H.Def e) -> def le i e
+                    Just (H.Def e) -> do
+                      liftIO . putStrLn $ toJavaScriptDef (idName i) e
+                      def le i e
                     _ -> error "livsSynth: No definition found") is
     incor <- incorrectSuspects le $ map Suspect exs
 
     case incor of
         [] -> return h''
         _ -> error $ "livsSynth: Incorrect translation back to real language" 
+  where
+    -- We do not want to fuzz any inputs for the new synthesized function,
+    -- since there is no way of getting new outputs
+    fuzzFake _ _ _ _ = return []

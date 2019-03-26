@@ -27,7 +27,7 @@ evalPrimitive h tenv e = do
         set_x = tspec ++ "\n(declare-fun x () " ++ toSygusType (typeOf e) ++ ")\n" ++
                     "(assert (= x " ++ s ++ "))"
 
-    m <- runSMT2WithGrammar h $ "(set-logic ALL_SUPPORTED)\n" ++ set_x ++ "\n(check-sat)\n(get-value (x))"
+    m <- runSMT2WithGrammar h tenv $ "(set-logic ALL_SUPPORTED)\n" ++ set_x ++ "\n(check-sat)\n(get-value (x))"
 
     case m of
         Sat m' -> case HM.lookup x m' of
