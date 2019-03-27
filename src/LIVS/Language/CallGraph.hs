@@ -4,6 +4,7 @@ module LIVS.Language.CallGraph ( CallGraph
                                , CallForest
                                , CallTree
                                , createCallGraph
+                               , addVertsToCallGraph
                                , dfs
                                , vert
                                , trees
@@ -22,7 +23,7 @@ import Data.Maybe
 import qualified Data.HashSet as S
 
 data CallGraph =
-    CallGraph G.Graph (G.Vertex -> Id) (Id -> Maybe G.Vertex)
+    CallGraph G.Graph (G.Vertex -> Id) (Id -> Maybe G.Vertex) [(Id, [Id])]
 
 -- | Takes a list, mapping functions to the functions they call
 createCallGraph :: [(Id, [Id])] -> CallGraph
@@ -38,7 +39,7 @@ createCallGraph iss =
 
         (g, ti, tv) = G.graphFromEdges . map (\(i, is) -> (i, idName i, map idName is)) $ iss'
     in
-    CallGraph g (fst3 . ti) (tv . idName)
+    CallGraph g (fst3 . ti) (tv . idName) iss
     where
         fst3 (x, _, _) = x
 
@@ -46,8 +47,11 @@ type CallForest = [CallTree]
 
 data CallTree = CallTree (G.Tree G.Vertex) (G.Vertex -> Id) (Id -> Maybe G.Vertex)
 
+addVertsToCallGraph :: [(Id, [Id])] -> CallGraph -> CallGraph
+addVertsToCallGraph is (CallGraph _ _ _ is') = createCallGraph $ is ++ is'
+
 dfs :: CallGraph -> CallForest
-dfs (CallGraph g ti tv) = map (\x  -> CallTree x ti tv) (G.dff g)
+dfs (CallGraph g ti tv _) = map (\x  -> CallTree x ti tv) (G.dff g)
 
 vert :: CallTree -> Id
 vert (CallTree (G.Node a _) f _) = f a 
@@ -57,20 +61,20 @@ trees (CallTree (G.Node _ ts) ti tv) = map (\x  -> CallTree x ti tv) ts
 
 -- | Returns all Id's (verts) reachable from the given Id in the CallGraph
 reachable :: Id -> CallGraph -> S.HashSet Id
-reachable n (CallGraph cg ti tv) =
+reachable n (CallGraph cg ti tv _) =
     case tv n of
         Just v -> S.fromList . map ti $ G.reachable cg v
         Nothing -> S.empty
 
 -- | Returns all Id's directly called by the given Id
 directlyCalls :: Id -> CallGraph -> S.HashSet Id
-directlyCalls i (CallGraph cg ti _) =
+directlyCalls i (CallGraph cg ti _ _) =
     S.fromList . map snd . filter ((==) i . fst) 
           . map (\(v1, v2) -> (ti v1, ti v2)) . G.edges $ cg
 
 -- | Gives a list of Id's in post-order
 postOrderList :: CallGraph -> [Id]
-postOrderList (CallGraph cg ti _) = reverse . map ti $ G.topSort cg
+postOrderList (CallGraph cg ti _ _) = reverse . map ti $ G.topSort cg
 
 -- | The same as postOrderListTree, except cuts off the beginning of each branch
 -- up to the first occurence of an element in the input list
@@ -79,7 +83,7 @@ postOrderListAfter is cg = filter (\i1 -> any (path cg i1) is) . postOrderList $
 
 -- | Returns true if the second Id reachable from the first
 path :: CallGraph -> Id -> Id -> Bool
-path (CallGraph g _ tv) i1 i2 =
+path (CallGraph g _ tv _) i1 i2 =
     case (tv i1, tv i2) of
         (Just i1', Just i2') -> G.path g i1' i2'
         _ -> False

@@ -11,13 +11,14 @@ import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
+import LIVS.Language.Typing
 import LIVS.Sygus.CVC4Interface
 import LIVS.Target.General.LanguageEnv
+import LIVS.Target.JavaScript.Interface
 
 import Control.Monad.Random
 import Data.List
-
-import LIVS.Target.JavaScript.Interface
+import Data.Maybe
 
 livsSynthCVC4 :: (MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
@@ -41,8 +42,14 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
     -- Get the Id's of the new functions we have to synthesize
     let is = nub $ map func exs
 
+    -- Expand the call graph with the new id's
+    let def_ids = allDefIds h'
+        cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
+
     -- Synthesize based on the user provided examples
-    h'' <- livs' con le gen fuzzFake cg exs tenv h' is
+    let con' = con { core_funcs = filterNonPrimitives h' (core_funcs con)}
+
+    h'' <- livs' con' le gen fuzzFake cg' exs tenv h' is
 
     -- Check that the synthesized functions work in the real language
     mapM_ (\i -> case H.lookup (idName i) h'' of
@@ -59,3 +66,14 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
     -- We do not want to fuzz any inputs for the new synthesized function,
     -- since there is no way of getting new outputs
     fuzzFake _ _ _ _ = return []
+
+allDefIds :: H.Heap -> [Id]
+allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
+    where
+        getDefPairs (n, H.Def e) = Just (n, e)
+        getDefPairs _ = Nothing
+
+-- | In general, we cannot convert SMT primitives back into the real language,
+-- so we filter them out here.
+filterNonPrimitives :: H.Heap -> [Name] ->[Name]
+filterNonPrimitives h = filter (not . flip H.isPrimitive h)

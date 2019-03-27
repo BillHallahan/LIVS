@@ -135,5 +135,6 @@ operators = [ Name "+" Nothing
             , Name "-" Nothing
             , Name "*" Nothing
             , Name "=" Nothing
+            , Name "==" Nothing
             , Name ">=" Nothing
             , Name "<=" Nothing ]
