@@ -10,7 +10,10 @@ import Test.Tasty.HUnit
 
 uiParseTests :: TestTree
 uiParseTests = testGroup "UI Parse" [ parseExample1
-                                    , parseExamples1 ]
+                                    , parseExample2
+                                    , parseExample3
+                                    , parseExamples1
+                                    ]
 
 parseExample1 :: TestTree
 parseExample1 = testCase "parseExample Test 1"
@@ -20,6 +23,25 @@ parseExample1 = testCase "parseExample Test 1"
         ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
                      , input = [AppVal (DataVal jsIntDC) (LitVal $ LInt 3)]
                      , output = AppVal (DataVal jsIntDC) (LitVal $ LInt 20) }
+
+parseExample2 :: TestTree
+parseExample2 = testCase "parseExample Test 2"
+    $ assertBool "Correct parseExample" 
+            (parseExample jsJSONToVal "@pbe (constraint (= (f 5 -4) -2))" == Just ex)
+    where
+        ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
+                     , input = [ AppVal (DataVal jsIntDC) (LitVal $ LInt 5)
+                               , AppVal (DataVal jsIntDC) (LitVal $ LInt (-4)) ]
+                     , output = AppVal (DataVal jsIntDC) (LitVal $ LInt (-2)) }
+
+parseExample3 :: TestTree
+parseExample3 = testCase "parseExample Test 3"
+    $ assertBool "Correct parseExample" 
+            (parseExample jsJSONToVal "@pbe (constraint (= (f \"hello world\") \"hey world\"))" == Just ex)
+    where
+        ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
+                     , input = [ AppVal (DataVal jsStringDC) (LitVal $ LString "hello world") ]
+                     , output = AppVal (DataVal jsStringDC) (LitVal $ LString "hey world") }
 
 parseExamples1 :: TestTree
 parseExamples1 = testCase "parseExamples Test 1"

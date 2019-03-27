@@ -33,11 +33,11 @@ parseExample stv s =
         _ -> Nothing
 
 exampleRegex :: Regex
-exampleRegex = mkRegex "@pbe[ ]*\\(constraint[ ]\\(=[ ]*\\(([a-zA-Z0-9 ]*)\\)[ ]*([a-zA-Z0-9 ]*)\\)\\)"
+exampleRegex = mkRegex "@pbe[ ]*\\(constraint[ ]\\(=[ ]*\\(([a-zA-Z0-9 \"-]*)\\)[ ]*([a-zA-Z0-9 \"-]*)\\)\\)"
 
 parseExample' :: (String -> Val) -> String -> String -> Maybe Example
 parseExample' stv call out
-    | f:ars <- words call =
+    | f:ars <- splitArgs call =
         let
             -- Aeson requires the newline to parse values
             arsV = map stv $ map (++ "\n") ars
@@ -49,3 +49,16 @@ parseExample' stv call out
                        , input = arsV
                        , output = outV }
     | otherwise = Nothing
+
+splitArgs :: String -> [String]
+splitArgs = splitArgs' False ""
+
+splitArgs' :: Bool -- ^ Are we in a string?
+           -> String -- ^ The next argument, being built up
+           -> String
+           -> [String]
+splitArgs' False ar (' ':xs) = reverse ar:splitArgs' False "" xs
+splitArgs' False ar ('\"':xs) = splitArgs' True ('\"':ar) xs
+splitArgs' True ar ('\"':xs) = splitArgs' False ('\"':ar) xs
+splitArgs' b ar (x:xs) = splitArgs' b (x:ar) xs
+splitArgs' _ ar [] = [reverse ar]

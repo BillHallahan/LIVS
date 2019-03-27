@@ -57,7 +57,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
         findName s = find (\(Name n _) -> n == s) ns
 
 coreFuncs :: [String]
-coreFuncs = ["=", "+", "*", "ite", "int.to.str", "str.++", "\"true\"", "\"false\"", "\"NaN\""]
+coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "\"true\"", "\"false\"", "\"NaN\""]
 
 addCoreFuncs :: LIVSConfig cf -> [cf] -> LIVSConfig cf
 addCoreFuncs config@(LIVSConfig { core_funcs = cf }) xs = config { core_funcs = cf ++ xs}
