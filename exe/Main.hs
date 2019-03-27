@@ -1,5 +1,6 @@
 module Main where
 
+import LIVS.Core.Fuzz
 import LIVS.Core.LIVSSynth
 
 import LIVS.Config.Config
@@ -70,6 +71,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let heap' = T.mergeConstructors tenv heap
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
-    lr <- livsSynthCVC4 config'' lenv fp cg heap'' tenv synth_ex
+    lr <- livsSynthCVC4 config'' lenv (fuzzFromOutputsWithInitM synth_ex) fp cg heap'' tenv synth_ex
 
     print lr

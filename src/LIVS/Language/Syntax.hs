@@ -22,6 +22,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , funcName
                             , examplesForFunc
                             , exampleFuncCall
+                            , exampleVals
                             , isCorrect
                             , isIncorrect
                             , mExample
@@ -123,6 +124,10 @@ examplesForFunc n = filter (\e -> n == funcName e)
 
 exampleFuncCall :: Example -> Expr
 exampleFuncCall ex = foldl' App (Var (func ex)) $ map valToExpr (input ex)
+
+-- | Get all values from an example
+exampleVals :: Example -> [Val]
+exampleVals ex = output ex:input ex
 
 -- | An "example" which may or may not be satisfied by the actual code.
 -- Often produced by deriving the Example from interpreting the IR.

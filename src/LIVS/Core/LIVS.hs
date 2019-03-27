@@ -34,16 +34,9 @@ import Data.List
 -- | Generates code satisfying a set of examples
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
--- | Generates inputs to a function
-type Fuzz m = LanguageEnv m 
-           -> T.TypeEnv
-           -> Int -- ^ How many examples to fuzz
-           -> Id -- ^ A function call
-           -> m [Example]
-
 livsCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livsCVC4 con le fp cg = livs con le (runSygusWithGrammar cg) fuzzExamplesM fp cg
+         => LIVSConfigNames -> LanguageEnv m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+livsCVC4 con le fuzz fp cg = livs con le (runSygusWithGrammar cg) fuzz fp cg
 
 livs :: MonadIO m
      => LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
@@ -70,7 +63,7 @@ livsStep :: MonadIO m =>
 livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- fuzz le tenv (fuzz_num con) i
+    re' <- fuzz le es tenv (fuzz_num con) i
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h

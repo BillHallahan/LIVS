@@ -1,6 +1,13 @@
-module LIVS.Core.Fuzz ( fuzzExamplesM
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+module LIVS.Core.Fuzz ( Fuzz
+                      , fuzzExamplesM
                       , fuzzExampleM
-                      , fuzzValM ) where
+                      , fuzzValM
+
+                      , fuzzFromOutputsWithInitM
+                      , fuzzFromOutputsM ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
@@ -9,14 +16,19 @@ import LIVS.Language.Typing
 import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
+import qualified Data.List as L
 
-fuzzExamplesM :: MonadRandom m => 
-                 LanguageEnv m
-              -> T.TypeEnv
-              -> Int -- ^ How many examples to fuzz
-              -> Id -- ^ A function call
-              -> m [Example] -- ^ A fuzzed input/output example
-fuzzExamplesM le tenv n i = do
+-- | Generates inputs to a function
+type Fuzz m = LanguageEnv m
+           -> [Example] -- ^ The existing examples
+           -> T.TypeEnv
+           -> Int -- ^ How many examples to fuzz
+           -> Id -- ^ A function call
+           -> m [Example]
+
+-- | Fuzz examples randomly
+fuzzExamplesM :: MonadRandom m => Fuzz m
+fuzzExamplesM le _ tenv n i = do
     mapM (\_ -> fuzzExampleM (call le) tenv i) [1..n]
 
 fuzzExampleM :: MonadRandom m => 
@@ -59,3 +71,37 @@ randomString = do
 
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
+
+-- | Fuzzes, drawing random values from the either of the examples lists when possible.
+-- Fuzzes randomly when no value of the given type exists.
+fuzzFromOutputsWithInitM :: MonadRandom m => [Example] -> Fuzz m
+fuzzFromOutputsWithInitM es le es' = fuzzFromOutputsM le (es ++ es')
+
+-- | Fuzzes, drawing random values from the existing examples when possible.
+-- Fuzzes randomly when no value of the given type exists.
+fuzzFromOutputsM :: MonadRandom m => Fuzz m
+fuzzFromOutputsM le es tenv n i = do
+    let vs = L.nub $ concatMap exampleVals es
+    mapM (\_ -> fuzzFromOutputsM' (call le) vs tenv i) [1..n]
+
+fuzzFromOutputsM' :: MonadRandom m => 
+                     (Expr -> m Val)
+                  -> [Val]
+                  -> T.TypeEnv
+                  -> Id
+                  -> m Example
+fuzzFromOutputsM' ca vs tenv i = do
+    let ts = argTypes i
+    ls <- mapM (fuzzFromOutputVal vs tenv) ts
+    
+    let outE = mkApp (Var i:map valToExpr ls)
+    r <- ca outE 
+
+    return Example { func = i
+                   , input = ls
+                   , output = r}
+
+fuzzFromOutputVal :: MonadRandom m => [Val] -> T.TypeEnv -> Type -> m Val
+fuzzFromOutputVal vs tenv t
+    | vs'@(_:_) <- filter (\v -> typeOf v == t) vs = fromListConst vs'
+    | otherwise = fuzzValM tenv t

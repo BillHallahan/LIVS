@@ -21,8 +21,8 @@ import Data.List
 import Data.Maybe
 
 livsSynthCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
-livsSynthCVC4 con le fp cg = livsSynth con le (runSygusWithGrammar cg) fuzzExamplesM fp cg
+         => LIVSConfigNames -> LanguageEnv m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
+livsSynthCVC4 con le fuzz fp cg = livsSynth con le (runSygusWithGrammar cg) fuzz fp cg
 
 livsSynth :: MonadIO m
           => LIVSConfigNames
@@ -65,7 +65,7 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
   where
     -- We do not want to fuzz any inputs for the new synthesized function,
     -- since there is no way of getting new outputs
-    fuzzFake _ _ _ _ = return []
+    fuzzFake _ _ _ _ _ = return []
 
 allDefIds :: H.Heap -> [Id]
 allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
