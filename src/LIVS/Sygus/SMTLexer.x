@@ -20,7 +20,7 @@ tokens:-
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
     [$alpha $symbs] [$alpha $digit $symbs ]*            { TokenName }
-    \" [$alpha $digit $symbs ]* \"                      { TokenString }
+    \" [$alpha $digit $symbs ]* \"                      { TokenString . elimOpenCloseQuote }
 
 {
 data Token = TokenSat
@@ -43,4 +43,13 @@ elimWhiteParens (')':xs) = elimWhiteParens xs
 elimWhiteParens (' ':xs) = elimWhiteParens xs
 elimWhiteParens (x:xs) = x:elimWhiteParens xs
 elimWhiteParens [] = []
+
+elimOpenCloseQuote :: String -> String
+elimOpenCloseQuote ('"':xs) = elimOpenCloseQuote' xs
+elimOpenCloseQuote _ = error "elimOpenCloseQuote: Bad string"
+
+elimOpenCloseQuote' :: String -> String
+elimOpenCloseQuote' ('"':[]) = []
+elimOpenCloseQuote' (x:xs) = elimOpenCloseQuote' xs
+elimOpenCloseQuote' [] = error "elimOpenCloseQuote': Bad string"
 }

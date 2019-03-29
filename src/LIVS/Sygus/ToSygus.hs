@@ -97,7 +97,7 @@ toSygusLit :: Lit -> String
 toSygusLit (LInt i)
     | i >= 0 = show i
     | otherwise = "(- " ++ show (-i) ++ ")"
-toSygusLit (LString s) = show s
+toSygusLit (LString s) = "\"" ++ s ++ "\""
 
 toSygusType :: Type -> String
 toSygusType (TyCon n _) = nameToString n

@@ -55,7 +55,7 @@ runCVC4WithFile :: String -- SyGuS
                 -> String
                 -> [String]
                 -> IO String
-runCVC4WithFile sygus ext ars =
+runCVC4WithFile sygus ext ars = do
     withSystemTempFile ("cvc4_input" ++ ext)
         (\fp h -> do
             hPutStr h sygus

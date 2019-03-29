@@ -51,7 +51,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
-                          -- , (Name "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
+                          , (Name "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
                           , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
                           , (Name "\"true\"" Nothing, H.Primitive $ stringType)
