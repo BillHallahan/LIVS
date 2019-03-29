@@ -1,6 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 
-module LIVS.Target.General.LanguageEnv ( Load
+module LIVS.Target.General.LanguageEnv ( FuncInfo (..)
+                                       , idsAndCalls
+                                       , idsAndConsts
+                                       , Load
                                        , Def
                                        , Call
                                        , LanguageEnv (..)
@@ -8,10 +11,32 @@ module LIVS.Target.General.LanguageEnv ( Load
 
 import LIVS.Language.Syntax
 
+import Data.Semigroup
+
+-- Information about the body of a function
+data FuncInfo = FuncInfo { calls :: [Id]
+                         , consts :: [Val] }
+                deriving (Eq, Show, Read)
+
+instance Semigroup FuncInfo where
+    f1 <> f2 = FuncInfo { calls = calls f1 <> calls f2
+                        , consts = consts f1 <> consts f2 }
+
+instance Monoid FuncInfo where
+    mempty = FuncInfo { calls = [], consts = [] }
+    mappend = (<>)
+
+idsAndCalls :: [(Id, FuncInfo)] -> [(Id, [Id])]
+idsAndCalls = map (\(i, fi) -> (i, calls fi))
+
+idsAndConsts :: [(Id, FuncInfo)] -> [(Id, [Val])]
+idsAndConsts = map (\(i, fi) -> (i, consts fi))
+
 -- | Given a code file, extracts:
 -- 1) Function declarations, i.e. function names and types
--- 2) For each function f, the names and types of the functions f calls 
-type Extract m b = FilePath -> m ([(Id, [Id])], b)
+-- 2) For each function f, the names and types of the functions f calls
+-- 3) For each function f, contained constant values
+type Extract m b = FilePath -> m ([(Id, FuncInfo)], b)
 
 -- | Load a file with the given name into a REPL
 type Load m = FilePath -> m ()

@@ -6,6 +6,7 @@ module LIVS.Core.Fuzz ( Fuzz
                       , fuzzExampleM
                       , fuzzValM
 
+                      , fuzzFromValsAndOutputsM
                       , fuzzFromOutputsM ) where
 
 import LIVS.Language.Expr
@@ -72,12 +73,17 @@ randomString = do
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
 
+-- | Fuzzes, drawing random values from the existing values and examples when possible.
+-- Fuzzes randomly when no value of the given type exists.
+fuzzFromValsAndOutputsM :: MonadRandom m => [Val] -> Fuzz m b
+fuzzFromValsAndOutputsM vs le b es tenv n i = do
+    let vs' = L.nub (vs ++ concatMap exampleVals es)
+    mapM (\_ -> fuzzFromOutputsM' (call le b) vs' tenv i) [1..n]
+
 -- | Fuzzes, drawing random values from the existing examples when possible.
 -- Fuzzes randomly when no value of the given type exists.
 fuzzFromOutputsM :: MonadRandom m => Fuzz m b
-fuzzFromOutputsM le b es tenv n i = do
-    let vs = L.nub $ concatMap exampleVals es
-    mapM (\_ -> fuzzFromOutputsM' (call le b) vs tenv i) [1..n]
+fuzzFromOutputsM = fuzzFromValsAndOutputsM []
 
 fuzzFromOutputsM' :: MonadRandom m => 
                      (Expr -> m Val)

@@ -45,7 +45,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     whenLoud (putStrLn "Verbose")
 
-    let cg = createCallGraph ids
+    let cg = createCallGraph (idsAndCalls ids)
         heap = H.fromList [ (Name "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
                           , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
@@ -73,6 +73,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let heap' = T.mergeConstructors tenv heap
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
-    lr <- livsSynthCVC4 config'' lenv b (\le b' ex -> fuzzFromOutputsM le b' (synth_ex ++ ex)) fp cg heap'' tenv synth_ex
+    let cs = concatMap (consts . snd) ids
+
+    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM (cs ++ concatMap exampleVals synth_ex)) fp cg heap'' tenv synth_ex
 
     print lr

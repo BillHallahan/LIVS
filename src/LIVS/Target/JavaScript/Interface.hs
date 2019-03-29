@@ -26,9 +26,6 @@ import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
 
-import Data.Attoparsec.ByteString
-import Data.Aeson
-import qualified Data.ByteString.Char8 as B
 import qualified Data.HashSet as S
 
 newtype JavaScriptREPL = JavaScriptREPL Process
@@ -41,7 +38,7 @@ jsLanguageEnv = do
                          , def = defJavaScript js
                          , call = callJavaScript js }
 
-extractFileJavaScript :: FilePath -> IO ([(Id, [Id])], S.HashSet Name)
+extractFileJavaScript :: FilePath -> IO ([(Id, FuncInfo)], S.HashSet Name)
 extractFileJavaScript fp = do
     jsast <- Ext.parseJS fp
     case jsast of
@@ -65,20 +62,6 @@ callJavaScript js dnn e = do
     putStrLn $ "r = " ++ r
 
     return $ jsJSONToVal r
-
-jsJSONToVal :: String -> Val
-jsJSONToVal s =
-    case parse json $ B.pack $ map repSnglWithDbl s of
-      Fail _ _ _
-        | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
-      Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
-      Partial _ -> error "Why does this happen?"
-      Done _ v -> toValue v
-    where
-        -- | JavaScript outputs JSON with single quotes, but Aeson
-        -- expects double quotes
-        repSnglWithDbl '\'' = '\"'
-        repSnglWithDbl c = c
 
 initJavaScriptREPL:: IO JavaScriptREPL
 initJavaScriptREPL = do

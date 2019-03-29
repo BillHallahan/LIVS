@@ -13,12 +13,15 @@ module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
 import LIVS.Language.AST
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
+import LIVS.Target.General.LanguageEnv
+import LIVS.Target.General.JSON
 import LIVS.Target.JavaScript.JSIdentifier
 
 import Language.JavaScript.Parser
 import Language.JavaScript.Parser.AST
 
 import qualified Data.HashSet as S
+import Data.Semigroup
 
 -- | A set of names that use dot notation.
 type DotNoteNames = S.HashSet Name
@@ -28,41 +31,44 @@ parseJS fp = do
     js <- readFile fp
     return $ parse js fp
 
-extractFunctions :: JSAST -> ([(Id, [Id])], S.HashSet Name)
+extractFunctions :: JSAST -> ([(Id, FuncInfo)], S.HashSet Name)
 extractFunctions (JSAstProgram stmts _) = mconcat $ map extractFunctionsStmt stmts
 extractFunctions (JSAstStatement stmt _) = extractFunctionsStmt stmt
-extractFunctions _ = ([], S.empty)
+extractFunctions _ = (mempty, S.empty)
 
-extractFunctionsStmt :: JSStatement -> ([(Id, [Id])], DotNoteNames)
+extractFunctionsStmt :: JSStatement -> ([(Id, FuncInfo)], DotNoteNames)
 extractFunctionsStmt (JSFunction _ ident _ args _ block _) =
     let
         (is, ns) = extractCalledFunctionsExpr block
         (is', ns') = extractCalledFunctionsStmt block
     in
-    ([( nameCLToId (identToName ident) args, is ++ is')], S.union ns ns')
-extractFunctionsStmt _ = ([], S.empty)
+    ([( nameCLToId (identToName ident) args, is <> is')], S.union ns ns')
+extractFunctionsStmt _ = (mempty, S.empty)
 
-extractCalledFunctionsStmt :: ASTContainer c JSStatement => c -> ([Id], DotNoteNames)
+extractCalledFunctionsStmt :: ASTContainer c JSStatement => c -> (FuncInfo, DotNoteNames)
 extractCalledFunctionsStmt = evalASTs extractCalledFunctionsStmt'
 
-extractCalledFunctionsStmt' :: JSStatement -> ([Id], S.HashSet Name)
-extractCalledFunctionsStmt' _ = ([], S.empty)
+extractCalledFunctionsStmt' :: JSStatement -> (FuncInfo, S.HashSet Name)
+extractCalledFunctionsStmt' _ = (mempty, S.empty)
 
-extractCalledFunctionsExpr :: ASTContainer c JSExpression => c -> ([Id], DotNoteNames)
+extractCalledFunctionsExpr :: ASTContainer c JSExpression => c -> (FuncInfo, DotNoteNames)
 extractCalledFunctionsExpr = evalASTs extractCalledFunctionsExpr'
 
-extractCalledFunctionsExpr' :: JSExpression -> ([Id], DotNoteNames)
--- extractCalledFunctionsExpr' (JSCallExpression e _ es _) = error $ "e = " ++ show e ++ " es = " ++ show es
--- extractCalledFunctionsExpr' (JSCallExpressionDot e _ es) = error $ "e = " ++ show e ++ " es = " ++ show es
--- extractCalledFunctionsExpr' (JSMemberDot e _ le) = error $ "e = " ++ show e ++ " le = " ++ show le
+extractCalledFunctionsExpr' :: JSExpression -> (FuncInfo, DotNoteNames)
+extractCalledFunctionsExpr' (JSDecimal _ d) =
+    let
+        d' = jsJSONToVal $ d ++ "\n"
+    in
+    (FuncInfo { calls = mempty, consts = [d'] }, S.empty)
+extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
-    ([nameCLToId (Name n Nothing) args], S.empty)
+    (FuncInfo { calls = [nameCLToId (Name n Nothing) args], consts = mempty }, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _ n)) _ args _) =
     let
         nm = Name n Nothing
     in
-    ([nameCLToIdWithExtraArgs nm args 1], S.singleton nm)
-extractCalledFunctionsExpr' _ = ([], S.empty)
+    (FuncInfo {calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
+extractCalledFunctionsExpr' _ = (mempty, S.empty)
 
 nameCLToIdWithExtraArgs :: Name -> JSCommaList a -> Int -> Id
 nameCLToIdWithExtraArgs n args i =

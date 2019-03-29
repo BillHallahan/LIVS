@@ -6,7 +6,25 @@ import Data.Scientific
 import Data.Aeson
 import LIVS.Target.JavaScript.JSIdentifier
 import LIVS.Language.Syntax
+
+import Data.Attoparsec.ByteString
+import Data.Aeson
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
+
+jsJSONToVal :: String -> Val
+jsJSONToVal s =
+    case parse json $ B.pack $ map repSnglWithDbl s of
+      Fail _ _ _
+        | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
+      Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
+      Partial _ -> error "Why does this happen?"
+      Done _ v -> toValue v
+    where
+        -- | JavaScript outputs JSON with single quotes, but Aeson
+        -- expects double quotes
+        repSnglWithDbl '\'' = '\"'
+        repSnglWithDbl c = c
 
 -- | convert the JSON object to the homemade data type
 toValue :: Value -> Val
