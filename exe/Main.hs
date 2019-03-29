@@ -33,7 +33,7 @@ main = do
 
     synth config jsEnv
 
-synth :: LIVSConfigCL -> LanguageEnv IO -> IO ()
+synth :: LIVSConfigCL -> LanguageEnv IO b -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     putStrLn $ "fp = " ++ fp
 
@@ -41,7 +41,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     print synth_ex
 
-    ids <- extract lenv fp
+    (ids, b) <- extract lenv fp
 
     whenLoud (putStrLn "Verbose")
 
@@ -72,6 +72,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let heap' = T.mergeConstructors tenv heap
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
-    lr <- livsSynthCVC4 config'' lenv (fuzzFromOutputsWithInitM synth_ex) fp cg heap'' tenv synth_ex
+    lr <- livsSynthCVC4 config'' lenv b (\le b' ex -> fuzzFromOutputsM le b' (synth_ex ++ ex)) fp cg heap'' tenv synth_ex
 
     print lr

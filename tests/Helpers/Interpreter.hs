@@ -16,16 +16,16 @@ import LIVS.Language.Monad.Heap
 import LIVS.Language.Monad.Naming
 import LIVS.Target.General.LanguageEnv
 
-langEnv :: Monad m => H.Heap -> LanguageEnv m
+langEnv :: Monad m => H.Heap -> LanguageEnv m ()
 langEnv h = LanguageEnv { load = const $ return ()
-                        , def = const . const $ return ()
-                        , call = \e -> return . fst $ runHeapM (callPrim e) h
+                        , def = const . const . const $ return ()
+                        , call = \_ e -> return . fst $ runHeapM (callPrim e) h
                         }
 
-langEnvInterpFallBack :: Monad m => H.Heap -> LanguageEnv m
+langEnvInterpFallBack :: Monad m => H.Heap -> LanguageEnv m ()
 langEnvInterpFallBack h = LanguageEnv { load = const $ return ()
-                                      , def = const . const $ return ()
-                                      , call = \e -> return . fst
+                                      , def = const . const . const $ return ()
+                                      , call = \_ e -> return . fst
                                             $ runHeapM (callPrimInterpFallBack e) h
                                       }
 

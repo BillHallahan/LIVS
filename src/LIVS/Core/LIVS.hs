@@ -35,12 +35,12 @@ import Data.List
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
 livsCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livsCVC4 con le fuzz fp cg = livs con le (runSygusWithGrammar cg) fuzz fp cg
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+livsCVC4 con le b fuzz fp cg = livs con le b (runSygusWithGrammar cg) fuzz fp cg
 
 livs :: MonadIO m
-     => LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livs con le gen fuzz fp cg h tenv = do
+     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+livs con le b gen fuzz fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
     -- This is always possible, except in the case of mutual recursion, which we
@@ -48,22 +48,22 @@ livs con le gen fuzz fp cg h tenv = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le gen fuzz cg [] tenv h ord
+    livs' con le b gen fuzz cg [] tenv h ord
 
 livs' :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ _ _ _ h [] = return h
-livs' con le gen fuzz cg es tenv h (i:is) = do
+        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
+livs' _ _ _ _ _ _ _ _ h [] = return h
+livs' con le b gen fuzz cg es tenv h (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
-    (h', es', is') <- livsStep con le gen fuzz cg es tenv h i
-    livs' con le gen fuzz cg es' tenv h' (is' ++ is)
+    (h', es', is') <- livsStep con le b gen fuzz cg es tenv h i
+    livs' con le b gen fuzz cg es' tenv h' (is' ++ is)
 
 livsStep :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m -> Gen m -> Fuzz m -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
-livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
+        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
+livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
-    re' <- fuzz le es tenv (fuzz_num con) i
+    re' <- fuzz le b es tenv (fuzz_num con) i
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
@@ -82,7 +82,7 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
 
             let h' = H.insertDef n r h
 
-            (es', is') <- livsSatCheckIncorrect le (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''
+            (es', is') <- livsSatCheckIncorrect le b (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''
             return (h', es', is')
 
 
@@ -92,8 +92,8 @@ livsStep con le gen fuzz cg es tenv h i@(Id n _) = do
 
 -- | Takes a list of examples, and determines which functions (if any) need to
 -- be resynthesized, and which new examples should be used when doing so.
-livsSatCheckIncorrect :: Monad m => LanguageEnv m -> EvalPrimitive m -> CallGraph -> [Example] -> H.Heap -> [Example] -> m ([Example], [Id])
-livsSatCheckIncorrect le ep cg es h exs = do
+livsSatCheckIncorrect :: Monad m => LanguageEnv m b -> b -> EvalPrimitive m -> CallGraph -> [Example] -> H.Heap -> [Example] -> m ([Example], [Id])
+livsSatCheckIncorrect le b ep cg es h exs = do
     -- Run the example inputs in the interpreter, collecting the suspect
     -- examples from function calls
     let runCollecting = runCollectingExamples ep 1000 h (mkNameGen [])
@@ -104,7 +104,7 @@ livsSatCheckIncorrect le ep cg es h exs = do
     -- those out.
     let maybe_incor_exs =
             filter (not . flip H.isPrimitive h . idName . func . sExample) $ concatMap snd rs
-    incor <- incorrectSuspects le maybe_incor_exs
+    incor <- incorrectSuspects le b maybe_incor_exs
 
     -- Figure out which functions are involved in the incorrect function calls
     let bad_fs = map (func . iExample) incor
@@ -135,16 +135,16 @@ filterToReachable con i cg =
     H.filterWithKey (\n' _ -> n' `S.member` r)
 
 -- | Takes a list of possibly incorrect examples, and returns only those that are really incorrect.
-incorrectSuspects :: Monad m => LanguageEnv m -> [SuspectExample] -> m [IncorrectExample]
-incorrectSuspects le es = return . onlyIncorrect =<< markSuspects le es
+incorrectSuspects :: Monad m => LanguageEnv m b -> b -> [SuspectExample] -> m [IncorrectExample]
+incorrectSuspects le b es = return . onlyIncorrect =<< markSuspects le b es
 
-markSuspects :: Monad m => LanguageEnv m -> [SuspectExample] -> m [MarkedExample]
-markSuspects le = mapM (markSuspect le)
+markSuspects :: Monad m => LanguageEnv m b -> b -> [SuspectExample] -> m [MarkedExample]
+markSuspects le b = mapM (markSuspect le b)
 
 -- | Takes a SuspectExample and check's whether it matches the real function.
-markSuspect :: Monad m => LanguageEnv m -> SuspectExample -> m MarkedExample
-markSuspect (LanguageEnv { call = ca }) (Suspect ex) = do
-    r <- ca $ exampleFuncCall ex
+markSuspect :: Monad m => LanguageEnv m b -> b -> SuspectExample -> m MarkedExample
+markSuspect (LanguageEnv { call = ca }) b (Suspect ex) = do
+    r <- ca b $ exampleFuncCall ex
     if r == output ex
         then return $ MarkedCorrect ex
         else return $ MarkedIncorrect ex r

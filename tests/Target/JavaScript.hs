@@ -6,6 +6,8 @@ import LIVS.Target.JavaScript.JSIdentifier
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
+import qualified Data.HashSet as S
+
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -24,7 +26,7 @@ run = do
 callConstFxn :: IO Val
 callConstFxn = do
   j <- jsLanguageEnv
-  (call j) testFxn
+  (call j S.empty) testFxn
 
 testFxn :: Expr
 testFxn = 

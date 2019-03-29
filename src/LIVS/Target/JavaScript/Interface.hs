@@ -1,5 +1,6 @@
 module LIVS.Target.JavaScript.Interface ( 
           JavaScriptREPL
+        , DotNoteNames
         , jsLanguageEnv
         , extractFileJavaScript
         , loadFileJavaScript
@@ -20,6 +21,7 @@ import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.Process
 import LIVS.Target.General.JSON
 import qualified LIVS.Target.JavaScript.Extract as Ext
+import LIVS.Target.JavaScript.Extract (DotNoteNames)
 import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
@@ -27,10 +29,11 @@ import Data.List
 import Data.Attoparsec.ByteString
 import Data.Aeson
 import qualified Data.ByteString.Char8 as B
+import qualified Data.HashSet as S
 
 newtype JavaScriptREPL = JavaScriptREPL Process
 
-jsLanguageEnv :: IO (LanguageEnv IO)
+jsLanguageEnv :: IO (LanguageEnv IO (S.HashSet Name))
 jsLanguageEnv = do
     js <- initJavaScriptREPL
     return $ LanguageEnv { extract = extractFileJavaScript
@@ -38,7 +41,7 @@ jsLanguageEnv = do
                          , def = defJavaScript js
                          , call = callJavaScript js }
 
-extractFileJavaScript :: FilePath -> IO [ (Id, [Id]) ]
+extractFileJavaScript :: FilePath -> IO ([(Id, [Id])], S.HashSet Name)
 extractFileJavaScript fp = do
     jsast <- Ext.parseJS fp
     case jsast of
@@ -50,15 +53,15 @@ loadFileJavaScript js p = do
     _ <- runAndReadJavaScript js $ "LOAD " ++ p ++ "\n"
     return ()
 
-defJavaScript :: JavaScriptREPL -> Id -> Expr -> IO ()
-defJavaScript js (Id n _) e = do
-    _ <- runAndReadJavaScript js $ toJavaScriptDef n e
+defJavaScript :: JavaScriptREPL -> DotNoteNames -> Id -> Expr -> IO ()
+defJavaScript js dnn (Id n _) e = do
+    _ <- runAndReadJavaScript js $ toJavaScriptDef dnn n e
     return ()
 
-callJavaScript :: JavaScriptREPL -> Expr -> IO Val
-callJavaScript js e = do
-    r <- runAndReadJavaScript js (toJavaScriptCall e)
-    putStrLn $ "call = " ++ toJavaScriptCall e
+callJavaScript :: JavaScriptREPL -> DotNoteNames -> Expr -> IO Val
+callJavaScript js dnn e = do
+    r <- runAndReadJavaScript js (toJavaScriptCall dnn e)
+    putStrLn $ "call = " ++ toJavaScriptCall dnn e
     putStrLn $ "r = " ++ r
 
     return $ jsJSONToVal r
@@ -91,37 +94,41 @@ runJavaScript (JavaScriptREPL js) s = runProcess js s
 closeJavaScript :: JavaScriptREPL -> IO ()
 closeJavaScript (JavaScriptREPL js) = closeProcess js "process.exit()\n"
 
-toJavaScriptDef :: Name -> Expr -> String
-toJavaScriptDef n e =
+toJavaScriptDef :: DotNoteNames -> Name -> Expr -> String
+toJavaScriptDef dnn n e =
     let
         args = concat . intersperse " " . map toJavaScriptId $ leadingLams e
-        e' = toJavaScriptExpr $ stripLeadingLams e
+        e' = toJavaScriptExpr dnn $ stripLeadingLams e
     in
     nameToString n ++ " = function (" ++ args ++ ") { return " ++ e' ++ "}\n"
 
-toJavaScriptCall :: Expr -> String
-toJavaScriptCall e = toJavaScriptExpr e ++ ";\n"
+toJavaScriptCall :: DotNoteNames -> Expr -> String
+toJavaScriptCall dnn e = toJavaScriptExpr dnn e ++ ";\n"
 
-toJavaScriptExpr :: Expr -> String
-toJavaScriptExpr (Var i) = toJavaScriptId i
-toJavaScriptExpr (Data dc)
+toJavaScriptExpr :: DotNoteNames -> Expr -> String
+toJavaScriptExpr _ (Var i) = toJavaScriptId i
+toJavaScriptExpr _ (Data dc)
     | dc == trueDC = "true"
     | dc == falseDC = "false"
     | dc == jsNaNDC = "NaN"
     | otherwise = ""
-toJavaScriptExpr (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
-toJavaScriptExpr (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr e) ++ ")"
-toJavaScriptExpr e@(App _ _)
+toJavaScriptExpr _ (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
+toJavaScriptExpr dnn (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr dnn e) ++ ")"
+toJavaScriptExpr dnn e@(App _ _)
     | App (App (App (Var (Id (Name "ite" _) _)) e1) e2) e3 <- e =
-        "(" ++ toJavaScriptExpr e1 ++ "?" ++ toJavaScriptExpr e2 ++ ":" ++ toJavaScriptExpr e3 ++ ")"
+        "(" ++ toJavaScriptExpr dnn e1 ++ "?" ++ toJavaScriptExpr dnn e2 ++ ":" ++ toJavaScriptExpr dnn e3 ++ ")"
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
-    , n `elem` operators = "(" ++ toJavaScriptExpr e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr e2 ++ ") "
+    , n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
+    | v@(Var (Id n _)):e:es <- unApp e
+    , n `S.member` dnn =
+        "(" ++ toJavaScriptExpr dnn e ++ "." ++ toJavaScriptExpr dnn v ++ "("
+        ++ (concat . intersperse ", " $ map (toJavaScriptExpr dnn) es) ++ "))"
     | otherwise = 
-        "(" ++ toJavaScriptExpr (appCenter e) ++ "("
-            ++ (concat . intersperse ", " . map toJavaScriptExpr $ appArgs e) ++ ")) "
-toJavaScriptExpr (Let (i, b) e) =
-    toJavaScriptId i ++ " = " ++ toJavaScriptExpr b ++ " in " ++ toJavaScriptExpr e
+        "(" ++ toJavaScriptExpr dnn (appCenter e) ++ "("
+            ++ (concat . intersperse ", " . map (toJavaScriptExpr dnn) $ appArgs e) ++ "))"
+toJavaScriptExpr dnn (Let (i, b) e) =
+    toJavaScriptId i ++ " = " ++ toJavaScriptExpr dnn b ++ " in " ++ toJavaScriptExpr dnn e
 
 toJavaScriptId :: Id -> String
 toJavaScriptId (Id n _) = nameToString n

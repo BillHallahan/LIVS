@@ -15,11 +15,12 @@ tokens:-
     unsat                                               { const TokenUnSat }
     unknown                                             { const TokenUnknown}
     define\-fun                                         { const TokenDefineFun }
+    $digit+                                             { TokenInt . read }
+    \(\-$white$digit+\)                                 { TokenInt . read . elimWhiteParens }
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
     [$alpha $symbs] [$alpha $digit $symbs ]*            { TokenName }
     \" [$alpha $digit $symbs ]* \"                      { TokenString }
-    $digit+                                             { TokenInt . read }
 
 {
 data Token = TokenSat
@@ -35,4 +36,11 @@ data Token = TokenSat
 
 lexSMT :: String -> [Token]
 lexSMT = alexScanTokens
+
+elimWhiteParens :: String -> String
+elimWhiteParens ('(':xs) = elimWhiteParens xs
+elimWhiteParens (')':xs) = elimWhiteParens xs
+elimWhiteParens (' ':xs) = elimWhiteParens xs
+elimWhiteParens (x:xs) = x:elimWhiteParens xs
+elimWhiteParens [] = []
 }

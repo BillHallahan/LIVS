@@ -21,12 +21,12 @@ import LIVS.Target.OCaml.ParserCL
 import Data.List
 newtype OCaml = OCaml Process
 
-ocamlLanguageEnv :: IO (LanguageEnv IO)
+ocamlLanguageEnv :: IO (LanguageEnv IO ())
 ocamlLanguageEnv = do
     ocaml <- getOCaml
     return $ LanguageEnv { load = loadFileOCaml ocaml
-                         , def = defOCaml ocaml
-                         , call = callOCaml ocaml }
+                         , def = \_ -> defOCaml ocaml
+                         , call = \_ -> callOCaml ocaml }
 
 loadFileOCaml :: OCaml -> FilePath -> IO ()
 loadFileOCaml ocaml p = runOCaml ocaml $ "#use \"" ++ p ++ "\";;\n"

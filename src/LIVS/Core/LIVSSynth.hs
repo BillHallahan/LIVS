@@ -21,23 +21,24 @@ import Data.List
 import Data.Maybe
 
 livsSynthCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m -> Fuzz m -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
-livsSynthCVC4 con le fuzz fp cg = livsSynth con le (runSygusWithGrammar cg) fuzz fp cg
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
+livsSynthCVC4 con le b fuzz fp cg = livsSynth con le b (runSygusWithGrammar cg) fuzz fp cg
 
 livsSynth :: MonadIO m
           => LIVSConfigNames
-          -> LanguageEnv m
+          -> LanguageEnv m b
+          -> b
           -> Gen m
-          -> Fuzz m
+          -> Fuzz m b
           -> FilePath
           -> CallGraph
           -> H.Heap
           -> T.TypeEnv
           -> [Example] -- ^ The examples to synthesize a new function from
           -> m H.Heap
-livsSynth con le gen fuzz fp cg h tenv exs = do
+livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Get the component functions
-    h' <- livs con le gen fuzz fp cg h tenv
+    h' <- livs con le b gen fuzz fp cg h tenv
 
     -- Get the Id's of the new functions we have to synthesize
     let is = nub $ map func exs
@@ -49,15 +50,14 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
     -- Synthesize based on the user provided examples
     let con' = con { core_funcs = filterNonPrimitives h' (core_funcs con)}
 
-    h'' <- livs' con' le gen fuzzFake cg' exs tenv h' is
+    h'' <- livs' con' le b gen fuzzFake cg' exs tenv h' is
 
     -- Check that the synthesized functions work in the real language
     mapM_ (\i -> case H.lookup (idName i) h'' of
                     Just (H.Def e) -> do
-                      liftIO . putStrLn $ toJavaScriptDef (idName i) e
-                      def le i e
+                      def le b i e
                     _ -> error "livsSynth: No definition found") is
-    incor <- incorrectSuspects le $ map Suspect exs
+    incor <- incorrectSuspects le b $ map Suspect exs
 
     case incor of
         [] -> return h''
@@ -65,7 +65,7 @@ livsSynth con le gen fuzz fp cg h tenv exs = do
   where
     -- We do not want to fuzz any inputs for the new synthesized function,
     -- since there is no way of getting new outputs
-    fuzzFake _ _ _ _ _ = return []
+    fuzzFake _ _ _ _ _ _ = return []
 
 allDefIds :: H.Heap -> [Id]
 allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
