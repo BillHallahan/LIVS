@@ -21,20 +21,21 @@ import Data.Maybe
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
-toSygus :: CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> String
-toSygus cg h tenv = toSygusWithGrammar cg h tenv (HS.fromList $ H.keys h)
+toSygus :: CallGraph  -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> String
+toSygus cg cons_val h tenv = toSygusWithGrammar cg cons_val h tenv (HS.fromList $ H.keys h)
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis. The passed Name's restricts the grammar to only
 -- directly use the names in the Set.
 toSygusWithGrammar :: CallGraph
+                   -> [Val]
                    -> H.Heap
                    -> T.TypeEnv
                    -> HS.HashSet Name
                    -> [Example]
                    -> String
-toSygusWithGrammar cg h tenv hsr es =
+toSygusWithGrammar cg cons_val h tenv hsr es =
     let
         tspec = toSygusTypeEnv tenv
 
@@ -44,15 +45,13 @@ toSygusWithGrammar cg h tenv hsr es =
         h' = H.mapWithKeyDefs' toSygusFunExpr h
         hf = intercalate "\n" $ mapMaybe (flip HM.lookup h') post
 
-        ls = map LInt [0..2]
-
         -- We narrow the heap to the allowable functions that are directly
         -- used in the function definition, but add selector functions and
         -- data constructors, to allow types to be passed between different
         -- sorts of data constructors
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
-        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n ls it ot) fs
+        fspec = concatMap (\(n, it, ot) -> genSynthFun hr n cons_val it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
@@ -119,7 +118,7 @@ toSygusFunExpr n e =
     in
     "(define-fun " ++ nameToString n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
-genSynthFun :: H.Heap -> Name -> [Lit] -> [Type] -> Type -> String
+genSynthFun :: H.Heap -> Name -> [Val] -> [Type] -> Type -> String
 genSynthFun h n ls it ot =
     let
         vs = [Name "x" (Just i) | i <- [1..] :: [Integer]]
@@ -148,14 +147,14 @@ collectFuncs = nub
 -- | Returns a grammar to return values of the given type
 sygusGrammar :: Type
              -> H.Heap
-             -> [Lit]
+             -> [Val]
              -> [Id] -- ^ Variables usable in the grammar
              -> String
 sygusGrammar t@(TyCon n _) h ls vs =
     let
         sc = sygusGrammar' t h
         vs' = map nameToString . map idName $ filter (\i -> typeOf i == t) vs
-        ls' = map toSygusLit $ filter (\l -> typeOf l == t) ls
+        ls' = map toSygusVal $ filter (\l -> typeOf l == t) ls
     in
        "(" ++ typeSymbol t ++ " " ++ nameToString n ++ "\n" 
     ++ "(" ++ concat (intersperse " " ls') ++ " "

@@ -1,6 +1,7 @@
 module Main where
 
 import LIVS.Core.Fuzz
+import LIVS.Core.GenConsts
 import LIVS.Core.LIVSSynth
 
 import LIVS.Config.Config
@@ -52,6 +53,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
                           , (Name "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
+                          , (Name "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
                           , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
                           , (Name "\"true\"" Nothing, H.Primitive $ stringType)
@@ -74,7 +76,10 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
     let cs = concatMap (consts . snd) ids
+        cs' = genConsts $ cs ++ concatMap exampleVals synth_ex
 
-    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM (cs ++ concatMap exampleVals synth_ex)) fp cg heap'' tenv synth_ex
+    putStrLn $ "cs' = " ++ show cs'
+
+    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM (cs' ++ concatMap exampleVals synth_ex)) fp cg cs' heap'' tenv synth_ex
 
     print lr

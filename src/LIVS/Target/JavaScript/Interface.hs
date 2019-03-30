@@ -94,6 +94,7 @@ toJavaScriptExpr _ (Data dc)
     | dc == trueDC = "true"
     | dc == falseDC = "false"
     | dc == jsNaNDC = "NaN"
+    | dc == jsErrorDC = "(0).indexof(\"\")" -- Throws a JS type error intentionally 
     | otherwise = ""
 toJavaScriptExpr _ (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr dnn (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr dnn e) ++ ")"

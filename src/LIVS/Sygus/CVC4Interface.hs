@@ -26,12 +26,12 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> [Example] -> m Result
-runSygus cg h tenv = runSygusWithGrammar cg h tenv (HS.fromList $ H.keys h)
+runSygus :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m Result
+runSygus cg const_vals h tenv = runSygusWithGrammar cg const_vals h tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => CallGraph -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar cg h tenv hsr es = do
-    let form = toSygusWithGrammar cg h tenv hsr es
+runSygusWithGrammar :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar cg const_vals h tenv hsr es = do
+    let form = toSygusWithGrammar cg const_vals h tenv hsr es
     liftIO $ putStrLn form
     m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
     return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m

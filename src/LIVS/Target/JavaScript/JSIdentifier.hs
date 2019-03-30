@@ -43,6 +43,12 @@ jsNaNDCName = Name "NaN2" Nothing
 jsNaNDC :: DC
 jsNaNDC = DC jsNaNDCName jsIdentType
 
+jsErrorDCName :: Name
+jsErrorDCName = Name "Error" Nothing
+
+jsErrorDC :: DC
+jsErrorDC = DC jsErrorDCName jsIdentType
+
 jsTypeEnv :: T.TypeEnv
 jsTypeEnv = T.fromList
     [ ( jsIdentName
@@ -53,6 +59,7 @@ jsTypeEnv = T.fromList
             , T.SelectorDC jsBoolDCName
                 [ T.NamedType jsBoolSelectorName boolType ]
             , T.SelectorDC jsNaNDCName []
+            , T.SelectorDC jsErrorDCName []
             ]
       )
     ]

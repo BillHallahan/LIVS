@@ -45,7 +45,7 @@ livsConfig =
     LIVSConfig {
           code_file = "" &= help "A code file, containing component functions." &= explicit &= name "code-file" &= typFile -- &= argPos 0
         , seed = Nothing &= help "A seed for the random number generator."
-        , fuzz_num = 3 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-name"
+        , fuzz_num = 3 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
         } &= verbosity
 
@@ -57,7 +57,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
         findName s = find (\(Name n _) -> n == s) ns
 
 coreFuncs :: [String]
-coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "\"true\"", "\"false\"", "\"NaN\""]
+coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
 
 addCoreFuncs :: LIVSConfig cf -> [cf] -> LIVSConfig cf
 addCoreFuncs config@(LIVSConfig { core_funcs = cf }) xs = config { core_funcs = cf ++ xs}

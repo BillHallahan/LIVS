@@ -35,8 +35,8 @@ import Data.List
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
 livsCVC4 :: (MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
-livsCVC4 con le b fuzz fp cg = livs con le b (runSygusWithGrammar cg) fuzz fp cg
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m H.Heap
+livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar cg const_val) fuzz fp cg
 
 livs :: MonadIO m
      => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
