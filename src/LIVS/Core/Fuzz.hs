@@ -104,5 +104,17 @@ fuzzFromOutputsM' ca vs tenv i = do
 
 fuzzFromOutputVal :: MonadRandom m => [Val] -> T.TypeEnv -> Type -> m Val
 fuzzFromOutputVal vs tenv t
-    | vs'@(_:_) <- filter (\v -> typeOf v == t) vs = fromListConst vs'
+    | vs'@(_:_) <- filter (\v -> typeOf v == t) vs = fuzzStrings =<< fromListConst vs'
     | otherwise = fuzzValM tenv t
+
+fuzzStrings :: MonadRandom m => Val -> Val
+fuzzStrings (AppVal v1 v2) = do
+    v1' <- fuzzStrings v1
+    v2' <- fuzzStrings v2
+    return $ AppVal v1' v2'
+fuzzStrings (LitVal (LString s)) = do
+    b <- getRandomR (0, length s)
+    e <- getRandomR (b, length s)
+    let s' = drop b $ take e s
+    return $ LitVal (LString s')
+fuzzStrings v = return v
