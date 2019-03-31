@@ -18,6 +18,8 @@ import LIVS.Target.General.LanguageEnv
 import Control.Monad.Random
 import qualified Data.List as L
 
+import Debug.Trace
+
 -- | Generates inputs to a function
 type Fuzz m b = LanguageEnv m b
              -> b
@@ -53,22 +55,30 @@ fuzzValM tenv t
     | t == intType = return . LitVal . LInt =<< getRandomR (-100 * 100, 100 * 100)
     | t == stringType = return . LitVal . LString =<< randomString
     | t == boolType = fromListConst [DataVal trueDC, DataVal falseDC]
-    | TyCon n _ <- t
-    , Just specs <- T.lookup n tenv = do
-        sel@(T.SelectorDC _ nt) <- fromListConst $ T.selectors specs
-
-        let dc = T.selectorDCToDC n sel
-
-        let ts = map T.namedTypeType nt
-        vs <- mapM (fuzzValM tenv) ts
-
-        return $ mkAppVal (DataVal dc:vs)
+    | TyCon n _ <- t = do
+        dc <- randomDC (fuzzValM tenv) tenv n
+        case dc of
+            Just dc' -> return dc'
+            Nothing -> error "fuzz: We cannot fuzz values of the given type."
     | otherwise = error "fuzz: We cannot fuzz values of the given type."
 
 randomString :: MonadRandom m => m String
 randomString = do
     n <- getRandomR (0, 4)
     return . take n =<< getRandomRs ('a','z')
+
+randomDC :: MonadRandom m => (Type -> m Val) ->  T.TypeEnv -> Name -> m (Maybe Val)
+randomDC f tenv n
+    | Just specs <- T.lookup n tenv = do
+        sel@(T.SelectorDC _ nt) <- fromListConst $ T.selectors specs
+
+        let dc = T.selectorDCToDC n sel
+
+        let ts = map T.namedTypeType nt
+        vs <- mapM f ts
+
+        return . Just $ mkAppVal (DataVal dc:vs)
+    | otherwise = return Nothing
 
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
@@ -77,7 +87,7 @@ fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
 -- Fuzzes randomly when no value of the given type exists.
 fuzzFromValsAndOutputsM :: MonadRandom m => [Val] -> Fuzz m b
 fuzzFromValsAndOutputsM vs le b es tenv n i = do
-    let vs' = L.nub (vs ++ concatMap exampleVals es)
+    let vs' = L.nub (vs ++ concatMap subVals (concatMap exampleVals es))
     mapM (\_ -> fuzzFromOutputsM' (call le b) vs' tenv i) [1..n]
 
 -- | Fuzzes, drawing random values from the existing examples when possible.
@@ -104,8 +114,15 @@ fuzzFromOutputsM' ca vs tenv i = do
 
 fuzzFromOutputVal :: MonadRandom m => [Val] -> T.TypeEnv -> Type -> m Val
 fuzzFromOutputVal vs tenv t
-    | vs'@(_:_) <- filter (\v -> typeOf v == t) vs = fuzzStrings =<< fromListConst vs'
+    | not $ null vs' = fromListConst vs'
+    | TyCon n _ <- t = do
+        dc <- randomDC (fuzzFromOutputVal vs tenv) tenv n
+        case dc of
+            Just dc' -> return dc'
+            Nothing -> fuzzValM tenv t
     | otherwise = fuzzValM tenv t
+    where
+        vs' = filter (\v -> typeOf v == t) vs
 
 fuzzStrings :: MonadRandom m => Val -> m Val
 fuzzStrings (AppVal v1 v2) = do

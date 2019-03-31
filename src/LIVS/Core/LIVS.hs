@@ -87,6 +87,7 @@ livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
 
 
         _ -> do
+            liftIO $ whenLoud (putStrLn $ "Synthesis failed for function " ++ show i)
             let is' = livsUnSatUnknown cg h i
             return (h, nub $ re'' ++ es, is')
 

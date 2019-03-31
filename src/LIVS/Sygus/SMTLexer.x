@@ -20,7 +20,7 @@ tokens:-
     \(                                                  { const TokenOpenParen }
     \)                                                  { const TokenCloseParen }
     [$alpha $symbs] [$alpha $digit $symbs ]*            { TokenName }
-    \" [$alpha $digit $symbs ]* \"                      { TokenString . elimOpenCloseQuote }
+    \" [$alpha $digit $symbs $white ]* \"               { TokenString . elimOpenCloseQuote }
 
 {
 data Token = TokenSat

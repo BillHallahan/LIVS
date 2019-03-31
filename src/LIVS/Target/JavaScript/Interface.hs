@@ -58,8 +58,8 @@ defJavaScript js dnn (Id n _) e = do
 callJavaScript :: JavaScriptREPL -> DotNoteNames -> Expr -> IO Val
 callJavaScript js dnn e = do
     r <- runAndReadJavaScript js (toJavaScriptCall dnn e)
-    putStrLn $ "call = " ++ toJavaScriptCall dnn e
-    putStrLn $ "r = " ++ r
+    -- putStrLn $ "call = " ++ toJavaScriptCall dnn e
+    -- putStrLn $ "r = " ++ r
 
     return $ jsJSONToVal r
 

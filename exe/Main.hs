@@ -33,6 +33,10 @@ main = do
     jsEnv <- jsLanguageEnv
 
     synth config jsEnv
+    -- (_, b) <- extract jsEnv (code_file config)
+    -- es <- fuzzExamplesM jsEnv b [] jsTypeEnv (fuzz_num config) (Id (Name "substring" Nothing) (TyFun jsIdentType (TyFun jsIdentType (TyFun jsIdentType jsIdentType))))
+    -- print es
+    -- return ()
 
 synth :: LIVSConfigCL -> LanguageEnv IO b -> IO ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
@@ -77,9 +81,14 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let cs = concatMap (consts . snd) ids
         cs' = genConsts $ cs ++ concatMap exampleVals synth_ex
+        fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
+        fuzz_with' = expandVals fuzz_with tenv
+        ics = genIntsConsts cs
 
     putStrLn $ "cs' = " ++ show cs'
 
-    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM (cs' ++ concatMap exampleVals synth_ex)) fp cg cs' heap'' tenv synth_ex
+    putStrLn $ "fuzz_with' = " ++ show (fuzz_with')
+
+    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM fuzz_with') fp cg cs' heap'' tenv synth_ex
 
     print lr

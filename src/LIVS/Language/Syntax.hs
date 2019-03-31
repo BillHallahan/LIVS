@@ -17,6 +17,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , valToExpr
                             , isVal
                             , mkAppVal
+                            , subVals
 
                             , idName
                             , funcName
@@ -86,6 +87,11 @@ isVal = isJust . exprToVal
 
 mkAppVal :: [Val] -> Val
 mkAppVal = foldl1 AppVal
+
+-- | Returns a list of all non-AppVals in a Val
+subVals :: Val -> [Val]
+subVals (AppVal v1 v2) = subVals v1 ++ subVals v2
+subVals v = [v]
 
 type Binding = (Id, Expr)
 
