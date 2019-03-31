@@ -17,6 +17,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , valToExpr
                             , isVal
                             , mkAppVal
+                            , appValCenter
                             , subVals
 
                             , idName
@@ -87,6 +88,10 @@ isVal = isJust . exprToVal
 
 mkAppVal :: [Val] -> Val
 mkAppVal = foldl1 AppVal
+
+appValCenter :: Val -> Val
+appValCenter (AppVal v _) = appValCenter v
+appValCenter v = v
 
 -- | Returns a list of all non-AppVals in a Val
 subVals :: Val -> [Val]

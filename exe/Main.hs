@@ -19,6 +19,8 @@ import LIVS.Target.JavaScript.JSIdentifier
 
 import LIVS.UI.Parse
 
+import qualified Data.HashMap.Lazy as HM
+
 import System.Console.CmdArgs
 import System.Random
 
@@ -85,10 +87,13 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
 
+    let r = toRational (1 :: Double) 
+        w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
+
     putStrLn $ "cs' = " ++ show cs'
 
     putStrLn $ "fuzz_with' = " ++ show (fuzz_with')
 
-    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM fuzz_with') fp cg cs' heap'' tenv synth_ex
+    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM w fuzz_with') fp cg cs' heap'' tenv synth_ex
 
     print lr

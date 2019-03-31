@@ -16,7 +16,10 @@ import LIVS.Language.Typing
 import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
+import Data.Hashable
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.List as L
+import Data.Maybe
 
 import Debug.Trace
 
@@ -83,27 +86,37 @@ randomDC f tenv n
 fromListConst :: MonadRandom m => [a] -> m a
 fromListConst xs = fromList $ zip xs (repeat $ toRational (1 :: Integer))
 
+type Weights v = HM.HashMap v Rational
+
+fromListWeighted :: (Eq v, Hashable v, MonadRandom m) =>
+                    Weights v -- ^ Weights for each v
+                 -> Rational -- ^ A default value, if a v is not in the list
+                 -> [v] -- ^ A list of v's to select from
+                 -> m v
+fromListWeighted m def = fromList . map (\v -> (v, HM.lookupDefault def v m))
+
 -- | Fuzzes, drawing random values from the existing values and examples when possible.
 -- Fuzzes randomly when no value of the given type exists.
-fuzzFromValsAndOutputsM :: MonadRandom m => [Val] -> Fuzz m b
-fuzzFromValsAndOutputsM vs le b es tenv n i = do
+fuzzFromValsAndOutputsM :: MonadRandom m => Weights DC -> [Val] -> Fuzz m b
+fuzzFromValsAndOutputsM w vs le b es tenv n i = do
     let vs' = L.nub (vs ++ concatMap subVals (concatMap exampleVals es))
-    mapM (\_ -> fuzzFromOutputsM' (call le b) vs' tenv i) [1..n]
+    mapM (\_ -> fuzzFromOutputsM' (call le b) w vs' tenv i) [1..n]
 
 -- | Fuzzes, drawing random values from the existing examples when possible.
 -- Fuzzes randomly when no value of the given type exists.
-fuzzFromOutputsM :: MonadRandom m => Fuzz m b
-fuzzFromOutputsM = fuzzFromValsAndOutputsM []
+fuzzFromOutputsM :: MonadRandom m => Weights DC -> Fuzz m b
+fuzzFromOutputsM w = fuzzFromValsAndOutputsM w []
 
 fuzzFromOutputsM' :: MonadRandom m => 
                      (Expr -> m Val)
+                  -> Weights DC
                   -> [Val]
                   -> T.TypeEnv
                   -> Id
                   -> m Example
-fuzzFromOutputsM' ca vs tenv i = do
+fuzzFromOutputsM' ca w vs tenv i = do
     let ts = argTypes i
-    ls <- mapM (fuzzFromOutputVal vs tenv) ts
+    ls <- mapM (fuzzFromOutputVal w vs tenv) ts
     
     let outE = mkApp (Var i:map valToExpr ls)
     r <- ca outE 
@@ -112,17 +125,27 @@ fuzzFromOutputsM' ca vs tenv i = do
                    , input = ls
                    , output = r}
 
-fuzzFromOutputVal :: MonadRandom m => [Val] -> T.TypeEnv -> Type -> m Val
-fuzzFromOutputVal vs tenv t
-    | not $ null vs' = fromListConst vs'
+fuzzFromOutputVal :: MonadRandom m => Weights DC -> [Val] -> T.TypeEnv -> Type -> m Val
+fuzzFromOutputVal w vs tenv t
+    | not $ null vs' = do
+        let dcs = L.nub $ mapMaybe centerDC vs'
+        dc <- fromListWeighted w (toRational (0.1 :: Double)) dcs
+        let vs'' = filterToDC dc vs'
+        fromListConst vs''
     | TyCon n _ <- t = do
-        dc <- randomDC (fuzzFromOutputVal vs tenv) tenv n
+        dc <- randomDC (fuzzFromOutputVal w vs tenv) tenv n
         case dc of
             Just dc' -> return dc'
             Nothing -> fuzzValM tenv t
     | otherwise = fuzzValM tenv t
     where
         vs' = filter (\v -> typeOf v == t) vs
+
+        centerDC v
+            | DataVal dc <- appValCenter v = Just dc
+            | otherwise = Nothing
+
+        filterToDC dc = filter ((==) (DataVal dc) . appValCenter)
 
 fuzzStrings :: MonadRandom m => Val -> m Val
 fuzzStrings (AppVal v1 v2) = do
