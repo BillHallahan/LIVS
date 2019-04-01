@@ -200,7 +200,7 @@ constAppNF e@(App _ _) = do
     
     bnd_a <- mapM (\a' -> do
                         a'' <- constAppNF a'
-                        i <- unseededFreshIdM (typeOf a')
+                        i <- unseededFreshIdM Ident (typeOf a')
                         return $ (i, a'')) as
 
     let e' = mkApp $ a:map (Var . fst) bnd_a

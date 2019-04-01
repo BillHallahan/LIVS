@@ -30,7 +30,7 @@ mkFunTyTest = testCase "mkTyFun"
     $ assertBool "mkTyFun" (mkTyFun [intType, TyCon floatN TYPE] == TyFun intType (TyCon floatN TYPE))
 
 xN :: Name
-xN = Name "x" Nothing
+xN = Name Ident "x" Nothing
 
 floatN :: Name
-floatN = Name "Float" Nothing
+floatN = Name Ident "Float" Nothing

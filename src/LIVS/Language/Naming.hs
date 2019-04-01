@@ -1,6 +1,6 @@
 module LIVS.Language.Naming ( Name (..)
+                            , LanguageLevel (..)
                             , nameToString
-                            , stringToName
 
                             , NameGen
                             , mkNameGen
@@ -15,33 +15,22 @@ import Data.Char
 import qualified Data.HashMap.Lazy as HM
 
 nameToString :: Name -> String
-nameToString (Name n Nothing) = n
-nameToString (Name n (Just i)) = n ++ show i
-
-stringToName :: String -> Name
-stringToName s =
-    let
-        (i, s') = span isDigit . reverse $ s
-        s'' = reverse s'
-    in
-    case i of
-        _:_ -> Name s'' (Just . read $ reverse i)
-        [] -> Name s'' Nothing
+nameToString (Name _ n _) = n
 
 newtype NameGen = NameGen (HM.HashMap String Integer)
 
 mkNameGen :: [Name] -> NameGen
 mkNameGen =
-    NameGen . HM.fromList . map (\(Name n i) -> (n, maybe 0 id $ fmap (+ 1) i))
+    NameGen . HM.fromList . map (\(Name ll n i) -> (n, maybe 0 id $ fmap (+ 1) i))
 
 freshName :: Name -> NameGen -> (Name, NameGen)
-freshName (Name n _) (NameGen ng) = (Name n (Just i), NameGen ng')
+freshName (Name ll n _) (NameGen ng) = (Name ll n (Just i), NameGen ng')
     where
         i = HM.lookupDefault 0 n ng
         ng' = HM.insert n (i + 1) ng
 
-unseededFreshName :: NameGen -> (Name, NameGen)
-unseededFreshName = freshName (Name "fresh" Nothing)
+unseededFreshName :: LanguageLevel -> NameGen -> (Name, NameGen)
+unseededFreshName ll = freshName (Name ll "fresh" Nothing)
 
 freshId :: Name -> Type -> NameGen -> (Id, NameGen)
 freshId n t ng =
@@ -50,5 +39,5 @@ freshId n t ng =
     in
     (Id n' t, ng')
 
-unseededFreshId :: Type -> NameGen -> (Id, NameGen)
-unseededFreshId = freshId (Name "fresh" Nothing)
+unseededFreshId :: LanguageLevel -> Type -> NameGen -> (Id, NameGen)
+unseededFreshId ll = freshId (Name ll "fresh" Nothing)

@@ -12,12 +12,16 @@ import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
+import LIVS.Language.Monad.Naming
 
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.JavaScript.Interface
 import LIVS.Target.JavaScript.JSIdentifier
 
 import LIVS.UI.Parse
+
+import Control.Monad.IO.Class
+import Control.Monad.Random.Class
 
 import qualified Data.HashMap.Lazy as HM
 
@@ -40,35 +44,35 @@ main = do
     -- print es
     -- return ()
 
-synth :: LIVSConfigCL -> LanguageEnv IO b -> IO ()
+synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
-    putStrLn $ "fp = " ++ fp
+    liftIO $ putStrLn $ "fp = " ++ fp
 
     synth_ex <- examplesFromFile jsJSONToVal fp
 
-    print synth_ex
+    liftIO $ print synth_ex
 
     (ids, b) <- extract lenv fp
 
-    whenLoud (putStrLn "Verbose")
+    liftIO $ whenLoud (putStrLn "Verbose")
 
     let cg = createCallGraph (idsAndCalls ids)
-        heap = H.fromList [ (Name "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
-                          , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
-                          , (Name "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
-                          , (Name "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
-                          , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
-                          , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
-                          , (Name "\"true\"" Nothing, H.Primitive $ stringType)
-                          , (Name "\"false\"" Nothing, H.Primitive $ stringType)
-                          , (Name "\"NaN\"" Nothing, H.Primitive $ stringType) ]
+        heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
+                          , (Name SMT "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
+                          , (Name SMT "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
+                          , (Name SMT "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
+                          , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
+                          , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
+                          , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
+                          , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
+                          , (Name SMT "\"NaN\"" Nothing, H.Primitive $ stringType) ]
 
     let config' = toLIVSConfigNames heap config
 
-    print $ core_funcs config'
+    liftIO $ print $ core_funcs config'
 
     let tenv = jsTypeEnv
 
@@ -90,10 +94,14 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let r = toRational (1 :: Double) 
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
 
-    putStrLn $ "cs' = " ++ show cs'
+    liftIO $ putStrLn $ "cs' = " ++ show cs'
 
-    putStrLn $ "fuzz_with' = " ++ show (fuzz_with')
+    liftIO $ putStrLn $ "fuzz_with' = " ++ show (fuzz_with')
 
-    lr <- livsSynthCVC4 config'' lenv b (fuzzFromValsAndOutputsM w fuzz_with') fp cg cs' heap'' tenv synth_ex
+    let ng = mkNameGen []
 
-    print lr
+    let lenv' = liftLanguageEnv nameGenT lenv
+        fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
+    lr <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
+
+    liftIO $ print lr

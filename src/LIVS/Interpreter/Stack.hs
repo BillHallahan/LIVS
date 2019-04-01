@@ -78,7 +78,7 @@ instance HeapMonad m => HeapMonad (StackT b m) where
 
 instance NameGenMonad m => NameGenMonad (StackT b m) where
     freshNameM = lift . freshNameM
-    unseededFreshNameM = lift unseededFreshNameM
+    unseededFreshNameM = lift . unseededFreshNameM
 
 instance StackMonad b m => StackMonad b (HeapT m) where
     pushM = lift . pushM

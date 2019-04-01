@@ -29,7 +29,7 @@ testLarge :: TestTree
 testLarge = undefined
 
 f :: Id
-f = Id (IdentName "f") (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
+f = Id (Name Ident "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
 
 jsStringVal :: String -> Val
 jsStringVal = AppVal (DataVal jsStringDC) . LitVal . LString

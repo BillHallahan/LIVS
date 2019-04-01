@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module LIVS.Language.Syntax ( Name (..)
+                            , LanguageLevel (..)
                             , Id (..)
                             , Expr (..)
                             , Val (..)
@@ -39,10 +40,15 @@ import Data.Foldable
 import Data.Hashable
 import Data.Maybe
 
-data Name = Name String (Maybe Integer)
+data Name = Name LanguageLevel String (Maybe Integer)
             deriving (Eq, Ord, Show, Read, Generic)
 
 instance Hashable Name
+
+data LanguageLevel = Ident | SMT 
+                   deriving (Eq, Ord, Show, Read, Generic)
+
+instance Hashable LanguageLevel
 
 data Id = Id Name Type
           deriving (Eq, Show, Read, Generic)

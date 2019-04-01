@@ -8,7 +8,7 @@ smtTrue :: DC
 smtTrue = trueDC
 
 smtAnd :: Id
-smtAnd = Id (SMTName "and") (TyFun boolType (TyFun boolType boolType))
+smtAnd = Id (Name SMT "and" Nothing) (TyFun boolType (TyFun boolType boolType))
 
 smtIte :: Type -> Id
-smtIte t = Id (SMTName "ite") (TyFun boolType (TyFun t (TyFun t t)))
+smtIte t = Id (Name SMT "ite" Nothing) (TyFun boolType (TyFun t (TyFun t t)))

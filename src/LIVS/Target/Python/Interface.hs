@@ -53,6 +53,6 @@ toPythonLit :: Lit -> String
 toPythonLit (LInt i) = show i
 
 operators :: [Name]
-operators = [ Name "+" Nothing
-            , Name "-" Nothing
-            , Name "*" Nothing ]
+operators = [ Name Ident "+" Nothing
+            , Name Ident "-" Nothing
+            , Name Ident "*" Nothing ]

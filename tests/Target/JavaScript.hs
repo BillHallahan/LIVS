@@ -32,7 +32,7 @@ testFxn :: Expr
 testFxn = 
   App (
     Lam 
-      (Id (Name "x" Nothing) (intType))
+      (Id (Name Ident "x" Nothing) (intType))
       (Lit $ LInt 3)
     )
     (Lit $ LInt 0)

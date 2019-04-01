@@ -1,7 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 
 module LIVS.Core.Fuzz ( Fuzz
+                      , liftFuzz
                       , fuzzExamplesM
                       , fuzzExampleM
                       , fuzzValM
@@ -32,6 +34,9 @@ type Fuzz m b = LanguageEnv m b
              -> Int -- ^ How many examples to fuzz
              -> Id -- ^ A function call
              -> m [Example]
+
+liftFuzz :: (forall a . m a -> m' a) -> LanguageEnv m b -> Fuzz m b -> Fuzz m' b
+liftFuzz f le fuzz _ b es tenv n i = f $ fuzz le b es tenv n i
 
 -- | Fuzz examples randomly
 fuzzExamplesM :: MonadRandom m => Fuzz m b

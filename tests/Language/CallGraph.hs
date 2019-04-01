@@ -125,4 +125,4 @@ graph4 = createCallGraph
 
 
 toId :: String -> Id
-toId n = Id (Name n Nothing) (TyFun intType intType)
+toId n = Id (Name Ident n Nothing) (TyFun intType intType)

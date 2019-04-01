@@ -17,13 +17,14 @@ module LIVS.Language.Monad.Naming ( NameGenMonad (..)
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 
+import Control.Monad.Random
 import Control.Monad.State.Lazy
 import Data.Functor.Identity
 
 class Monad m => NameGenMonad m where
     freshNameM :: Name -> m Name
-    unseededFreshNameM :: m Name
-    unseededFreshNameM = freshNameM (Name "fresh" Nothing)
+    unseededFreshNameM :: LanguageLevel -> m Name
+    unseededFreshNameM ll = freshNameM (Name ll "fresh" Nothing)
 
 newtype NameGenT m a = NameGenT (StateT NameGen m a)
                        deriving (Applicative, Functor, Monad)
@@ -43,8 +44,17 @@ instance Monad m => NameGenMonad (NameGenT m) where
         put ng'
         return n'
 
-nameGenT :: Monad m => (NameGen -> m (a, NameGen)) -> NameGenT m a
-nameGenT = NameGenT . StateT
+instance MonadIO m => MonadIO (NameGenT m) where
+    liftIO = lift . liftIO
+
+instance MonadRandom m => MonadRandom (NameGenT m) where
+    getRandom = lift getRandom
+    getRandoms = lift getRandoms
+    getRandomR = lift . getRandomR
+    getRandomRs = lift . getRandomRs
+
+nameGenT :: Monad m => m a -> NameGenT m a -- (NameGen -> m (a, NameGen)) -> NameGenT m a
+nameGenT = lift -- NameGenT . StateT
 
 runNameGenT :: Monad m => NameGenT m a -> NameGen -> m (a, NameGen)
 runNameGenT (NameGenT ngt) = runStateT ngt
@@ -63,5 +73,5 @@ freshIdM n t = do
     n' <- freshNameM n
     return (Id n' t)
 
-unseededFreshIdM :: NameGenMonad m => Type -> m Id
-unseededFreshIdM = freshIdM (Name "fresh" Nothing)
+unseededFreshIdM :: NameGenMonad m => LanguageLevel -> Type -> m Id
+unseededFreshIdM ll = freshIdM (Name ll "fresh" Nothing)

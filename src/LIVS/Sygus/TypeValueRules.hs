@@ -45,7 +45,7 @@ generateRulesFunc :: Id ->  [([DC], Val)] -> Expr
 generateRulesFunc def dcv =
   let
       arg_tys = argTypes def
-      args = map (\(i, t) -> Id (IdentName $ "x" ++ show i) t) $ zip ([0..] :: [Integer]) arg_tys
+      args = map (\(i, t) -> Id (Name SMT ("x" ++ show i) Nothing) t) $ zip ([0..] :: [Integer]) arg_tys
 
       -- Convert a list of ([DC], Val) into a list of (Expr, Val), where the
       -- Expr are boolean conditions such that, if satisfied, that Val should be

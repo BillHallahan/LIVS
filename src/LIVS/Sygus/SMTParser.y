@@ -80,7 +80,7 @@ expr :: { Expr }
      | int { Lit (LInt $1) }
 
 name :: { Name }
-     : smtName { Name $1 Nothing}
+     : smtName { Name Ident $1 Nothing}
 
 model :: { [(Name, Expr)] }
       : model '(' modelVal ')' { $3:$1 }

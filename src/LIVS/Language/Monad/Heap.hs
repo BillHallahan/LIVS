@@ -52,7 +52,7 @@ instance HeapMonad m => HeapMonad (NameGenT m) where
 
 instance NameGenMonad m => NameGenMonad (HeapT m) where
     freshNameM = lift . freshNameM
-    unseededFreshNameM = lift unseededFreshNameM
+    unseededFreshNameM = lift . unseededFreshNameM
 
 heapT :: Monad m => (Heap -> m (a, Heap)) -> HeapT m a
 heapT = HeapT . StateT

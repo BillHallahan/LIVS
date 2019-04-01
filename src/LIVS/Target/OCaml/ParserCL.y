@@ -24,7 +24,7 @@ val :: { Val }
     | int { LitVal (LInt $1) }
 
 name :: { Name }
-	  : tname { Name $1 Nothing }
+	  : tname { Name Ident $1 Nothing }
 
 {
 parseError :: [Token] -> a

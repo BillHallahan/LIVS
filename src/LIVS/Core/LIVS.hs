@@ -21,6 +21,7 @@ import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
+import LIVS.Language.Monad.Naming
 import LIVS.Core.Fuzz
 import LIVS.Sygus.CVC4Interface
 import LIVS.Sygus.Result
@@ -34,7 +35,7 @@ import Data.List
 -- | Generates code satisfying a set of examples
 type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
 
-livsCVC4 :: (MonadIO m, MonadRandom m)
+livsCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m H.Heap
 livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar cg const_val) fuzz fp cg
 

@@ -9,6 +9,7 @@ module Helpers.Interpreter ( langEnv
 
 import LIVS.Interpreter.Interpreter
 import LIVS.Interpreter.Stack
+import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
@@ -49,19 +50,19 @@ callPrim e = do
         Nothing -> error "callPrim: Bad Expr"
 
 callPrim' :: HeapMonad m => Expr -> m (Maybe Val)
-callPrim' (App (App (App (Var (Id (Name "ite" _) _)) b) e) e') =
+callPrim' (App (App (App (Var (Id (Name _ "ite" _) _)) b) e) e') =
     case b of
-        Data (DC (Name "true" _) _) ->
+        Data (DC (Name _ "true" _) _) ->
             reduceToVal e
-        Data (DC (Name "false" _) _) ->
+        Data (DC (Name _ "false" _) _) ->
             reduceToVal e'
         _ -> error $ "callPrim': Unhandled expression from ite" ++ show b ++ "\n" ++ show e ++ "\n" ++ show e'
-callPrim' (App (App (Var (Id (Name ">=" _) _)) (Lit (LInt l))) (Lit (LInt l')))
+callPrim' (App (App (Var (Id (Name _ ">=" _) _)) (Lit (LInt l))) (Lit (LInt l')))
     | l >= l' =
-        return . Just . DataVal $ DC (Name "true" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
+        return . Just . DataVal $ trueDC
     | otherwise =
-        return . Just . DataVal $ DC (Name "false" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
-callPrim' (App (App (Var (Id (Name "-" _) _)) (Lit (LInt l))) (Lit (LInt l'))) =
+        return . Just . DataVal $ falseDC
+callPrim' (App (App (Var (Id (Name _ "-" _) _)) (Lit (LInt l))) (Lit (LInt l'))) =
     return . Just . LitVal $ LInt (l - l')
 callPrim' _ = return Nothing
 
@@ -73,7 +74,7 @@ callPrimInterpFallBack e = do
         Just r' -> return r'
         Nothing -> do
             h <- getHeap
-            e' <- runEnvTest (mkNameGen []) empty (runM (\e -> return . fst $ runHeapM (callPrimExpr e) h) 1000 e)
+            e' <- runEnvTest (mkNameGen []) empty (runM (\e' -> return . fst $ runHeapM (callPrimExpr e') h) 1000 e)
             case exprToVal e' of
                 Just v -> return v
                 Nothing -> error "callPrimInterpFallBack: Did not reduce to Val"

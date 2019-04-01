@@ -24,7 +24,7 @@ mkApp1 = testCase "mkApp1 1"
     $ assertBool "Correct App" (mkApp [e1, e2, e3] == App (App e1 e2) e3)
 
 e1 :: Expr
-e1 = Var (Id (Name "+" Nothing) (TyFun intType (TyFun intType intType)))
+e1 = Var (Id (Name Ident "+" Nothing) (TyFun intType (TyFun intType intType)))
 
 e2 :: Expr
 e2 = Var i1
@@ -33,7 +33,7 @@ e3 :: Expr
 e3 = Var i2
 
 i1 :: Id
-i1 = Id (Name "x" Nothing) intType
+i1 = Id (Name Ident "x" Nothing) intType
 
 i2 :: Id
-i2 = Id (Name "y" Nothing) intType
+i2 = Id (Name Ident "y" Nothing) intType

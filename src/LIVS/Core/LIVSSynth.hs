@@ -12,6 +12,7 @@ import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
+import LIVS.Language.Monad.Naming
 import LIVS.Sygus.CVC4Interface
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.JavaScript.Interface
@@ -20,7 +21,7 @@ import Control.Monad.Random
 import Data.List
 import Data.Maybe
 
-livsSynthCVC4 :: (MonadIO m, MonadRandom m)
+livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
 livsSynthCVC4 con le b fuzz fp cg const_val = livsSynth con le b (runSygusWithGrammar cg const_val) fuzz fp cg
 

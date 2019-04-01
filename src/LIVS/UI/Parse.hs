@@ -5,12 +5,13 @@ module LIVS.UI.Parse ( examplesFromFile
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
+import Control.Monad.IO.Class
 import Text.Regex
 
 -- | Parse all examples from somewhere in a file.
-examplesFromFile :: (String -> Val) -> FilePath -> IO [Example]
+examplesFromFile :: MonadIO m => (String -> Val) -> FilePath -> m [Example]
 examplesFromFile stv fp = do
-    c <- readFile fp
+    c <- liftIO $ readFile fp
     return $ parseExamples stv c
 
 -- | Parse all examples from somewhere in a string.
@@ -45,7 +46,7 @@ parseExample' stv call out
 
             f_t = mkTyFun $ map typeOf arsV ++ [typeOf outV]
         in
-        Just $ Example { func = Id (Name f Nothing) f_t
+        Just $ Example { func = Id (Name Ident f Nothing) f_t
                        , input = arsV
                        , output = outV }
     | otherwise = Nothing

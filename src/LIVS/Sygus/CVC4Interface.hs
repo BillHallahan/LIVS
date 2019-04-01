@@ -12,6 +12,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
+import LIVS.Language.Monad.Naming
 import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
@@ -27,15 +28,15 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m Result
+runSygus :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m Result
 runSygus cg const_vals h tenv = runSygusWithGrammar cg const_vals h tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
 runSygusWithGrammar cg const_vals h tenv hsr es
     | (Example { func = Id n t }:_) <- es = do
+        n' <- freshNameM n
+
         let rules = typeValueRules es
-            
-            n' = InternalName (nameString n ++ "_def") Nothing (Just n)
             es' = filterNotRuleCovered rules es
             es'' = map (\e -> e { func = Id n' t}) es' 
 

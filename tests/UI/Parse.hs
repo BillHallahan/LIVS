@@ -20,7 +20,7 @@ parseExample1 = testCase "parseExample Test 1"
     $ assertBool "Correct parseExample" 
             (parseExample jsJSONToVal "@pbe (constraint (= (f 3) 20))" == Just ex)
     where
-        ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
+        ex = Example { func = Id (Name Ident "f" Nothing) (TyFun jsIdentType jsIdentType)
                      , input = [AppVal (DataVal jsIntDC) (LitVal $ LInt 3)]
                      , output = AppVal (DataVal jsIntDC) (LitVal $ LInt 20) }
 
@@ -29,7 +29,7 @@ parseExample2 = testCase "parseExample Test 2"
     $ assertBool "Correct parseExample" 
             (parseExample jsJSONToVal "@pbe (constraint (= (f 5 -4) -2))" == Just ex)
     where
-        ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
+        ex = Example { func = Id (Name Ident "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
                      , input = [ AppVal (DataVal jsIntDC) (LitVal $ LInt 5)
                                , AppVal (DataVal jsIntDC) (LitVal $ LInt (-4)) ]
                      , output = AppVal (DataVal jsIntDC) (LitVal $ LInt (-2)) }
@@ -39,7 +39,7 @@ parseExample3 = testCase "parseExample Test 3"
     $ assertBool "Correct parseExample" 
             (parseExample jsJSONToVal "@pbe (constraint (= (f \"hello world\") \"hey world\"))" == Just ex)
     where
-        ex = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
+        ex = Example { func = Id (Name Ident "f" Nothing) (TyFun jsIdentType jsIdentType)
                      , input = [ AppVal (DataVal jsStringDC) (LitVal $ LString "hello world") ]
                      , output = AppVal (DataVal jsStringDC) (LitVal $ LString "hey world") }
 
@@ -52,10 +52,10 @@ parseExamples1 = testCase "parseExamples Test 1"
         ex2_str = "@pbe (constraint (= (f 90) 2))"
         ex_str = ex1_str ++ "\nOTHER STUFF" ++ ex2_str ++ "\nMORE OTHER STUFF"
 
-        ex1 = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
+        ex1 = Example { func = Id (Name Ident "f" Nothing) (TyFun jsIdentType jsIdentType)
                       , input = [AppVal (DataVal jsIntDC) (LitVal $ LInt 8)]
                       , output = AppVal (DataVal jsIntDC) (LitVal $ LInt 1) }
 
-        ex2 = Example { func = Id (Name "f" Nothing) (TyFun jsIdentType jsIdentType)
+        ex2 = Example { func = Id (Name Ident "f" Nothing) (TyFun jsIdentType jsIdentType)
                       , input = [AppVal (DataVal jsIntDC) (LitVal $ LInt 90)]
                       , output = AppVal (DataVal jsIntDC) (LitVal $ LInt 2) }
