@@ -22,7 +22,8 @@ testSmall = testCase "typeVal Test 1"
 testLarge :: TestTree
 testLarge = undefined
 
-f = Id (Name "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
+f :: Id
+f = Id (IdentName "f") (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
 
 jsStringVal :: String -> Val
 jsStringVal = AppVal (DataVal jsStringDC) . LitVal . LString
@@ -30,6 +31,7 @@ jsStringVal = AppVal (DataVal jsStringDC) . LitVal . LString
 jsIntVal :: Int -> Val
 jsIntVal = AppVal (DataVal jsIntDC) . LitVal . LInt
 
+exs :: [Example]
 exs = [
       -- these two examples agree
         Example { func = f
