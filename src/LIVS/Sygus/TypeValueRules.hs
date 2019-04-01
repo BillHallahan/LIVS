@@ -1,7 +1,7 @@
-{-# LANGUAGE LambdaCase #-}
-
+-- should we call this ExampleGrouping or something instead?
 module LIVS.Sygus.TypeValueRules ( typeValueRules
                                  , typeTypeRules
+                                 , inputTypeRules
                                  , filterNotRuleCovered
                                  , generateRulesFunc ) where
 
@@ -14,8 +14,22 @@ import LIVS.Sygus.SMTPrims
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
 
+import Control.Applicative
+
+-- | Split a list of exmaples into lists of examples of matching types
+--  :: [Example] -> [[Example]]
+
+-- | 
+inputTypeRules :: [Example] -> [([DC], Maybe DC)]
+inputTypeRules exs = let
+    ttRules = HM.map Just $ HM.fromList $ typeTypeRules exs
+    rs = HM.fromList $ map ((\(dcs,_) -> (dcs,Nothing)). buildRule) exs
+  in
+    HM.toList $ HM.unionWith (<|>) rs ttRules
+
+
 -- | Establish rules about which input types always lead to the same output type
-typeTypeRules :: [Example] -> [([DC],DC)]
+typeTypeRules :: [Example] -> [([DC], DC)]
 typeTypeRules es = let
     rs = map ((\(dcs,v) -> (dcs, valToDC v)). buildRule) es
   in 
@@ -41,12 +55,13 @@ filterRules _ provisionalKeep [] = HM.toList provisionalKeep
 
 buildRule :: Example -> ([DC],Val)
 buildRule e =
-    (map (valToDC . appValCenter) $ input e, output e)
+    (map valToDC $ input e, output e)
 
 valToDC :: Val -> DC
-valToDC = \case
+valToDC v = case (appValCenter v) of
     DataVal dc -> dc
-    _ -> error "Bad call"
+    LitVal l -> error $ "Bad call: had LitVal"++(show l)
+    AppVal _ _-> error "Bad call: had AppVal"
 
 -- | From a list of examples, removes all those already covered by one of the rules
 filterNotRuleCovered :: [([DC],Val)] -> [Example] -> [Example]

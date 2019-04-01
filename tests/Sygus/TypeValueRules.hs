@@ -11,27 +11,33 @@ import Test.Tasty.HUnit
 typeValueTests :: TestTree
 typeValueTests = testGroup "Type-Value rules" [
       typeValueTest1
+    , typeTypeTest
+    , inputTypeTest
     , filterNotRuleCovered1 
     ]
 
 typeValueTest1 :: TestTree
 typeValueTest1 = testCase "typeValueTest Test 1"
     $ assertBool (show $ typeValueRules exs)
-        (typeValueRules exs == [([jsStringDC, jsStringDC], DataVal jsErrorDC)])
+        (typeValueRules (exs) == [([jsStringDC, jsStringDC], DataVal jsErrorDC)])
 
-typeTypeTest1 :: TestTree
-typeTypeTest1 = testCase "typeTypeTest Test 1"
+typeTypeTest :: TestTree
+typeTypeTest = testCase "typeTypeTest Test 1"
     $ assertBool (show $ typeTypeRules exs)
-        (typeTypeRules exs == [([jsStringDC, jsStringDC], jsErrorDC), ([jsIntDC, jsIntDC], jsIntDC)])
+        (typeTypeRules (exs) == [([jsStringDC, jsStringDC], jsErrorDC), ([jsIntDC, jsIntDC], jsIntDC)])
+
+inputTypeTest :: TestTree
+inputTypeTest = testCase "inputTypeTest Test"
+    $ assertBool (show $ typeTypeRules exs)
+        (inputTypeRules (exs++exsNoTypeRule) == [([jsStringDC, jsStringDC], Just jsErrorDC), ([jsIntDC, jsIntDC], Nothing)])
 
 filterNotRuleCovered1 :: TestTree
 filterNotRuleCovered1 = testCase "filterNotRuleCovered Test 1"
     $ assertBool (show $ typeValueRules exs)
-        (filterNotRuleCovered [([jsStringDC, jsStringDC], DataVal jsErrorDC)] exs == exsNoRule)
+        (filterNotRuleCovered [([jsStringDC, jsStringDC], DataVal jsErrorDC)] exs == exsNoValRule)
 
 
-testLarge :: TestTree
-testLarge = undefined
+
 
 f :: Id
 f = Id (Name Ident "f" Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
@@ -50,10 +56,10 @@ exs = [
                 , output = DataVal jsErrorDC }
       , Example { func = f
                 , input = [jsStringVal "x", jsStringVal "y"]
-                , output = DataVal jsErrorDC } ] ++ exsNoRule
+                , output = DataVal jsErrorDC } ] ++ exsNoValRule
 
-exsNoRule :: [Example]
-exsNoRule = 
+exsNoValRule :: [Example]
+exsNoValRule = 
       -- these two disagree on output value, so we do not learn anything
       [ Example { func = f
                 , input = [jsIntVal 3, jsIntVal 4]
@@ -61,6 +67,17 @@ exsNoRule =
       , Example { func = f
                 , input = [jsIntVal 4, jsIntVal 4]
                 , output = jsIntVal 4}
+      ]
+
+exsNoTypeRule :: [Example]
+exsNoTypeRule = 
+      -- these two disagree on output type, so we do not learn anything
+      [ Example { func = f
+                , input = [jsIntVal 3, jsIntVal 6]
+                , output = jsIntVal 3}
+      , Example { func = f
+                , input = [jsIntVal 4, jsIntVal 5]
+                , output = jsStringVal "x"}
       ]
 
 
