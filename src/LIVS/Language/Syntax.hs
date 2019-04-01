@@ -13,6 +13,9 @@ module LIVS.Language.Syntax ( Name (..)
                             , MarkedExample (..)
                             , IncorrectExample (..)
 
+                            , nameString
+                            , unique
+
                             , exprToVal
                             , valToExpr
                             , isVal
@@ -39,10 +42,21 @@ import Data.Foldable
 import Data.Hashable
 import Data.Maybe
 
-data Name = Name String (Maybe Integer)
-            deriving (Eq, Ord, Show, Read, Generic)
+data Name = IdentName String -- ^ The name of something from the real language
+          | SMTName String -- ^ The name of something in SMTLIB
+          | InternalName String (Maybe Integer) (Maybe Name) -- ^ A name internal to LIVS, possibly substitutable for another name
+          deriving (Eq, Ord, Show, Read, Generic)
 
 instance Hashable Name
+
+nameString :: Name -> String
+nameString (IdentName s) = s
+nameString (SMTName s) = s
+nameString (InternalName s _ _) = s
+
+unique :: Name -> Maybe Integer
+unique (InternalName _ i _) = i
+unique _ = Nothing
 
 data Id = Id Name Type
           deriving (Eq, Show, Read, Generic)

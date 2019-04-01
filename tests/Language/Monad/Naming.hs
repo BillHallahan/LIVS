@@ -18,8 +18,8 @@ freshNameM1 = testCase "freshNameM"
 
 freshNameM1' :: NameGenM Bool
 freshNameM1' = do
-    let f = Name "f" Nothing
-        g = Name "g" Nothing
+    let f = InternalName "f" Nothing Nothing
+        g = InternalName "g" Nothing Nothing
 
 
     fList <- mapM freshNameM $ replicate 10 f
@@ -30,4 +30,4 @@ freshNameM1' = do
     return $ lst == nub lst
 
 nameGen :: NameGen
-nameGen = mkNameGen [Name "f" (Just 4), Name "g" (Just 7)]
+nameGen = mkNameGen [InternalName "f" (Just 4) Nothing, InternalName "g" (Just 7) Nothing]

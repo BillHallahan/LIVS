@@ -45,7 +45,7 @@ parseExample' stv call out
 
             f_t = mkTyFun $ map typeOf arsV ++ [typeOf outV]
         in
-        Just $ Example { func = Id (Name f Nothing) f_t
+        Just $ Example { func = Id (IdentName f) f_t
                        , input = arsV
                        , output = outV }
     | otherwise = Nothing

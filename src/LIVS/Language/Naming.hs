@@ -1,6 +1,6 @@
 module LIVS.Language.Naming ( Name (..)
                             , nameToString
-                            , stringToName
+                            , stringToInternalName
 
                             , NameGen
                             , mkNameGen
@@ -15,33 +15,38 @@ import Data.Char
 import qualified Data.HashMap.Lazy as HM
 
 nameToString :: Name -> String
-nameToString (Name n Nothing) = n
-nameToString (Name n (Just i)) = n ++ show i
+nameToString (IdentName n) = n
+nameToString (SMTName n) = n
+nameToString (InternalName n Nothing _) = n
+nameToString (InternalName n (Just i) _) = n ++ show i
 
-stringToName :: String -> Name
-stringToName s =
+stringToInternalName :: String -> Name
+stringToInternalName s =
     let
         (i, s') = span isDigit . reverse $ s
         s'' = reverse s'
     in
     case i of
-        _:_ -> Name s'' (Just . read $ reverse i)
-        [] -> Name s'' Nothing
+        _:_ -> InternalName s'' (Just . read $ reverse i) Nothing
+        [] -> InternalName s'' Nothing Nothing
 
 newtype NameGen = NameGen (HM.HashMap String Integer)
 
 mkNameGen :: [Name] -> NameGen
 mkNameGen =
-    NameGen . HM.fromList . map (\(Name n i) -> (n, maybe 0 id $ fmap (+ 1) i))
+    NameGen . HM.fromList . map (\n -> (nameString n, maybe 0 (+ 1) $ unique n))
 
 freshName :: Name -> NameGen -> (Name, NameGen)
-freshName (Name n _) (NameGen ng) = (Name n (Just i), NameGen ng')
+freshName n (NameGen ng) 
+    | InternalName _ _ mn <- n = (InternalName s (Just i) mn, NameGen ng')
+    | otherwise = (InternalName s (Just i) Nothing, NameGen ng')
     where
-        i = HM.lookupDefault 0 n ng
-        ng' = HM.insert n (i + 1) ng
+        s = nameString n
+        i = HM.lookupDefault 0 s ng
+        ng' = HM.insert s (i + 1) ng
 
 unseededFreshName :: NameGen -> (Name, NameGen)
-unseededFreshName = freshName (Name "fresh" Nothing)
+unseededFreshName = freshName (InternalName "fresh" Nothing Nothing)
 
 freshId :: Name -> Type -> NameGen -> (Id, NameGen)
 freshId n t ng =
@@ -51,4 +56,4 @@ freshId n t ng =
     (Id n' t, ng')
 
 unseededFreshId :: Type -> NameGen -> (Id, NameGen)
-unseededFreshId = freshId (Name "fresh" Nothing)
+unseededFreshId = freshId (InternalName "fresh" Nothing Nothing)

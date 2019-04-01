@@ -1,6 +1,7 @@
 module Interpreter.Interpreter (interpreterTests) where
 
 import LIVS.Interpreter.Interpreter
+import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
@@ -29,7 +30,7 @@ run1 = testCase "Run Test 1"
     $ assertBool "Correct run1" 
             (runWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) e == Lit (LInt 4))
     where
-        abs2 = Var (Id (Name "abs2" Nothing) (TyFun intType intType))
+        abs2 = Var (Id (IdentName "abs2") (TyFun intType intType))
         e = App abs2 (Lit (LInt 4))
 
 run2 :: TestTree
@@ -38,10 +39,10 @@ run2 = testCase "Run Test 2"
             (runWithIdentity (callPrimExprM heapAbs) 100 heapAbs (mkNameGen []) callE == Lit (LInt 1))
     where
         e = Lam 
-              (Id (Name "x1" Nothing) intType) 
+              (Id (IdentName "x1") intType) 
               (Lam 
-                  (Id (Name "x2" Nothing) intType) 
-                  (Var (Id (Name "x1" Nothing) intType))
+                  (Id (IdentName "x2") intType) 
+                  (Var (Id (IdentName "x1") intType))
               )
         callE = App (App e (Lit (LInt 1))) (Lit (LInt 2))
 
@@ -54,15 +55,15 @@ runCollectingExamples1 = testCase "runCollectingExamples Test 1"
             (Suspect abs2Ex) `HS.member` exs && (Suspect iteEx) `HS.member` exs
             )
     where
-        abs3 = Var (Id (Name "abs3" Nothing) (TyFun intType intType))
+        abs3 = Var (Id (IdentName "abs3") (TyFun intType intType))
         e = App abs3 (Lit (LInt (-4)))
 
-        abs2Ex = Example { func = Id (Name "abs2" Nothing) (TyFun intType intType)
+        abs2Ex = Example { func = Id (IdentName "abs2") (TyFun intType intType)
                         , input = [ LitVal (LInt (-4)) ]
                         , output = LitVal (LInt 4) }
 
         iteEx = Example { func = iteId
-                        , input = [ DataVal (DC (Name "true" Nothing) (TyCon (Name "Bool" Nothing) TYPE))
+                        , input = [ DataVal trueDC
                                   , LitVal (LInt 4), LitVal (LInt (-4)) ]
                         , output = LitVal (LInt 4) }
 
@@ -75,7 +76,7 @@ runCollectingExamples2 = testCase "runCollectingExamples Test 2"
             length exs == 5
             )
     where
-        abs3 = Var (Id (Name "abs3" Nothing) (TyFun intType intType))
+        abs3 = Var (Id (IdentName "abs3") (TyFun intType intType))
         e = App abs3 (Lit (LInt (-4)))
 
 runCollectingExamples3 :: TestTree
@@ -88,40 +89,40 @@ runCollectingExamples3 = testCase "runCollectingExamples Test 3"
             )
     where
         h = H.fromList 
-            [ ( Name "id" Nothing
+            [ ( IdentName "id"
               , H.Def
                     (Lam
-                        (Id (Name "x1" Nothing) intType)
-                        (Var (Id (Name "x1" Nothing) intType))
+                        (Id (IdentName "x1") intType)
+                        (Var (Id (IdentName "x1") intType))
                     )
               )
-            , ( Name "f" Nothing
+            , ( IdentName "f"
               , H.Def
                     (Lam
-                        (Id (Name "x1" Nothing) intType)
+                        (Id (IdentName "x1") intType)
                         (App
                             (Var idF)
-                            (Var (Id (Name "x1" Nothing) intType))
+                            (Var (Id (IdentName "x1") intType))
                         )
                     )
               )
-            , ( Name "ite" Nothing
-              , H.Primitive (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
+            , ( SMTName "ite"
+              , H.Primitive (TyFun boolType (TyFun intType (TyFun intType intType)))
               )
-            , ( Name ">=" Nothing 
-              , H.Primitive (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
+            , ( SMTName ">=" 
+              , H.Primitive (TyFun intType (TyFun intType boolType))
               )
-            , ( Name "-" Nothing 
+            , ( SMTName "-" 
               , H.Primitive (TyFun intType (TyFun intType intType))
               )
             ]
 
-        f = Id (Name "f" Nothing) (TyFun intType intType)
-        idF = Id (Name "id" Nothing) (TyFun intType intType)
+        f = Id (IdentName "f") (TyFun intType intType)
+        idF = Id (IdentName "id") (TyFun intType intType)
 
         e = App (Var f) (Lit (LInt (-3)))
 
-        idEx = Example { func = Id (Name "id" Nothing) (TyFun intType intType)
+        idEx = Example { func = Id (IdentName "id") (TyFun intType intType)
                        , input = [ LitVal (LInt (-3)) ]
                        , output = LitVal (LInt (-3)) }
 

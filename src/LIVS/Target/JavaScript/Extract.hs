@@ -62,10 +62,10 @@ extractCalledFunctionsExpr' (JSDecimal _ d) =
     (FuncInfo { calls = mempty, consts = [d'] }, S.empty)
 extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
-    (FuncInfo { calls = [nameCLToId (Name n Nothing) args], consts = mempty }, S.empty)
+    (FuncInfo { calls = [nameCLToId (IdentName n) args], consts = mempty }, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _ n)) _ args _) =
     let
-        nm = Name n Nothing
+        nm = IdentName n
     in
     (FuncInfo {calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
 extractCalledFunctionsExpr' _ = (mempty, S.empty)
@@ -82,12 +82,12 @@ nameCLToId :: Name -> JSCommaList a -> Id
 nameCLToId n args = nameCLToIdWithExtraArgs n args 0
 
 jsExpressionToName :: JSExpression -> Maybe Name
-jsExpressionToName (JSIdentifier _ n) = Just (Name n Nothing)
+jsExpressionToName (JSIdentifier _ n) = Just (IdentName n)
 jsExpressionToName _ = Nothing
 
 identToName :: JSIdent -> Name
-identToName (JSIdentName _ s) = Name s Nothing
-identToName (JSIdentNone) = Name "None" Nothing
+identToName (JSIdentName _ s) = IdentName s
+identToName (JSIdentNone) = IdentName "None"
 
 commaListLength :: JSCommaList a -> Int
 commaListLength (JSLCons cl _ _) = 1 + commaListLength cl

@@ -10,6 +10,7 @@ module Helpers.Interpreter ( langEnv
 import LIVS.Interpreter.Interpreter
 import LIVS.Interpreter.Stack
 import qualified LIVS.Language.Heap as H
+import LIVS.Language.Expr
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Monad.Heap
@@ -49,19 +50,18 @@ callPrim e = do
         Nothing -> error "callPrim: Bad Expr"
 
 callPrim' :: HeapMonad m => Expr -> m (Maybe Val)
-callPrim' (App (App (App (Var (Id (Name "ite" _) _)) b) e) e') =
+callPrim' (App (App (App (Var (Id (SMTName "ite") _)) b) e) e') =
     case b of
-        Data (DC (Name "true" _) _) ->
-            reduceToVal e
-        Data (DC (Name "false" _) _) ->
-            reduceToVal e'
+        Data dc
+            | dc == trueDC -> reduceToVal e
+            | dc == falseDC -> reduceToVal e'
         _ -> error $ "callPrim': Unhandled expression from ite" ++ show b ++ "\n" ++ show e ++ "\n" ++ show e'
-callPrim' (App (App (Var (Id (Name ">=" _) _)) (Lit (LInt l))) (Lit (LInt l')))
+callPrim' (App (App (Var (Id (SMTName ">=") _)) (Lit (LInt l))) (Lit (LInt l')))
     | l >= l' =
-        return . Just . DataVal $ DC (Name "true" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
+        return . Just . DataVal $ trueDC
     | otherwise =
-        return . Just . DataVal $ DC (Name "false" Nothing) (TyCon (Name "Bool" Nothing) TYPE)
-callPrim' (App (App (Var (Id (Name "-" _) _)) (Lit (LInt l))) (Lit (LInt l'))) =
+        return . Just . DataVal $ falseDC
+callPrim' (App (App (Var (Id (SMTName "-") _)) (Lit (LInt l))) (Lit (LInt l'))) =
     return . Just . LitVal $ LInt (l - l')
 callPrim' _ = return Nothing
 

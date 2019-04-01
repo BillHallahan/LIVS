@@ -54,7 +54,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
     con { core_funcs = mapMaybe findName cf}
     where
         ns = H.keys h
-        findName s = find (\(Name n _) -> n == s) ns
+        findName s = find (\n -> s == nameString n) ns
 
 coreFuncs :: [String]
 coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]

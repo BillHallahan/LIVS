@@ -5,46 +5,46 @@ import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 
 jsIdentName :: Name
-jsIdentName = Name "JSIdentifier" Nothing
+jsIdentName = SMTName "JSIdentifier"
 
 jsIdentType :: Type
 jsIdentType = TyCon (jsIdentName) TYPE
 
 jsIntDCName :: Name
-jsIntDCName = Name "JSInt" Nothing
+jsIntDCName = SMTName "JSInt"
 
 jsIntDC :: DC
 jsIntDC = DC jsIntDCName (TyFun intType jsIdentType)
 
 jsIntSelectorName :: Name
-jsIntSelectorName = Name "jsInt" Nothing
+jsIntSelectorName = SMTName "jsInt"
 
 jsStringDCName :: Name
-jsStringDCName = Name "JSString" Nothing
+jsStringDCName = SMTName "JSString"
 
 jsStringDC :: DC
 jsStringDC = DC jsStringDCName (TyFun stringType jsIdentType)
 
 jsStringSelectorName :: Name
-jsStringSelectorName = Name "jsString" Nothing
+jsStringSelectorName = SMTName "jsString"
 
 jsBoolDCName :: Name
-jsBoolDCName = Name "JSBool" Nothing
+jsBoolDCName = SMTName "JSBool"
 
 jsBoolDC :: DC
 jsBoolDC = DC jsBoolDCName (TyFun boolType jsIdentType)
 
 jsBoolSelectorName :: Name
-jsBoolSelectorName = Name "jsBool" Nothing
+jsBoolSelectorName = SMTName "jsBool"
 
 jsNaNDCName :: Name
-jsNaNDCName = Name "NaN2" Nothing
+jsNaNDCName = SMTName "NaN2"
 
 jsNaNDC :: DC
 jsNaNDC = DC jsNaNDCName jsIdentType
 
 jsErrorDCName :: Name
-jsErrorDCName = Name "Error" Nothing
+jsErrorDCName = SMTName "Error"
 
 jsErrorDC :: DC
 jsErrorDC = DC jsErrorDCName jsIdentType
