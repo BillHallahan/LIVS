@@ -118,6 +118,7 @@ test-suite test
                        , Helpers.Language
                        , Interpreter.Interpreter
                        , LIVS.LIVS
+                       , Sygus.TypeValueRules
                        , Language.AST
                        , Language.CallGraph
                        , Language.Expr

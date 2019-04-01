@@ -1,4 +1,7 @@
+{-# LANGUAGE LambdaCase #-}
+
 module LIVS.Sygus.TypeValueRules ( typeValueRules
+                                 , typeTypeRules
                                  , filterNotRuleCovered
                                  , generateRulesFunc ) where
 
@@ -10,7 +13,13 @@ import LIVS.Sygus.SMTPrims
 
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
-import Data.List
+
+-- | Establish rules about which input types always lead to the same output type
+typeTypeRules :: [Example] -> [([DC],DC)]
+typeTypeRules es = let
+    rs = map ((\(dcs,v) -> (dcs, valToDC v)). buildRule) es
+  in 
+    filterRules' rs
 
 -- | Establish rules about which input types that always lead to the same value
 --   Identifies which input types generate an error value (or any fixed value)
@@ -18,22 +27,26 @@ typeValueRules :: [Example] -> [([DC],Val)]
 typeValueRules es = let
     rs = map buildRule es
   in
-    filterRules S.empty HM.empty rs
+    filterRules' rs
 
-filterRules :: S.HashSet [DC] -> HM.HashMap [DC] Val -> [([DC],Val)] -> [([DC],Val)]
+filterRules' :: Eq a => [([DC], a)] -> [([DC], a)]
+filterRules' rs = filterRules S.empty HM.empty rs
+
+filterRules :: Eq a => S.HashSet [DC] -> HM.HashMap [DC] a -> [([DC],a)] -> [([DC],a)]
 filterRules reject provisionalKeep ((dc,v):rs) = 
     if S.member dc reject || (HM.lookupDefault v dc provisionalKeep /= v)
     then filterRules (S.insert dc reject) (HM.delete dc provisionalKeep) rs
     else filterRules reject (HM.insert dc v provisionalKeep) rs
-filterRules reject provisionalKeep [] = HM.toList provisionalKeep 
+filterRules _ provisionalKeep [] = HM.toList provisionalKeep 
 
 buildRule :: Example -> ([DC],Val)
 buildRule e =
     (map (valToDC . appValCenter) $ input e, output e)
-  where
-    valToDC v = case v of
-      DataVal dc -> dc
-      _ -> error "Bad call"
+
+valToDC :: Val -> DC
+valToDC = \case
+    DataVal dc -> dc
+    _ -> error "Bad call"
 
 -- | From a list of examples, removes all those already covered by one of the rules
 filterNotRuleCovered :: [([DC],Val)] -> [Example] -> [Example]

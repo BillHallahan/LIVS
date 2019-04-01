@@ -19,6 +19,11 @@ typeValueTest1 = testCase "typeValueTest Test 1"
     $ assertBool (show $ typeValueRules exs)
         (typeValueRules exs == [([jsStringDC, jsStringDC], DataVal jsErrorDC)])
 
+typeTypeTest1 :: TestTree
+typeTypeTest1 = testCase "typeTypeTest Test 1"
+    $ assertBool (show $ typeTypeRules exs)
+        (typeTypeRules exs == [([jsStringDC, jsStringDC], jsErrorDC), ([jsIntDC, jsIntDC], jsIntDC)])
+
 filterNotRuleCovered1 :: TestTree
 filterNotRuleCovered1 = testCase "filterNotRuleCovered Test 1"
     $ assertBool (show $ typeValueRules exs)
