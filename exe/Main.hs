@@ -53,18 +53,18 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     whenLoud (putStrLn "Verbose")
 
     let cg = createCallGraph (idsAndCalls ids)
-        heap = H.fromList [ (SMTName "=", H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
-                          , (SMTName "+", H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (SMTName "-", H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (SMTName "*", H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (SMTName "ite", H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
-                          , (SMTName "str.substr", H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
-                          , (SMTName "str.indexof", H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
-                          , (SMTName "str.++", H.Primitive $ TyFun stringType (TyFun stringType stringType))
-                          , (SMTName "int.to.str", H.Primitive $ TyFun intType stringType)
-                          , (SMTName "\"true\"", H.Primitive $ stringType)
-                          , (SMTName "\"false\"", H.Primitive $ stringType)
-                          , (SMTName "\"NaN\"", H.Primitive $ stringType) ]
+        heap = H.fromList [ (Name "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
+                          , (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
+                          , (Name "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
+                          , (Name "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
+                          , (Name "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
+                          , (Name "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
+                          , (Name "\"true\"" Nothing, H.Primitive $ stringType)
+                          , (Name "\"false\"" Nothing, H.Primitive $ stringType)
+                          , (Name "\"NaN\"" Nothing, H.Primitive $ stringType) ]
 
     let config' = toLIVSConfigNames heap config
 

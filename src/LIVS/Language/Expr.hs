@@ -12,10 +12,10 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 trueDC :: DC
-trueDC = DC (SMTName "true") boolType
+trueDC = DC (Name "true" Nothing) boolType
 
 falseDC :: DC
-falseDC = DC (SMTName "false") boolType
+falseDC = DC (Name "false" Nothing) boolType
 
 mkLams :: [Id] -> Expr -> Expr
 mkLams is e = foldr Lam e is

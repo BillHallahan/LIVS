@@ -164,4 +164,4 @@ mergeTesters tenv h =
             H.insertPrimitive ins_name func_ty  h'
 
 testerName :: Name -> Name
-testerName dcn = SMTName ("is" ++ nameToString dcn)
+testerName dcn = Name ("is" ++ nameToString dcn) Nothing

@@ -12,18 +12,18 @@ import LIVS.Language.Syntax
 import LIVS.Language.Typing
 
 heapPrim :: H.Heap
-heapPrim = H.fromList [ (SMTName "+", H.Primitive $ TyFun intType (TyFun intType intType))
-                      , (SMTName "-", H.Primitive $ TyFun intType (TyFun intType intType))
-                      , (SMTName "=", H.Primitive $ TyFun intType (TyFun intType boolType))
-                      , (SMTName ">=", H.Primitive $ TyFun intType (TyFun intType boolType))
-                      , (SMTName "ite", H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
+heapPrim = H.fromList [ (Name "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                      , (Name "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
+                      , (Name "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+                      , (Name ">=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+                      , (Name "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))]
 
 heapAbs :: H.Heap
 heapAbs = H.fromList
-    [ ( IdentName "abs2"
+    [ ( Name "abs2" Nothing
       , H.Def 
             (Lam 
-                (Id (IdentName "x1") intType) 
+                (Id (Name "x1" Nothing) intType) 
                 (App 
                     (App 
                         (App 
@@ -33,7 +33,7 @@ heapAbs = H.fromList
                                     (Var gteId) 
                                     (Lit (LInt 0))
                                 ) 
-                                (Var (Id (IdentName "x1") intType))
+                                (Var (Id (Name "x1" Nothing) intType))
                             )
                         ) 
                         (App 
@@ -41,30 +41,30 @@ heapAbs = H.fromList
                                 (Var subId) 
                                 (Lit (LInt 0))
                             ) 
-                            (Var (Id (IdentName "x1") intType))
+                            (Var (Id (Name "x1" Nothing) intType))
                         )
                     ) 
-                    (Var (Id (IdentName "x1") intType))
+                    (Var (Id (Name "x1" Nothing) intType))
                 )
             )
         )
-    , ( IdentName "abs3"
+    , ( Name "abs3" Nothing
       , H.Def
             (Lam 
-                (Id (IdentName "x1") intType) 
+                (Id (Name "x1" Nothing) intType) 
                 (App 
-                    (Var (Id (IdentName "abs2") (TyFun intType intType))) 
-                    (Var (Id (IdentName "x1") intType))
+                    (Var (Id (Name "abs2" Nothing) (TyFun intType intType))) 
+                    (Var (Id (Name "x1" Nothing) intType))
                 )
             )
       )
-    , ( SMTName "ite"
-      , H.Primitive (TyFun boolType (TyFun intType (TyFun intType intType)))
+    , ( Name "ite" Nothing
+      , H.Primitive (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
       )
-    , ( SMTName ">=" 
-      , H.Primitive (TyFun intType (TyFun intType boolType))
+    , ( Name ">=" Nothing 
+      , H.Primitive (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
       )
-    , ( SMTName "-" 
+    , ( Name "-" Nothing 
       , H.Primitive (TyFun intType (TyFun intType intType))
       )
     ]
@@ -74,18 +74,18 @@ callGraphAbs = createCallGraph callGraphAbs'
 
 callGraphAbs' :: [ (Id, [Id])]
 callGraphAbs' =
-    [ ( Id (IdentName "abs2") (TyFun intType intType)
+    [ ( Id (Name "abs2" Nothing) (TyFun intType intType)
       , [subId, gteId, iteId])
-    , ( Id (IdentName "abs3") (TyFun intType intType)
-      , [Id (IdentName "abs2") (TyFun intType intType)])
+    , ( Id (Name "abs3" Nothing) (TyFun intType intType)
+      , [Id (Name "abs2" Nothing) (TyFun intType intType)])
     ]
 
 
 iteId :: Id
-iteId = Id (SMTName "ite") (TyFun boolType (TyFun intType (TyFun intType intType)))
+iteId = Id (Name "ite" Nothing) (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
 
 gteId :: Id
-gteId = Id (SMTName ">=") (TyFun intType (TyFun intType boolType))
+gteId = Id (Name ">=" Nothing) (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
 
 subId :: Id
-subId = Id (SMTName "-") (TyFun intType (TyFun intType intType))
+subId = Id (Name "-" Nothing) (TyFun intType (TyFun intType intType))

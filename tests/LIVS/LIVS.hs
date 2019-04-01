@@ -25,7 +25,7 @@ livsSatCheckIncorrect1 = testCase "livsSatCheckIncorrect Test 1"
     $ assertBool "Correct examples from livsSatCheckIncorrect"
         (HS.fromList (fst livsSatCheckIncorrect1_2) == HS.fromList fix_exs)
     where
-        abs2 = Id (IdentName "abs2") (TyFun intType intType)
+        abs2 = Id (Name "abs2" Nothing) (TyFun intType intType)
 
         -- Input/output counterexamples for abs2, that are the result of running
         -- the interpreter on the exs  
@@ -45,9 +45,9 @@ livsSatCheckIncorrect2 = testCase "livsSatCheckIncorrect Test 2"
         in
         r == [abs2, f, g] || r == [abs2, g, f])
     where
-        f = Id (IdentName "f") (TyFun intType intType)
-        g = Id (IdentName "g") (TyFun intType intType)
-        abs2 = Id (IdentName "abs2") (TyFun intType intType)
+        f = Id (Name "f" Nothing) (TyFun intType intType)
+        g = Id (Name "g" Nothing) (TyFun intType intType)
+        abs2 = Id (Name "abs2" Nothing) (TyFun intType intType)
 
 -- | This is used by both livsSatCheckIncorrect1 and livsSatCheckIncorrect2
 -- Two heaps are used: correctHeap corresponds to actual function definitions,
@@ -62,10 +62,10 @@ livsSatCheckIncorrect1_2 =
         callGraphAbsC = createCallGraph $ [(f, [ abs2 ]), (g, [abs2])]
 
         correctHeap = H.fromList 
-            [ ( IdentName "abs2"
+            [ ( Name "abs2" Nothing
               , H.Def 
                     (Lam 
-                        (Id (IdentName "x1") intType) 
+                        (Id (Name "x1" Nothing) intType) 
                         (App 
                             (App 
                                 (App 
@@ -75,7 +75,7 @@ livsSatCheckIncorrect1_2 =
                                             (Var gteId) 
                                             (Lit (LInt 0))
                                         ) 
-                                        (Var (Id (IdentName "x1") intType))
+                                        (Var (Id (Name "x1" Nothing) intType))
                                     )
                                 ) 
                                 (App 
@@ -83,64 +83,64 @@ livsSatCheckIncorrect1_2 =
                                         (Var subId) 
                                         (Lit (LInt 0))
                                     ) 
-                                    (Var (Id (IdentName "x1") intType))
+                                    (Var (Id (Name "x1" Nothing) intType))
                                 )
                             ) 
-                            (Var (Id (IdentName "x1") intType))
+                            (Var (Id (Name "x1" Nothing) intType))
                         )
                     )
                 )
-            , ( IdentName "f"
+            , ( Name "f" Nothing
               , H.Def
                     (Lam
-                        (Id (IdentName "x1") intType)
-                        (Var (Id (IdentName "x1") intType))
+                        (Id (Name "x1" Nothing) intType)
+                        (Var (Id (Name "x1" Nothing) intType))
                     )
               )
-            , ( SMTName "ite"
-              , H.Primitive (TyFun boolType (TyFun intType (TyFun intType intType)))
+            , ( Name "ite" Nothing
+              , H.Primitive (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
               )
-            , ( SMTName ">=" 
-              , H.Primitive (TyFun intType (TyFun intType boolType))
+            , ( Name ">=" Nothing 
+              , H.Primitive (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
               )
-            , ( SMTName "-" 
+            , ( Name "-" Nothing 
               , H.Primitive (TyFun intType (TyFun intType intType))
               )
             ]
         -- Here, the component function is the absolute value function, but 
         -- \x -> x has been incorrectly guessed
         h = H.fromList 
-            [ ( IdentName "abs2"
+            [ ( Name "abs2" Nothing
               , H.Def
                     (Lam
-                        (Id (IdentName "x1") intType)
-                        (Var (Id (IdentName "x1") intType))
+                        (Id (Name "x1" Nothing) intType)
+                        (Var (Id (Name "x1" Nothing) intType))
                     )
               )
-            , ( IdentName "f"
+            , ( Name "f" Nothing
               , H.Def
                     (Lam
-                        (Id (IdentName "x1") intType)
+                        (Id (Name "x1" Nothing) intType)
                         (App
                             (Var abs2)
-                            (Var (Id (IdentName "x1") intType))
+                            (Var (Id (Name "x1" Nothing) intType))
                         )
                     )
               )
-            , ( SMTName "ite"
-              , H.Primitive (TyFun boolType (TyFun intType (TyFun intType intType)))
+            , ( Name "ite" Nothing
+              , H.Primitive (TyFun (TyCon (Name "Bool" Nothing) TYPE) (TyFun intType (TyFun intType intType)))
               )
-            , ( SMTName ">=" 
-              , H.Primitive (TyFun intType (TyFun intType boolType))
+            , ( Name ">=" Nothing 
+              , H.Primitive (TyFun intType (TyFun intType (TyCon (Name "Bool" Nothing) TYPE)))
               )
-            , ( SMTName "-" 
+            , ( Name "-" Nothing 
               , H.Primitive (TyFun intType (TyFun intType intType))
               )
             ]
 
-        f = Id (IdentName "f") (TyFun intType intType)
-        g = Id (IdentName "g") (TyFun intType intType)
-        abs2 = Id (IdentName "abs2") (TyFun intType intType)
+        f = Id (Name "f" Nothing) (TyFun intType intType)
+        g = Id (Name "g" Nothing) (TyFun intType intType)
+        abs2 = Id (Name "abs2" Nothing) (TyFun intType intType)
 
         exs = [ Example { func = f
                         , input = [LitVal (LInt (-3))]

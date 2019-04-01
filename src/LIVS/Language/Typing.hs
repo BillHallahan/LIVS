@@ -55,13 +55,13 @@ instance Typed PresType where
     typeOf (PresType t) = t 
 
 intType :: Type
-intType = TyCon (InternalName "Int" Nothing Nothing) TYPE
+intType = TyCon (Name "Int" Nothing) TYPE
 
 stringType :: Type
-stringType = TyCon (InternalName "String" Nothing Nothing) TYPE
+stringType = TyCon (Name "String" Nothing) TYPE
 
 boolType :: Type
-boolType = TyCon (InternalName "Bool" Nothing Nothing) TYPE
+boolType = TyCon (Name "Bool" Nothing) TYPE
 
 exampleFuncType :: Example -> Type
 exampleFuncType es = mkTyFun $ map typeOf (input es) ++ [typeOf (output es)]

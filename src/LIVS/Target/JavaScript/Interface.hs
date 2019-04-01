@@ -99,7 +99,7 @@ toJavaScriptExpr _ (Data dc)
 toJavaScriptExpr _ (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr dnn (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr dnn e) ++ ")"
 toJavaScriptExpr dnn e@(App _ _)
-    | App (App (App (Var (Id (SMTName "ite") _)) e1) e2) e3 <- e =
+    | App (App (App (Var (Id (Name "ite" _) _)) e1) e2) e3 <- e =
         "(" ++ toJavaScriptExpr dnn e1 ++ "?" ++ toJavaScriptExpr dnn e2 ++ ":" ++ toJavaScriptExpr dnn e3 ++ ")"
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
@@ -122,10 +122,10 @@ toJavaScriptLit (LInt i) = show i
 toJavaScriptLit (LString s) = show s
 
 operators :: [Name]
-operators = [ IdentName "+"
-            , IdentName "-"
-            , IdentName "*"
-            , IdentName "="
-            , IdentName "=="
-            , IdentName ">="
-            , IdentName "<=" ]
+operators = [ Name "+" Nothing
+            , Name "-" Nothing
+            , Name "*" Nothing
+            , Name "=" Nothing
+            , Name "==" Nothing
+            , Name ">=" Nothing
+            , Name "<=" Nothing ]

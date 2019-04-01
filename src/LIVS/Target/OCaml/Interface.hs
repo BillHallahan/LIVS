@@ -80,7 +80,7 @@ toOCamlExpr (Data (DC n _)) = nameToString n
 toOCamlExpr (Lit l) = "(" ++ toOCamlLit l ++ ")"
 toOCamlExpr (Lam _ e) = toOCamlExpr e
 toOCamlExpr e@(App _ _)
-    | App (App (App (Var (Id (SMTName "ite") _)) e1) e2) e3 <- e =
+    | App (App (App (Var (Id (Name "ite" _) _)) e1) e2) e3 <- e =
         "(if " ++ toOCamlExpr e1 ++ " then " ++ toOCamlExpr e2 ++ " else " ++ toOCamlExpr e3 ++ ")"
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = "(" ++ toOCamlExpr e1 ++ " " ++ nameToString n ++ " " ++ toOCamlExpr e2 ++ ") "
@@ -97,8 +97,8 @@ toOCamlLit :: Lit -> String
 toOCamlLit (LInt i) = show i
 
 operators :: [Name]
-operators = [ IdentName "+"
-            , IdentName "-"
-            , IdentName "*"
-            , IdentName ">="
-            , IdentName "<=" ]
+operators = [ Name "+" Nothing
+            , Name "-" Nothing
+            , Name "*" Nothing
+            , Name ">=" Nothing
+            , Name "<=" Nothing ]

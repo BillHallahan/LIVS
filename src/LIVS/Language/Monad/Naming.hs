@@ -23,7 +23,7 @@ import Data.Functor.Identity
 class Monad m => NameGenMonad m where
     freshNameM :: Name -> m Name
     unseededFreshNameM :: m Name
-    unseededFreshNameM = freshNameM (InternalName "fresh" Nothing Nothing)
+    unseededFreshNameM = freshNameM (Name "fresh" Nothing)
 
 newtype NameGenT m a = NameGenT (StateT NameGen m a)
                        deriving (Applicative, Functor, Monad)
@@ -64,4 +64,4 @@ freshIdM n t = do
     return (Id n' t)
 
 unseededFreshIdM :: NameGenMonad m => Type -> m Id
-unseededFreshIdM = freshIdM (InternalName "fresh" Nothing Nothing)
+unseededFreshIdM = freshIdM (Name "fresh" Nothing)

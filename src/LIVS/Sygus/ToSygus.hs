@@ -121,7 +121,7 @@ toSygusFunExpr n e =
 genSynthFun :: H.Heap -> Name -> [Val] -> [Type] -> Type -> String
 genSynthFun h n ls it ot =
     let
-        vs = [SMTName ("x" ++ show i) | i <- [1..] :: [Integer]]
+        vs = [Name "x" (Just i) | i <- [1..] :: [Integer]]
 
         vs' = map (uncurry Id) $ zip vs it
 
