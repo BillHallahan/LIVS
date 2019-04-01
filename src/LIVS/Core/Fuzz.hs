@@ -8,9 +8,6 @@ module LIVS.Core.Fuzz ( Fuzz
 
                       , fuzzFromValsAndOutputsM
                       , fuzzFromOutputsM 
-
-                      , typeValueRules
-
                       ) where
 
 import LIVS.Language.Expr
@@ -22,7 +19,6 @@ import LIVS.Target.General.LanguageEnv
 import Control.Monad.Random
 import Data.Hashable
 import qualified Data.HashMap.Lazy as HM
-import qualified Data.HashSet as S
 import qualified Data.List as L
 import Data.Maybe
 
@@ -36,32 +32,6 @@ type Fuzz m b = LanguageEnv m b
              -> Int -- ^ How many examples to fuzz
              -> Id -- ^ A function call
              -> m [Example]
-
--- | Establish rules about which input types that always lead to the same value
---   Identifies which input types generate an error value (or any fixed value)
-typeValueRules :: [Example] -> [([DC],Val)]
-typeValueRules es = let
-    rs = map buildRule es
-  in
-    filterRules S.empty HM.empty rs
-
-filterRules :: S.HashSet [DC] -> HM.HashMap [DC] Val -> [([DC],Val)] -> [([DC],Val)]
-filterRules reject provisionalKeep ((dc,v):rs) = 
-    if S.member dc reject || (HM.lookupDefault v dc provisionalKeep /= v)
-    then filterRules (S.insert dc reject) (HM.delete dc provisionalKeep) rs
-    else filterRules reject (HM.insert dc v provisionalKeep) rs
-filterRules reject provisionalKeep [] = HM.toList provisionalKeep 
-    
-   
-
-buildRule :: Example -> ([DC],Val)
-buildRule e =
-    (map (valToDC. appValCenter) $ input e, output e)
-  where
-    valToDC v = case v of
-      DataVal dc -> dc
-      _ -> error "Bad call"
-
 
 -- | Fuzz examples randomly
 fuzzExamplesM :: MonadRandom m => Fuzz m b
@@ -160,7 +130,7 @@ fuzzFromOutputVal :: MonadRandom m => Weights DC -> [Val] -> T.TypeEnv -> Type -
 fuzzFromOutputVal w vs tenv t
     | not $ null vs' = do
         let dcs = L.nub $ mapMaybe centerDC vs'
-        dc <- fromListWeighted w (toRational (0.1 :: Double)) dcs
+        dc <- fromListWeighted w (toRational (0 :: Double)) dcs
         let vs'' = filterToDC dc vs'
         fromListConst vs''
     | TyCon n _ <- t = do

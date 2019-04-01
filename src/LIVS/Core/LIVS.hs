@@ -74,13 +74,11 @@ livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
 
     case m of
         Sat m' -> do
-            let r = case HM.lookup n m' of
-                    Just r' -> r'
+            case HM.lookup n m' of
+                    Just r -> liftIO $ whenLoud (putStrLn $ "Synthesized " ++ show r)
                     Nothing -> error "livs': No function definition found."
 
-            liftIO $ whenLoud (putStrLn $ "Synthesized " ++ show r)
-
-            let h' = H.insertDef n r h
+            let h' = H.union (H.fromExprHashMap m') h
 
             (es', is') <- livsSatCheckIncorrect le b (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''
             return (h', es', is')

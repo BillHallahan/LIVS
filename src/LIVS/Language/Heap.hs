@@ -2,6 +2,8 @@ module LIVS.Language.Heap ( Heap
                           , HeapObj (..)
                           , empty
                           , fromList
+                          , fromHashMap
+                          , fromExprHashMap
                           , insertDef
                           , insertPrimitive
                           , lookup
@@ -17,6 +19,7 @@ module LIVS.Language.Heap ( Heap
                           , filterWithKey
                           , keys
                           , elems
+                          , union
                           , toHashMap
                           , toList
 
@@ -51,6 +54,12 @@ empty = Heap M.empty
 
 fromList :: [(Name, HeapObj)] -> Heap
 fromList = Heap . M.fromList
+
+fromHashMap :: M.HashMap Name HeapObj -> Heap
+fromHashMap = Heap
+
+fromExprHashMap :: M.HashMap Name Expr -> Heap
+fromExprHashMap = fromHashMap . M.map Def
 
 insertDef :: Name -> Expr -> Heap -> Heap
 insertDef n e = Heap . M.insert n (Def e) . unHeap
@@ -105,6 +114,9 @@ keys = M.keys . unHeap
 
 elems :: Heap -> [HeapObj]
 elems = M.elems . unHeap
+
+union :: Heap -> Heap -> Heap
+union (Heap h1) (Heap h2) = Heap $ M.union h1 h2
 
 toHashMap :: Heap -> M.HashMap Name HeapObj
 toHashMap = unHeap

@@ -38,7 +38,9 @@ library
                        , LIVS.Sygus.Result
                        , LIVS.Sygus.SMTLexer
                        , LIVS.Sygus.SMTParser
+                       , LIVS.Sygus.SMTPrims
                        , LIVS.Sygus.ToSygus
+                       , LIVS.Sygus.TypeValueRules
                        , LIVS.Target.General.LanguageEnv
                        , LIVS.Target.General.Process
                        , LIVS.Target.General.JSON

@@ -11,7 +11,7 @@ import Language.Typing
 import Language.Monad.Naming
 import LIVS.LIVS
 import UI.Parse
-import Core.TypeValueRules
+import Sygus.TypeValueRules
 
 import Target.JavaScript
 

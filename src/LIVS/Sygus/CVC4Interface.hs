@@ -16,6 +16,7 @@ import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
 import LIVS.Sygus.ToSygus
+import LIVS.Sygus.TypeValueRules
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Target.General.Process
@@ -30,11 +31,22 @@ runSygus :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] 
 runSygus cg const_vals h tenv = runSygusWithGrammar cg const_vals h tenv (HS.fromList $ H.keys h)
 
 runSygusWithGrammar :: MonadIO m => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar cg const_vals h tenv hsr es = do
-    let form = toSygusWithGrammar cg const_vals h tenv hsr es
-    liftIO $ putStrLn form
-    m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
-    return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+runSygusWithGrammar cg const_vals h tenv hsr es
+    | (Example { func = Id n t }:_) <- es = do
+        let rules = typeValueRules es
+            
+            n' = InternalName (nameString n ++ "_def") Nothing (Just n)
+            es' = filterNotRuleCovered rules es
+            es'' = map (\e -> e { func = Id n' t}) es' 
+
+            rules_func = generateRulesFunc (Id n' t) rules
+
+        let form = toSygusWithGrammar cg const_vals h tenv hsr es''
+        liftIO $ putStrLn form
+
+        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
+        return . insertSat n rules_func . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+    | otherwise = return $ Sat M.empty
 
 runCVC4OnString :: MonadIO m => T.TypeEnv -> String -> m Result
 runCVC4OnString tenv s = do

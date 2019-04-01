@@ -18,6 +18,9 @@ module LIVS.Language.TypeEnv ( TypeEnv
                              , constructorNames
                              , selectorNames
                              , testerNames
+
+                             , tester
+                             
                              , mergeConstructors
                              , mergeSelectorsAndTesters
                              , mergeSelectors
@@ -98,6 +101,9 @@ selectorNames =
 
 testerNames :: TypeEnv -> [Name]
 testerNames = map testerName . map selectorDCName . selectorDCs
+
+tester :: DC -> Id
+tester dc@(DC n _) = Id (testerName n) (TyFun (returnType dc) boolType) 
 
 -- | Merges the constructors from a TypeEnv into a Heap, as Primitives
 mergeConstructors :: TypeEnv -> H.Heap -> H.Heap
