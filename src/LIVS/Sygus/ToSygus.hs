@@ -73,11 +73,11 @@ toSygusExample (Example { func = f, input = is, output = out }) =
     "(constraint (= " ++ call ++ " " ++ toSygusVal out ++ "))"
 
 toSygusId :: Id -> String
-toSygusId (Id n _) = nameToString n
+toSygusId (Id n _) = nameToStringSMT n
 
 toSygusIdWithType :: Id -> String
 toSygusIdWithType (Id n t) =
-    "(" ++ nameToString n ++ " " ++ toSygusType t ++ ")"
+    "(" ++ nameToStringSMT n ++ " " ++ toSygusType t ++ ")"
 
 toSygusExpr :: Expr -> String
 toSygusExpr (Var i) = toSygusId i
@@ -96,7 +96,7 @@ toSygusVal (LitVal dc) = toSygusLit dc
 toSygusVal (AppVal v1 v2) = "(" ++ toSygusVal v1 ++ " " ++ toSygusVal v2 ++ ")"
 
 toSygusDC :: DC -> String
-toSygusDC (DC n _) = nameToString n
+toSygusDC (DC n _) = nameToStringSMT n
 
 toSygusLit :: Lit -> String
 toSygusLit (LInt i)
@@ -105,7 +105,7 @@ toSygusLit (LInt i)
 toSygusLit (LString s) = "\"" ++ s ++ "\""
 
 toSygusType :: Type -> String
-toSygusType (TyCon n _) = nameToString n
+toSygusType (TyCon n _) = nameToStringSMT n
 toSygusType t@(TyFun _ _) =
     let
         as = concat . intersperse " " . map toSygusType . argTypes $ PresType t
@@ -122,23 +122,23 @@ toSygusFunExpr n e =
 
         se = toSygusExpr e
     in
-    "(define-fun " ++ nameToString n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
+    "(define-fun " ++ nameToStringSMT n ++ " (" ++ as ++ ") " ++ r ++ " " ++ se ++ ")"
 
 genSynthFun :: H.Heap -> Name -> [Val] -> [Type] -> Type -> String
 genSynthFun h n ls it ot =
     let
-        vs = [Name SMT ("x" ++ show i) Nothing | i <- [1..] :: [Integer]]
+        vs = [Name Ident "x" (Just i) | i <- [1..] :: [Integer]]
 
         vs' = map (uncurry Id) $ zip vs it
 
         sit = concatMap (\(i, t) -> 
-            "(" ++ nameToString (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
+            "(" ++ nameToStringSMT (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
 
         rts = nub . map returnType $ H.elems h
         gs = concat . intersperse "\n" $ map (\t -> sygusGrammar t h ls vs') rts
     in
-    "(synth-fun " ++ nameToString n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
+    "(synth-fun " ++ nameToStringSMT n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
         ++ "((Start " ++ sot ++ " (" ++ typeSymbol ot ++ "))\n"
         ++ gs ++ "))"
 
@@ -159,10 +159,10 @@ sygusGrammar :: Type
 sygusGrammar t@(TyCon n _) h ls vs =
     let
         sc = sygusGrammar' t h
-        vs' = map nameToString . map idName $ filter (\i -> typeOf i == t) vs
+        vs' = map nameToStringSMT . map idName $ filter (\i -> typeOf i == t) vs
         ls' = map toSygusVal $ filter (\l -> typeOf l == t) ls
     in
-       "(" ++ typeSymbol t ++ " " ++ nameToString n ++ "\n" 
+       "(" ++ typeSymbol t ++ " " ++ nameToStringSMT n ++ "\n" 
     ++ "(" ++ concat (intersperse " " ls') ++ " "
     ++ concat (intersperse " " vs') ++ "\n"
     ++ sc
@@ -178,12 +178,12 @@ sygusGrammar' t =
                 ts = concat . intersperse " " $ map typeSymbol at
             in
             case at of
-                [] -> nameToString n ++ "\n"
-                _ -> "(" ++ nameToString n ++ " " ++ ts ++ ")\n")
+                [] -> nameToStringSMT n ++ "\n"
+                _ -> "(" ++ nameToStringSMT n ++ " " ++ ts ++ ")\n")
         . H.filter (\e -> t == returnType e)
 
 typeSymbol :: Type -> String
-typeSymbol (TyCon n _) = "nt" ++ nameToString n
+typeSymbol (TyCon n _) = "nt" ++ nameToStringSMT n
 typeSymbol _ = error $ "typeSymbol: Bad type."
 
 toSygusTypeEnv :: T.TypeEnv -> String
@@ -195,16 +195,16 @@ toSygusTypeEnv' n (T.ADTSpec ts) =
         ts' = intercalate " " $ map (toSygusSelectorDC) ts
         testers = intercalate "\n" $ map (toSygusTesters n) ts
     in
-    "(declare-datatype " ++ nameToString n ++ " (" ++ ts' ++ "))\n" ++ testers
+    "(declare-datatype " ++ nameToStringSMT n ++ " (" ++ ts' ++ "))\n" ++ testers
 
 toSygusSelectorDC :: T.SelectorDC -> String
 toSygusSelectorDC (T.SelectorDC n nt) =
-    "(" ++ nameToString n ++ " "
+    "(" ++ nameToStringSMT n ++ " "
         ++ intercalate " " (map toSygusNamedType nt) ++ ")"
 
 toSygusNamedType :: T.NamedType -> String
 toSygusNamedType (T.NamedType n t) =
-    "(" ++ nameToString n ++ " " ++ toSygusType t ++ ")"
+    "(" ++ nameToStringSMT n ++ " " ++ toSygusType t ++ ")"
 
 toSygusTesters :: Name -> T.SelectorDC -> String
 toSygusTesters tn (T.SelectorDC n _) =
@@ -212,7 +212,7 @@ toSygusTesters tn (T.SelectorDC n _) =
 
 toSygusTester :: Name -> Name -> String
 toSygusTester tn dcn = 
-    "(define-fun is" ++ nameToString dcn ++ " ((i " ++ nameToString tn ++ ")) Bool ((_ is " ++ nameToString dcn ++ ") i))"
+    "(define-fun is" ++ nameToStringSMT dcn ++ " ((i " ++ nameToStringSMT tn ++ ")) Bool ((_ is " ++ nameToStringSMT dcn ++ ") i))"
 
 -- | Filters out (some) unneeded types from the TypeEnv
 filterTypeEnv :: H.Heap -> [Example] -> T.TypeEnv -> T.TypeEnv

@@ -8,12 +8,22 @@ import Test.Tasty.HUnit
 
 namingTests :: TestTree
 namingTests = testGroup "Naming" [ nameToString1
+                                 , stringToName1
+                                 , stringToName2
                                  , nameGen1
                                  , nameGen2 ]
 
 nameToString1 :: TestTree
 nameToString1 = testCase "nameToString Test 1"
     $ assertBool "Correct nameToString" (nameToString (Name Ident "add" (Just 2)) == "add")
+
+stringToName1 :: TestTree
+stringToName1 = testCase "stringToName Test 1"
+    $ assertBool "Correct stringToName" (stringToName Ident "add2" == Name Ident "add" (Just 2))
+
+stringToName2 :: TestTree
+stringToName2 = testCase "stringToName Test 2"
+    $ assertBool "Correct stringToName" (stringToName Ident "add" == Name Ident "add" Nothing)
 
 nameGen1 :: TestTree
 nameGen1 = testCase "nameGen Test 1"

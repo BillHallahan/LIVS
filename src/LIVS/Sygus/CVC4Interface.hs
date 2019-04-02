@@ -61,7 +61,9 @@ runSygusWithGrammar' cg const_vals h tenv hsr es
         liftIO $ putStrLn form
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
-        return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+        let pars_m = parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+        liftIO $ putStrLn $ "pars_m = " ++ show pars_m
+        return pars_m
     | otherwise = return $ Sat M.empty
 
 runCVC4OnString :: MonadIO m => T.TypeEnv -> String -> m Result

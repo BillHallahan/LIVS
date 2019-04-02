@@ -79,6 +79,8 @@ livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
                     Just r -> liftIO $ whenLoud (putStrLn $ "Synthesized " ++ show r)
                     Nothing -> error "livs': No function definition found."
 
+            liftIO $ putStrLn $ "size m' = " ++ show (HM.size m')
+
             let h' = H.union (H.fromExprHashMap m') h
 
             (es', is') <- livsSatCheckIncorrect le b (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''

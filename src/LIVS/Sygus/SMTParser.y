@@ -6,6 +6,7 @@
 module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
+import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Sygus.Result
@@ -80,7 +81,7 @@ expr :: { Expr }
      | int { Lit (LInt $1) }
 
 name :: { Name }
-     : smtName { Name Ident $1 Nothing}
+     : smtName { stringToName Ident $1 }
 
 model :: { [(Name, Expr)] }
       : model '(' modelVal ')' { $3:$1 }
