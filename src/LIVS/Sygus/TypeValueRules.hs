@@ -137,9 +137,13 @@ generateTypeValueRulesFuncs = map dcValToExpr
     dcValToExpr (dcs, v) =
       let
         xs = map (Name Ident "x" . Just) [0..]
-        ts = map dcToType dcs 
+        ts = map dcToType dcs
+        v' = stripConstructor v
       in
-      mkLams (map (uncurry Id) $ zip xs ts) (valToExpr v)
+      mkLams (map (uncurry Id) $ zip xs ts) (valToExpr v')
+
+    stripConstructor (AppVal _ v@(LitVal _)) = v
+    stripConstructor v = v
 
     dcToType (DC _ (TyFun t _)) = t
 
