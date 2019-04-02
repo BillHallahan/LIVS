@@ -58,6 +58,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let cg = createCallGraph (idsAndCalls ids)
         heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun jsIdentType (TyFun jsIdentType boolType))
+                          , (Name SMT ">" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name SMT "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
                           , (Name SMT "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
@@ -86,7 +87,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         heap'' = T.mergeSelectorsAndTesters tenv heap'
 
     let cs = concatMap (consts . snd) ids
-        cs' = genConsts $ cs ++ concatMap exampleVals synth_ex
+        cs' = genConsts cs
         fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
         fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
