@@ -27,22 +27,21 @@ import qualified Data.HashMap.Lazy as HM
 
 import System.Console.CmdArgs
 import System.Random
+import System.Directory
 
 main :: IO ()
 main = do
-    config <- cmdArgs livsConfig
 
-    case seed config of
-        Just s -> setStdGen $ mkStdGen s
-        Nothing -> return ()
+    setStdGen $ mkStdGen 1
 
     jsEnv <- jsLanguageEnv
 
-    synth config jsEnv
-    -- (_, b) <- extract jsEnv (code_file config)
-    -- es <- fuzzExamplesM jsEnv b [] jsTypeEnv (fuzz_num config) (Id (Name "substring" Nothing) (TyFun jsIdentType (TyFun jsIdentType (TyFun jsIdentType jsIdentType))))
-    -- print es
-    -- return ()
+    let benchmarkDir = "benchmarks/synthesis/"
+    benchmarksFilepaths <- listDirectory benchmarkDir
+
+    mapM_
+       (\fp -> synth (livsConfig {code_file = fp}) jsEnv)
+       (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths) --TODO fix naming convention for benchmarks
 
 synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
@@ -50,6 +49,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     synth_ex <- examplesFromFile jsJSONToVal fp
 
+    liftIO $ putStrLn "Extracted Examples:"
     liftIO $ print synth_ex
 
     (ids, b) <- extract lenv fp
@@ -72,6 +72,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let config' = toLIVSConfigNames heap config
 
+    liftIO $ putStrLn "running synthesis with the following core_funcs:"
     liftIO $ print $ core_funcs config'
 
     let tenv = jsTypeEnv
