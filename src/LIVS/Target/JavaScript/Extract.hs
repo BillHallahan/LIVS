@@ -60,6 +60,11 @@ extractCalledFunctionsExpr' (JSDecimal _ d) =
         d' = jsJSONToVal $ d ++ "\n"
     in
     (FuncInfo { calls = mempty, consts = [d'] }, S.empty)
+extractCalledFunctionsExpr' (JSStringLiteral _ s) =
+    let
+        s' = jsJSONToVal $ s ++ "\n"
+    in
+    (FuncInfo { calls = [], consts = [s'] }, S.empty)
 extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
     (FuncInfo { calls = [nameCLToId (Name Ident n Nothing) args], consts = mempty }, S.empty)
