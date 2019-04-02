@@ -7,6 +7,8 @@ module LIVS.Language.TypeEnv ( TypeEnv
                              , lookup
                              , keys
                              , elems
+                             , filter
+                             , filterWithKey
                              , fromList
                              , toList
 
@@ -33,7 +35,7 @@ import LIVS.Language.Typing
 
 import qualified Data.HashMap.Lazy as M
 
-import Prelude hiding (lookup)
+import Prelude hiding (lookup, filter)
 
 -- | Associates Algebraic Data Constructor Names to the corresponding constructors.
 newtype TypeEnv = TypeEnv { unTypeEnv :: M.HashMap Name ADTSpec }
@@ -65,6 +67,12 @@ keys = M.keys . unTypeEnv
 
 elems :: TypeEnv -> [ADTSpec]
 elems = M.elems . unTypeEnv
+
+filter :: (ADTSpec -> Bool) -> TypeEnv -> TypeEnv
+filter p = TypeEnv . M.filter p . unTypeEnv 
+
+filterWithKey :: (Name -> ADTSpec -> Bool) -> TypeEnv -> TypeEnv
+filterWithKey p = TypeEnv . M.filterWithKey p . unTypeEnv 
 
 fromList :: [(Name, ADTSpec)] -> TypeEnv
 fromList = TypeEnv . M.fromList

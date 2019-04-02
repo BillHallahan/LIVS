@@ -18,6 +18,8 @@ import qualified Data.HashSet as HS
 import Data.List
 import Data.Maybe
 
+import Debug.Trace
+
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
@@ -37,12 +39,16 @@ toSygusWithGrammar :: CallGraph
                    -> String
 toSygusWithGrammar cg cons_val h tenv hsr es =
     let
-        tspec = toSygusTypeEnv tenv
+        tenv' = filterTypeEnv h es tenv
+        tspec = toSygusTypeEnv tenv'
 
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
         post = map idName $ postOrderList cg
-        h' = H.mapWithKeyDefs' toSygusFunExpr h
+
+        tyFilH = filterHeapToValidTypes tenv' h
+
+        h' = H.mapWithKeyDefs' toSygusFunExpr tyFilH
         hf = intercalate "\n" $ mapMaybe (flip HM.lookup h') post
 
         -- We narrow the heap to the allowable functions that are directly
@@ -50,7 +56,7 @@ toSygusWithGrammar cg cons_val h tenv hsr es =
         -- data constructors, to allow types to be passed between different
         -- sorts of data constructors
         fs = collectFuncs es
-        hr = H.filterWithKey (\n _ -> n `HS.member` hsr) h
+        hr = H.filterWithKey (\n _ -> n `HS.member` hsr) tyFilH
         fspec = concatMap (\(n, it, ot) -> genSynthFun hr n cons_val it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
@@ -207,3 +213,24 @@ toSygusTesters tn (T.SelectorDC n _) =
 toSygusTester :: Name -> Name -> String
 toSygusTester tn dcn = 
     "(define-fun is" ++ nameToString dcn ++ " ((i " ++ nameToString tn ++ ")) Bool ((_ is " ++ nameToString dcn ++ ") i))"
+
+-- | Filters out (some) unneeded types from the TypeEnv
+filterTypeEnv :: H.Heap -> [Example] -> T.TypeEnv -> T.TypeEnv
+filterTypeEnv h es tenv = T.filterWithKey (\n _ -> n `HS.member` tyConNs) tenv
+    where
+
+        esTys = concatMap (\e -> (typeOf $ output e):map typeOf (input e)) es
+
+        cons = T.constructorNames tenv
+        h' = H.filterWithKey (\n _ -> n `notElem` cons) h
+        hRetTys = map returnType $ H.elems h'
+
+        tyConNs = HS.unions . map tyConNames $ esTys ++ hRetTys
+
+-- | Filter a Heap to eliminate functions where the return type is not one of
+-- the primitives or in the TypeEnv
+filterHeapToValidTypes :: T.TypeEnv -> H.Heap -> H.Heap
+filterHeapToValidTypes tenv =
+    H.filter (\e -> all (`HS.member` tycons) $ tyConNames (typeOf e))
+    where
+        tycons = HS.unions $ HS.fromList (T.keys tenv):map tyConNames [intType, stringType, boolType]

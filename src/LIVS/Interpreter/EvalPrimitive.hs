@@ -21,7 +21,7 @@ evalPrimitive :: MonadIO m => H.Heap -> T.TypeEnv -> Expr -> m Expr
 evalPrimitive h tenv e = do
     let tspec = toSygusTypeEnv tenv
 
-    let x = Name SMT "x" Nothing
+    let x = Name Ident "x" Nothing
 
     let s = toSygusExpr e
         set_x = tspec ++ "\n(declare-fun x () " ++ toSygusType (typeOf e) ++ ")\n" ++

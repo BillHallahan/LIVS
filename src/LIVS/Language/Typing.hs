@@ -8,9 +8,13 @@ module LIVS.Language.Typing ( Typed (..)
                             , mkTyFun
                             , unTyFun
                             , argTypes
-                            , returnType ) where
+                            , returnType
+
+                            , tyConNames ) where
 
 import LIVS.Language.Syntax
+
+import qualified Data.HashSet as S
 
 class Typed t where
     typeOf :: t -> Type
@@ -89,3 +93,8 @@ returnType = returnType' . typeOf
         returnType' :: Type -> Type
         returnType' (TyFun _ t2) = returnType' t2
         returnType' t = t
+
+tyConNames :: Type -> S.HashSet Name
+tyConNames (TyCon n t) = S.union (S.singleton n) (tyConNames t)
+tyConNames (TyFun t1 t2) = S.union (tyConNames t1) (tyConNames t2)
+tyConNames TYPE = S.empty
