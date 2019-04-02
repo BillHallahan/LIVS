@@ -58,7 +58,8 @@ args_rev :: { [Id] }
 
 arg :: { Id }
     : '(' name name ')' {% do
-                            let t = TyCon $3 TYPE
+                            let (Name _ n i) = $3 
+                            let t = TyCon (Name SMT n i) TYPE
                             setType $2 t
                             return $ Id $2 t }
 
@@ -132,11 +133,20 @@ getTypeNamesAndSelectorDCs :: ParserM [(Name, T.SelectorDC)]
 getTypeNamesAndSelectorDCs = return . T.typeNamesAndSelectorDCs =<< getTypeEnv
 
 idM :: Name -> ParserM Id
-idM n = do
+idM n@(Name ll n' i) = do
     t <- getType n
     case t of
         Just t' -> return (Id n t')
-        Nothing -> return (Id n TYPE)
+        Nothing -> do
+            let new_n = Name (flipLangLevel ll) n' i
+            new_t <- getType new_n
+            case new_t of
+                Just new_t' -> return (Id new_n new_t')
+                Nothing -> return (Id n TYPE)
+
+flipLangLevel :: LanguageLevel -> LanguageLevel
+flipLangLevel Ident = SMT
+flipLangLevel SMT = Ident
 
 varOrData :: Name -> ParserM Expr
 varOrData n = do

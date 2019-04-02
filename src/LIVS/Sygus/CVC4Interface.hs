@@ -41,17 +41,21 @@ runSygusWithGrammar cg const_vals h tenv hsr es
             es' = filterNotTypeValueRuleCovered rules es
             es'' = map (\e -> e { func = Id n' t}) es' 
 
-            ty_val_rules_func = generateTypeValueRulesFunc (Id n' t) rules
+            ty_val_rules_funcs = generateTypeValueRulesFuncs rules -- ty_val_rules_func = generateTypeValueRulesFunc (Id n' t) rules
 
-            es''' = simplifyExamples es''
+        ty_val_rules_funcs' <- mapM (\e -> do 
+                                        ty_val_n <- freshNameM n
+                                        return (ty_val_n, e)) ty_val_rules_funcs
+
+        let es''' = simplifyExamples es''
 
         es4 <- reassignFuncNames es'''
         
-        let in_typ_rules_func = generateInputTypeRulesFunc tenv (Id n' t) es4
+        -- let in_typ_rules_func = generateInputTypeRulesFunc tenv (Id n' t) es4
 
         res <- mapM (runSygusWithGrammar' cg const_vals h tenv hsr) $ map (\(_, x) -> x) es4
 
-        return . insertSat n' in_typ_rules_func . insertSat n ty_val_rules_func $ foldr mergeRes (Sat M.empty) res
+        return . flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
     | otherwise = return $ Sat M.empty
 
 runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result

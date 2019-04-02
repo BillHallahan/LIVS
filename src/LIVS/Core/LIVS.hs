@@ -68,17 +68,13 @@ livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
-        gram = S.union (S.fromList $ core_funcs con) (S.map idName $ directlyCalls i cg)
+        gram = S.union (S.fromList $ core_funcs con) (expandSetIgnoringNum h $ S.map idName $ directlyCalls i cg)
 
     -- Take a guess at the definition of the function
     m <- gen relH tenv gram re''
 
     case m of
         Sat m' -> do
-            case HM.lookup n m' of
-                    Just r -> liftIO $ whenLoud (putStrLn $ "Synthesized " ++ show r)
-                    Nothing -> error "livs': No function definition found."
-
             liftIO $ putStrLn $ "size m' = " ++ show (HM.size m')
 
             let h' = H.union (H.fromExprHashMap m') h
@@ -98,7 +94,7 @@ livsSatCheckIncorrect :: Monad m => LanguageEnv m b -> b -> EvalPrimitive m -> C
 livsSatCheckIncorrect le b ep cg es h exs = do
     -- Run the example inputs in the interpreter, collecting the suspect
     -- examples from function calls
-    let runCollecting = runCollectingExamples ep 1000 h (mkNameGen [])
+    let runCollecting = runCollectingExamples ep 100 h (mkNameGen [])
     rs <- mapM (runCollecting) $ map exampleFuncCall exs
 
     -- Figure out which suspect function calls are actually incorrect.
@@ -132,9 +128,18 @@ livsUnSatUnknown cg h i =
 filterToReachable :: LIVSConfigNames -> Id -> CallGraph -> H.Heap -> H.Heap
 filterToReachable con i cg =
     let
-        r = S.union (S.fromList $ core_funcs con) (S.map idName $ reachable i cg)
+        r = S.map nameToString $ S.union (S.fromList $ core_funcs con) (S.map idName $ reachable i cg)
     in
-    H.filterWithKey (\n' _ -> n' `S.member` r)
+    H.filterWithKey (\n' _ -> nameToString n' `S.member` r)
+
+-- Given a set of names, ignores the names numbers, and finds all names with the same
+-- string in the heap.
+expandSetIgnoringNum :: H.Heap -> S.HashSet Name -> S.HashSet Name
+expandSetIgnoringNum h =
+    let
+        ks = S.fromList $ H.keys h
+    in
+    S.unions . map (\n -> S.filter (\k -> nameToString n == nameToString k) ks) . S.toList
 
 -- | Takes a list of possibly incorrect examples, and returns only those that are really incorrect.
 incorrectSuspects :: Monad m => LanguageEnv m b -> b -> [SuspectExample] -> m [IncorrectExample]

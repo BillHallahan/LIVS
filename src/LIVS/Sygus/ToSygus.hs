@@ -18,8 +18,6 @@ import qualified Data.HashSet as HS
 import Data.List
 import Data.Maybe
 
-import Debug.Trace
-
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
@@ -44,7 +42,8 @@ toSygusWithGrammar cg cons_val h tenv hsr es =
 
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
-        post = map idName $ postOrderList cg
+        ks = H.keys h
+        post = concatMap (\n -> filter (\k -> nameToString n == nameToString k) ks) . map idName $ postOrderList cg
 
         tyFilH = filterHeapToValidTypes tenv' h
 

@@ -7,6 +7,7 @@ module LIVS.Sygus.TypeValueRules ( typeValueRules
                                  , simplifyExamples
                                  , reassignFuncNames
 
+                                 , generateTypeValueRulesFuncs
                                  , generateTypeValueRulesFunc
                                  , generateInputTypeRulesFunc ) where
 
@@ -129,6 +130,18 @@ reassignFuncNames = mapM assignFuncName
       i <- freshIdM (idName $ func e) (mkTyFun $ map typeOf (input e) ++ [typeOf (output e)])
       return (dcmdc, map (\e -> e { func = i }) ess)
     assignFuncName _ = error "assignFuncNames: empty example list."
+
+generateTypeValueRulesFuncs :: [([DC], Val)] -> [Expr]
+generateTypeValueRulesFuncs = map dcValToExpr
+  where    
+    dcValToExpr (dcs, v) =
+      let
+        xs = map (Name Ident "x" . Just) [0..]
+        ts = map dcToType dcs 
+      in
+      mkLams (map (uncurry Id) $ zip xs ts) (valToExpr v)
+
+    dcToType (DC _ (TyFun t _)) = t
 
 -- | Generates a function based on the DC/Val pairs.  Falls back on calling the
 -- default function if none of the DC/Val pairs match.
