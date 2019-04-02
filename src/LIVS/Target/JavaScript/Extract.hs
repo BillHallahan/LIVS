@@ -66,6 +66,8 @@ extractCalledFunctionsExpr' (JSStringLiteral _ s) =
     in
     (FuncInfo { calls = [], consts = [s'] }, S.empty)
 extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
+extractCalledFunctionsExpr' (JSExpressionBinary _ bop _) =
+    (FuncInfo { calls = [binOpToId bop], consts = mempty}, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
     (FuncInfo { calls = [nameCLToId (Name Ident n Nothing) args], consts = mempty }, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _ n)) _ args _) =
@@ -98,6 +100,16 @@ commaListLength :: JSCommaList a -> Int
 commaListLength (JSLCons cl _ _) = 1 + commaListLength cl
 commaListLength (JSLOne _) = 1
 commaListLength JSLNil = 0
+
+binOpToId :: JSBinOp -> Id
+binOpToId (JSBinOpEq _) = binOp "=="
+binOpToId (JSBinOpMinus _) = binOp "-"
+binOpToId (JSBinOpPlus _) = binOp "+"
+binOpToId (JSBinOpTimes _) = binOp "*"
+binOpToId _ = error "Unhandled Binary Operator"
+
+binOp :: String -> Id
+binOp s = Id (Name Ident s Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIdentType))
 
 $(derivingASTWithContainers ''JSExpression)
 $(derivingASTWithContainers ''JSStatement)
