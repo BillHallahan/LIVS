@@ -51,10 +51,10 @@ livsConfig =
 
 toLIVSConfigNames :: H.Heap -> LIVSConfigCL -> LIVSConfigNames
 toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
-    con { core_funcs = mapMaybe findName cf}
+    con { core_funcs = concatMap filterNames cf}
     where
         ns = H.keys h
-        findName s = find (\(Name _ n _) -> n == s) ns
+        filterNames s = filter (\(Name _ n _) -> n == s) ns
 
 coreFuncs :: [String]
 coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
