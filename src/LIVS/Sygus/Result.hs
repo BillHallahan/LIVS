@@ -15,3 +15,8 @@ mapSat _ r = r
 
 insertSat :: Name -> Expr -> Result -> Result
 insertSat n e = mapSat (HM.insert n e)
+
+mergeRes :: Result -> Result -> Result
+mergeRes (Sat m1) (Sat m2) = Sat (HM.union m1 m2)
+mergeRes UnSat UnSat = UnSat
+mergeRes _ _ = Unknown

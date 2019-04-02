@@ -5,10 +5,13 @@ module LIVS.Sygus.TypeValueRules ( typeValueRules
                                  , typeTypeRules
                                  , inputTypeRules
                                  , simplifyExamples
+                                 , reassignFuncNames
 
-                                 , generateTypeValueRulesFunc ) where
+                                 , generateTypeValueRulesFunc
+                                 , generateInputTypeRulesFunc ) where
 
 import LIVS.Language.Expr
+import LIVS.Language.Monad.Naming
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
@@ -16,6 +19,7 @@ import LIVS.Sygus.SMTPrims
 
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
+import Data.List
 
 import Control.Applicative
 
@@ -117,14 +121,57 @@ groupInputTypeRules dcvs es = map (\dcv -> (dcv, filterInputTypeRule dcv es)) dc
 filterInputTypeRule :: ([DC], a) -> [Example] -> [Example]
 filterInputTypeRule (dc, _) = filter ((==) dc . fst . buildInputTypeRule)
 
+reassignFuncNames :: NameGenMonad m => [(([DC], Maybe DC), [Example])] -> m [(([DC], Maybe DC), [Example])]
+reassignFuncNames = mapM assignFuncName
+  where
+    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> m (([DC], Maybe DC), [Example])
+    assignFuncName ((dcmdc, ess@(e:es))) = do
+      i <- freshIdM (idName $ func e) (mkTyFun $ map typeOf (input e) ++ [typeOf (output e)])
+      return (dcmdc, map (\e -> e { func = i }) ess)
+    assignFuncName _ = error "assignFuncNames: empty example list."
+
 -- | Generates a function based on the DC/Val pairs.  Falls back on calling the
 -- default function if none of the DC/Val pairs match.
 generateTypeValueRulesFunc :: Id ->  [([DC], Val)] -> Expr
 generateTypeValueRulesFunc def dcv =
   let
-      arg_tys = argTypes def
-      args = map (\(i, t) -> Id (Name SMT ("x" ++ show i) Nothing) t) $ zip ([0..] :: [Integer]) arg_tys
+    arg_tys = argTypes def
+    args = map (\(i, t) -> Id (Name SMT ("x" ++ show i) Nothing) t) $ zip ([0..] :: [Integer]) arg_tys
+  in
+  generateIfDCThenExprFunc args (mkApp $ Var def:map Var args) $ map (\(x, y) -> (x, valToExpr y)) dcv
 
+generateInputTypeRulesFunc :: T.TypeEnv -> Id -> [(([DC], Maybe DC), [Example])] -> Expr
+generateInputTypeRulesFunc tenv i =
+  generateIfDCThenExprFunc args def . map generateFunctionCall
+  where
+    def = Var $ Id (Name SMT "Should be unreachable" Nothing) TYPE
+
+    arg_tys = argTypes i
+    args = map (\(i', t) -> Id (Name SMT ("x" ++ show i') Nothing) t) $ zip ([0..] :: [Integer]) arg_tys
+    argsV = map Var args
+
+    generateFunctionCall ((dcs, jdc), (e:_)) =
+      let
+        sels = map getSingleSelector dcs
+
+        c = mkApp $ Var (func e):map (uncurry App) (zip sels argsV)
+        c' = case jdc of
+                  Just dc -> App (Data dc) c
+                  Nothing -> c
+      in
+      (dcs, c')
+    generateFunctionCall _ = error "generateInputTypeRulesFunc: no examples" 
+
+    getSingleSelector dc@(DC dcn _)
+      | dct@(TyCon n _) <- returnType dc
+      , Just (T.ADTSpec selectors) <- T.lookup n tenv
+      , Just sel <- find (\s -> T.selectorDCName s == dcn) selectors
+      , T.SelectorDC _ [nt] <- sel = Var $ Id (T.namedTypeName nt) (TyFun dct $ T.namedTypeType nt) 
+      | otherwise = error "Bad type" 
+
+generateIfDCThenExprFunc :: [Id] -> Expr -> [([DC], Expr)] -> Expr
+generateIfDCThenExprFunc args def dcv =
+  let
       -- Convert a list of ([DC], Val) into a list of (Expr, Val), where the
       -- Expr are boolean conditions such that, if satisfied, that Val should be
       -- returned
@@ -132,19 +179,15 @@ generateTypeValueRulesFunc def dcv =
       testers_apps = mapFst (toAppliedTesters args) testers_vals
       testers_anded = mapFst toAndedTesters testers_apps
 
-      tester_expr = mapSnd valToExpr testers_anded
-
       -- Combine the anded testers with ite's
       ret_type = returnType def
       ite = Var $ smtIte ret_type
 
-      def_call = mkApp $ Var def:map Var args
-      check_testers = foldr (\(ch, e) -> App (App (App ite ch) e)) def_call tester_expr 
+      check_testers = foldr (\(ch, e) -> App (App (App ite ch) e)) def testers_anded 
   in
-  error $ show check_testers
+  mkLams args $ check_testers
   where
     mapFst f = map (\(x, y) -> (f x, y))
-    mapSnd f = map (\(x, y) -> (x, f y))
 
     toTesters = map (Var . T.tester)
     toAppliedTesters as = map (\(arg, tester) -> App tester (Var arg)) . zip as
