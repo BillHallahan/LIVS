@@ -37,10 +37,10 @@ runSygusWithGrammar cg const_vals h tenv hsr es
         n' <- freshNameM n
 
         let rules = typeValueRules es
-            es' = filterNotRuleCovered rules es
+            es' = filterNotTypeValueRuleCovered rules es
             es'' = map (\e -> e { func = Id n' t}) es' 
 
-            rules_func = generateRulesFunc (Id n' t) rules
+            rules_func = generateTypeValueRulesFunc (Id n' t) rules
 
         let form = toSygusWithGrammar cg const_vals h tenv hsr es''
         liftIO $ putStrLn form

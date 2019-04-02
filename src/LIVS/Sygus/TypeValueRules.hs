@@ -1,9 +1,12 @@
 -- should we call this ExampleGrouping or something instead?
 module LIVS.Sygus.TypeValueRules ( typeValueRules
+                                 , filterNotTypeValueRuleCovered
+
                                  , typeTypeRules
                                  , inputTypeRules
-                                 , filterNotRuleCovered
-                                 , generateRulesFunc ) where
+                                 , simplifyExamples
+
+                                 , generateTypeValueRulesFunc ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Syntax
@@ -16,30 +19,11 @@ import qualified Data.HashSet as S
 
 import Control.Applicative
 
--- | Split a list of exmaples into lists of examples of matching types
---  :: [Example] -> [[Example]]
-
--- | 
-inputTypeRules :: [Example] -> [([DC], Maybe DC)]
-inputTypeRules exs = let
-    ttRules = HM.map Just $ HM.fromList $ typeTypeRules exs
-    rs = HM.fromList $ map ((\(dcs,_) -> (dcs,Nothing)). buildRule) exs
-  in
-    HM.toList $ HM.unionWith (<|>) rs ttRules
-
-
--- | Establish rules about which input types always lead to the same output type
-typeTypeRules :: [Example] -> [([DC], DC)]
-typeTypeRules es = let
-    rs = map ((\(dcs,v) -> (dcs, valToDC v)). buildRule) es
-  in 
-    filterRules' rs
-
 -- | Establish rules about which input types that always lead to the same value
 --   Identifies which input types generate an error value (or any fixed value)
 typeValueRules :: [Example] -> [([DC],Val)]
 typeValueRules es = let
-    rs = map buildRule es
+    rs = map buildTypeValueRule es
   in
     filterRules' rs
 
@@ -53,9 +37,13 @@ filterRules reject provisionalKeep ((dc,v):rs) =
     else filterRules reject (HM.insert dc v provisionalKeep) rs
 filterRules _ provisionalKeep [] = HM.toList provisionalKeep 
 
-buildRule :: Example -> ([DC],Val)
-buildRule e =
+buildTypeValueRule :: Example -> ([DC],Val)
+buildTypeValueRule e =
     (map valToDC $ input e, output e)
+
+buildInputTypeRule :: Example -> ([DC], DC)
+buildInputTypeRule e =
+    (map valToDC $ input e, valToDC $ output e)
 
 valToDC :: Val -> DC
 valToDC v = case (appValCenter v) of
@@ -64,13 +52,75 @@ valToDC v = case (appValCenter v) of
     AppVal _ _-> error "Bad call: had AppVal"
 
 -- | From a list of examples, removes all those already covered by one of the rules
-filterNotRuleCovered :: [([DC],Val)] -> [Example] -> [Example]
-filterNotRuleCovered dcv = filter (flip notElem dcv . buildRule)
+filterNotTypeValueRuleCovered :: [([DC],Val)] -> [Example] -> [Example]
+filterNotTypeValueRuleCovered dcv = filter (flip notElem dcv . buildTypeValueRule)
+
+-- | Split a list of exmaples into lists of examples of matching types
+--  :: [Example] -> [[Example]]
+
+-- | 
+inputTypeRules :: [Example] -> [([DC], Maybe DC)]
+inputTypeRules exs = let
+    ttRules = HM.map Just $ HM.fromList $ typeTypeRules exs
+    rs = HM.fromList $ map ((\(dcs,_) -> (dcs,Nothing)). buildTypeValueRule) exs
+  in
+    HM.toList $ HM.unionWith (<|>) rs ttRules
+
+
+-- | Establish rules about which input types always lead to the same output type
+typeTypeRules :: [Example] -> [([DC], DC)]
+typeTypeRules es = let
+    rs = map buildInputTypeRule es
+  in 
+    filterRules' rs
+
+-- | Takes a list of examples, and splits them up by the input data constructors.
+-- Eliminates the data constructors from the input, and, (when possible) the output,
+-- and returns a mapping from input/output data constructors to examples
+simplifyExamples :: [Example] -> [(([DC], Maybe DC), [Example])]
+simplifyExamples es =
+    let
+        r = inputTypeRules es
+    in
+    simplifyExamples' r es
+
+-- | Removes the data constructors from the input and (when possible) output
+simplifyExamples' :: [([DC], Maybe DC)] -> [Example] -> [(([DC], Maybe DC), [Example])]
+simplifyExamples' dcs es = simplifyExamples'' $ groupInputTypeRules dcs es
+
+simplifyExamples'' :: [(([DC], Maybe DC), [Example])] -> [(([DC], Maybe DC), [Example])]
+simplifyExamples'' = map simplifyExample
+  
+simplifyExample :: (([DC], Maybe DC), [Example]) -> (([DC], Maybe DC), [Example])
+simplifyExample ((dcs, mdc), es) = ((dcs, mdc), map simplifyExample' es)
+  where
+    simplifyExample' e@(Example { input = is, output = out }) =
+        let
+          is' = map (\(i, dc) -> case i of
+                                  AppVal (DataVal dc') v
+                                    | dc' == dc -> v
+                                    | otherwise -> i
+                                  _ -> i) $ zip is dcs
+
+          out' = case out of
+                  AppVal (DataVal outDC) v
+                    | Just outDC == mdc -> v
+                    | otherwise -> out
+                  _ -> out
+        in
+        e { input = is', output = out' }
+
+-- | Group examples that share the same input data constructors together
+groupInputTypeRules :: [([DC], a)] -> [Example] -> [(([DC], a), [Example])]
+groupInputTypeRules dcvs es = map (\dcv -> (dcv, filterInputTypeRule dcv es)) dcvs
+
+filterInputTypeRule :: ([DC], a) -> [Example] -> [Example]
+filterInputTypeRule (dc, _) = filter ((==) dc . fst . buildInputTypeRule)
 
 -- | Generates a function based on the DC/Val pairs.  Falls back on calling the
 -- default function if none of the DC/Val pairs match.
-generateRulesFunc :: Id ->  [([DC], Val)] -> Expr
-generateRulesFunc def dcv =
+generateTypeValueRulesFunc :: Id ->  [([DC], Val)] -> Expr
+generateTypeValueRulesFunc def dcv =
   let
       arg_tys = argTypes def
       args = map (\(i, t) -> Id (Name SMT ("x" ++ show i) Nothing) t) $ zip ([0..] :: [Integer]) arg_tys
