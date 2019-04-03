@@ -4,6 +4,7 @@ module LIVS.Interpreter.EvalPrimitive ( EvalPrimitive
                                       , evalPrimitive
                                       , liftEvalPrimitive) where
 
+import LIVS.Config.Config
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
@@ -17,8 +18,8 @@ import qualified Data.HashMap.Lazy as HM
 
 type EvalPrimitive m = Expr -> m Expr
 
-evalPrimitive :: MonadIO m => H.Heap -> T.TypeEnv -> Expr -> m Expr
-evalPrimitive h tenv e = do
+evalPrimitive :: MonadIO m => LIVSConfigNames -> H.Heap -> T.TypeEnv -> Expr -> m Expr
+evalPrimitive con h tenv e = do
     let tspec = toSygusTypeEnv tenv
 
     let x = Name Ident "x" Nothing
@@ -27,7 +28,7 @@ evalPrimitive h tenv e = do
         set_x = tspec ++ "\n(declare-fun x () " ++ toSygusType (typeOf e) ++ ")\n" ++
                     "(assert (= x " ++ s ++ "))"
 
-    m <- runSMT2WithGrammar h tenv $ "(set-logic ALL_SUPPORTED)\n" ++ set_x ++ "\n(check-sat)\n(get-value (x))"
+    m <- runSMT2WithGrammar con h tenv $ "(set-logic ALL_SUPPORTED)\n" ++ set_x ++ "\n(check-sat)\n(get-value (x))"
 
     case m of
         Sat m' -> case HM.lookup x m' of

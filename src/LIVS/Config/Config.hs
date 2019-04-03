@@ -35,6 +35,7 @@ data LIVSConfig cf =
                , seed :: Maybe Int -- ^ The seed for the random number gerator
                , fuzz_num :: Int -- ^ The number of examples to fuzz
                , core_funcs :: [cf] -- ^ Functions that are always available in synthesis
+               , smt_timeout :: Int -- ^ Timeout for the SMT Solver
                } deriving (Data, Typeable)
 
 type LIVSConfigCL = LIVSConfig String
@@ -47,6 +48,7 @@ livsConfig =
         , seed = Nothing &= help "A seed for the random number generator."
         , fuzz_num = 3 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
+        , smt_timeout = 10000 &= help "A timeout for the SMT solver, in milliseconds" &= explicit &= name "smt-timeout"
         } &= verbosity
 
 toLIVSConfigNames :: H.Heap -> LIVSConfigCL -> LIVSConfigNames

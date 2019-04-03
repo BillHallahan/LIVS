@@ -38,7 +38,7 @@ type Gen m = H.Heap -> Sub.SubFunctions -> T.TypeEnv -> S.HashSet Name -> [Examp
 
 livsCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
-livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar cg const_val) fuzz fp cg
+livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
 
 livs :: MonadIO m
      => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
@@ -82,7 +82,7 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
 
             let h' = H.union (H.fromExprHashMap m') h
 
-            (es', is') <- livsSatCheckIncorrect le b (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''
+            (es', is') <- livsSatCheckIncorrect le b (evalPrimitive con h tenv) cg  (nub $ re'' ++ es) h' re''
             return (h', sub', es', is')
 
 

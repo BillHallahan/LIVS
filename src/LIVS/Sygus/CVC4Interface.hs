@@ -9,6 +9,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
                                 , runAndReadCVC4
                                 , closeCVC4) where
 
+import LIVS.Config.Config
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
@@ -30,11 +31,11 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
-runSygus cg const_vals h sub tenv = runSygusWithGrammar cg const_vals h sub tenv (HS.fromList $ H.keys h)
+runSygus :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
+runSygus con cg const_vals h sub tenv = runSygusWithGrammar con cg const_vals h sub tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
-runSygusWithGrammar cg const_vals h sub tenv hsr es
+runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
+runSygusWithGrammar con cg const_vals h sub tenv hsr es
     | (Example { func = Id n t }:_) <- es = do
         n' <- freshNameM n
 
@@ -54,20 +55,20 @@ runSygusWithGrammar cg const_vals h sub tenv hsr es
         
         -- let in_typ_rules_func = generateInputTypeRulesFunc tenv (Id n' t) es4
 
-        res <- mapM (runSygusWithGrammar' cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
+        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
 
         let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
 
         return (res', sub')
     | otherwise = return $ (Sat M.empty, sub)
 
-runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar' cg const_vals h sub tenv hsr es
+runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar' con cg const_vals h sub tenv hsr es
     | (Example { func = Id n _ }:_) <- es = do
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ putStrLn form
 
-        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]
+        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", show $ smt_timeout con]
         let pars_m = parseSMT (H.map' typeOf h) tenv . lexSMT $ m
         liftIO $ putStrLn $ "pars_m = " ++ show pars_m
         return pars_m
@@ -80,12 +81,12 @@ runCVC4OnString tenv s = do
     liftIO $ print m
     return . parseSMT (M.empty) tenv . lexSMT $ m
 
-runSMT2WithGrammar :: MonadIO m => H.Heap -> T.TypeEnv -> String -> m Result
-runSMT2WithGrammar h tenv s = do
+runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> T.TypeEnv -> String -> m Result
+runSMT2WithGrammar con h tenv s = do
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
-    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", "10000", "--produce-model"]
+    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", show $ smt_timeout con, "--produce-model"]
     return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
