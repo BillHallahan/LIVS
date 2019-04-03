@@ -24,8 +24,6 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.List as L
 import Data.Maybe
 
-import Debug.Trace
-
 -- | Generates inputs to a function
 type Fuzz m b = LanguageEnv m b
              -> b
@@ -152,15 +150,3 @@ fuzzFromOutputVal w vs tenv t
             | otherwise = Nothing
 
         filterToDC dc = filter ((==) (DataVal dc) . appValCenter)
-
-fuzzStrings :: MonadRandom m => Val -> m Val
-fuzzStrings (AppVal v1 v2) = do
-    v1' <- fuzzStrings v1
-    v2' <- fuzzStrings v2
-    return $ AppVal v1' v2'
-fuzzStrings (LitVal (LString s)) = do
-    b <- getRandomR (0, length s)
-    e <- getRandomR (b, length s)
-    let s' = drop b $ take e s
-    return $ LitVal (LString s')
-fuzzStrings v = return v

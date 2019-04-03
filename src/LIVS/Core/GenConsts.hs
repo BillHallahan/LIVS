@@ -7,7 +7,6 @@ import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 
-import Control.Monad
 import Data.List
 
 -- | Given a list of constants, generates a list of constants to be used in

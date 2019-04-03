@@ -26,8 +26,6 @@ import qualified LIVS.Language.Heap as H
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Functor.Identity
-import Data.List
-import Data.Maybe
 import System.Console.CmdArgs
 
 data LIVSConfig cf =

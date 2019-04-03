@@ -88,7 +88,7 @@ genChildrenClause _ _ = error "genChildrenClause: Bad Con"
 fieldChildren :: TH.Name -> (TH.Name, StrictType) -> Q (Maybe Exp)
 fieldChildren tcn (n, (_, t)) = do
     case t of
-        a@(AppT _ _) -> return . Just =<< varE 'containedASTs `appE` (varE n)
+        (AppT _ _) -> return . Just =<< varE 'containedASTs `appE` (varE n)
         ConT tcn' | tcn == tcn' -> return . Just =<< listE [varE n]
                   | otherwise -> do
                         b <- isLifted tcn'
@@ -196,8 +196,7 @@ derivingASTWithContainers ty = do
 
     -- Determine which types we need to derive ASTContainers for
     (TyConI tyCon) <- reify ty
-    let (tn, tn_vars, cs) = tyConData tyCon
-    tn' <- applyTypes tn tn_vars
+    let (_, _, cs) = tyConData tyCon
     req <- collectReqTypes cs
 
     d_ast_c <- return . concat =<< mapM (flip derivingASTContainer ty) req
@@ -230,6 +229,7 @@ collectReqTypes' collected (c:cs) = do
                                 _ -> error $ "collectReqTypes': Bad") tns
 
             collectReqTypes' collected' $ cs ++ concat css
+        _ -> error "collectReqTypes': unsupported"
 
 withTyConI :: TH.Name -> a -> (Dec -> Q a) -> Q a
 withTyConI ty def f = do
@@ -241,7 +241,7 @@ withTyConI ty def f = do
 
 typeToNames :: Type -> [TH.Name]
 typeToNames (AppT t1 t2) = typeToNames t1 ++ typeToNames t2
-typeToNames (VarT n) = []
+typeToNames (VarT _) = []
 typeToNames (ConT n) = [n]
 typeToNames ListT = []
 typeToNames t = error $ "typeToNames: Bad type in typeToNames" ++ show t
@@ -257,4 +257,6 @@ splitTySyn ty = do
                 DataD _ _ _ _ _ _ -> return [ty]
                 NewtypeD _ _ _ _ _ _ -> return [ty]
                 TySynD _ _ t -> return . concat =<< mapM splitTySyn (typeToNames t)
+                _ -> error "splitTySyn: unsupported"
         PrimTyConI _ _ _ -> return []
+        _ -> error "splitTySyn: unsupported"

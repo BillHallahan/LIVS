@@ -24,7 +24,6 @@ import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
-import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
@@ -62,7 +61,7 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
 
 runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
 runSygusWithGrammar' con cg const_vals h sub tenv hsr es
-    | (Example { func = Id n _ }:_) <- es = do
+    | (_:_) <- es = do
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ whenLoud $ putStrLn form
 

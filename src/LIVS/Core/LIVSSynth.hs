@@ -12,15 +12,12 @@ import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
-import LIVS.Language.Typing
 import LIVS.Language.Monad.Naming
 import LIVS.Sygus.CVC4Interface
 import LIVS.Target.General.LanguageEnv
-import LIVS.Target.JavaScript.Interface
 
 import Control.Monad.Random
 import Data.List
-import Data.Maybe
 
 livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap

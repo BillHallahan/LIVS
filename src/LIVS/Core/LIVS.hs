@@ -29,7 +29,6 @@ import LIVS.Sygus.Result
 import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
-import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
 import Data.List
 
@@ -126,20 +125,11 @@ livsUnSatUnknown cg h i =
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
 filterToReachable :: LIVSConfigNames -> Id -> CallGraph -> H.Heap -> H.Heap
-filterToReachable con i@(Id n _) cg =
+filterToReachable con i cg =
     let
         r = S.map nameToString $ S.union (S.fromList $ core_funcs con) (S.map idName $ reachable i cg)
     in
-    H.filterWithKey (\n' _ -> nameToString n' `S.member` r)
-
--- Given a set of names, ignores the names numbers, and finds all names with the same
--- string in the heap.
-expandSetIgnoringNum :: H.Heap -> S.HashSet Name -> S.HashSet Name
-expandSetIgnoringNum h =
-    let
-        ks = S.fromList $ H.keys h
-    in
-    S.unions . map (\n -> S.filter (\k -> nameToString n == nameToString k) ks) . S.toList
+    H.filterWithKey (\n _ -> nameToString n `S.member` r)
 
 -- | Takes a list of possibly incorrect examples, and returns only those that are really incorrect.
 incorrectSuspects :: Monad m => LanguageEnv m b -> b -> [SuspectExample] -> m [IncorrectExample]

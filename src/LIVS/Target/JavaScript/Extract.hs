@@ -12,7 +12,6 @@ module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
 
 import LIVS.Language.AST
 import LIVS.Language.Syntax
-import LIVS.Language.Typing
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.JSON
 import LIVS.Target.JavaScript.JSIdentifier

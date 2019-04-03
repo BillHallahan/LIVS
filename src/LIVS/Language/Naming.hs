@@ -45,7 +45,7 @@ newtype NameGen = NameGen (HM.HashMap String Integer)
 
 mkNameGen :: [Name] -> NameGen
 mkNameGen =
-    NameGen . HM.fromList . map (\(Name ll n i) -> (n, maybe 0 id $ fmap (+ 1) i))
+    NameGen . HM.fromList . map (\(Name _ n i) -> (n, maybe 0 id $ fmap (+ 1) i))
 
 freshName :: Name -> NameGen -> (Name, NameGen)
 freshName (Name ll n _) (NameGen ng) = (Name ll n (Just i), NameGen ng')

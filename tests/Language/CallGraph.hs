@@ -42,7 +42,7 @@ reachable2 = testCase "reachable Test 2"
 directlyCalls1 :: TestTree
 directlyCalls1 = testCase "directlyCalls Test 1"
     $ assertBool ("Correct directlyCalls" ++ show (directlyCalls (toId "g") graph2))
-        (directlyCalls (toId "g") graph2 == 
+        (S.fromList (directlyCalls (toId "g") graph2) == 
             S.fromList [toId "x", toId "h"])
 
 postOrderList1 :: TestTree

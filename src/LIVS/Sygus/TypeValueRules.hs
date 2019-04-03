@@ -130,16 +130,16 @@ reassignFuncNames sub orig_n es = do
   return (es', sub')
   where
     assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m (([DC], Maybe DC), [Example])
-    assignFuncName ((dcmdc, ess@(e:es))) = do
+    assignFuncName ((dcmdc, ess@(e:_))) = do
       let t = exampleFuncType e
-      i <- case Sub.lookupName orig_n t sub of
+      nsub <- get
+      i <- case Sub.lookupName orig_n t nsub of
               Just n -> return (Id n t)
               Nothing -> do
                 i@(Id new_n _) <- freshIdM (idName $ func e) t
-                sub <- get
-                put $ Sub.insert orig_n t new_n sub
+                put $ Sub.insert orig_n t new_n nsub
                 return i
-      return (dcmdc, map (\e -> e { func = i }) ess)
+      return (dcmdc, map (\e' -> e' { func = i }) ess)
     assignFuncName _ = error "assignFuncNames: empty example list."
 
 
@@ -158,6 +158,7 @@ generateTypeValueRulesFuncs = map dcValToExpr
     stripConstructor v = v
 
     dcToType (DC _ (TyFun t _)) = t
+    dcToType _ = error "generateTypeValueRulesFuncs: Unsupported DC"
 
 -- | Generates a function based on the DC/Val pairs.  Falls back on calling the
 -- default function if none of the DC/Val pairs match.

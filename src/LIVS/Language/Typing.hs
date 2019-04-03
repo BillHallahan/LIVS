@@ -43,6 +43,7 @@ instance Typed Val where
 
 instance Typed Lit where
     typeOf (LInt _) = intType
+    typeOf (LFloat _) = floatType
     typeOf (LString _) = stringType
 
 instance Typed DC where
@@ -60,6 +61,9 @@ instance Typed PresType where
 
 intType :: Type
 intType = TyCon (Name SMT "Int" Nothing) TYPE
+
+floatType :: Type
+floatType = TyCon (Name SMT "Float" Nothing) TYPE
 
 stringType :: Type
 stringType = TyCon (Name SMT "String" Nothing) TYPE
