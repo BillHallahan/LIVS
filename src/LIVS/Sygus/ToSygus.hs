@@ -44,7 +44,6 @@ toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
 
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
-        ks = H.keys h
         post = flip Sub.lookupAllNames sub . map idName $ postOrderList cg
 
         elimSynthH = H.filterWithKey (\n _ -> n /= idName (func e)) h
@@ -105,6 +104,9 @@ toSygusLit :: Lit -> String
 toSygusLit (LInt i)
     | i >= 0 = show i
     | otherwise = "(- " ++ show (-i) ++ ")"
+toSygusLit (LFloat f)
+    | f >= 0 = show f
+    | otherwise = "(- " ++ show (-f) ++ ")"
 toSygusLit (LString s) = "\"" ++ s ++ "\""
 
 toSygusType :: Type -> String

@@ -50,6 +50,6 @@ elimOpenCloseQuote _ = error "elimOpenCloseQuote: Bad string"
 
 elimOpenCloseQuote' :: String -> String
 elimOpenCloseQuote' ('"':[]) = []
-elimOpenCloseQuote' (x:xs) = elimOpenCloseQuote' xs
+elimOpenCloseQuote' (_:xs) = elimOpenCloseQuote' xs
 elimOpenCloseQuote' [] = error "elimOpenCloseQuote': Bad string"
 }

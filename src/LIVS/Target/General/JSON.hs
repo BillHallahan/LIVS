@@ -7,7 +7,6 @@ import LIVS.Language.Syntax
 import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.Scientific
-import Data.Aeson
 
 import Data.Attoparsec.ByteString
 import Data.Aeson
@@ -38,7 +37,7 @@ toValue = \case
       | Just n' <- toBoundedInteger n -> AppVal (DataVal jsIntDC) $ LitVal (LInt n')
       | otherwise -> AppVal (DataVal undefined) $ LitVal (LFloat $ toRealFloat n)
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
-  Object o -> undefined
-  Array a  -> undefined
+  Object _ -> undefined
+  Array _  -> undefined
   Bool b -> if b then DataVal trueDC else DataVal falseDC
   Null     -> undefined

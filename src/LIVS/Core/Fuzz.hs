@@ -97,7 +97,7 @@ fromListWeighted :: (Eq v, Hashable v, MonadRandom m) =>
                  -> Rational -- ^ A default value, if a v is not in the list
                  -> [v] -- ^ A list of v's to select from
                  -> m v
-fromListWeighted m def = fromList . map (\v -> (v, HM.lookupDefault def v m))
+fromListWeighted m d = fromList . map (\v -> (v, HM.lookupDefault d v m))
 
 -- | Fuzzes, drawing random values from the existing values and examples when possible.
 -- Fuzzes randomly when no value of the given type exists.

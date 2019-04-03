@@ -17,7 +17,7 @@ genConsts vs = nub $ genIntsConsts vs ++ genStrings vs
 genIntsConsts :: [Val] -> [Val]
 genIntsConsts vs = concatMap ints vs ++ concatMap strLens vs
     where
-        ints l@(LitVal (LInt i)) = [l]
+        ints l@(LitVal (LInt _)) = [l]
         ints (AppVal v1 v2) = ints v1 ++ ints v2
         ints _ = []
 

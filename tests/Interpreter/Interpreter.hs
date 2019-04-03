@@ -6,8 +6,6 @@ import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
-import LIVS.Language.Monad.Heap
-import LIVS.Target.General.LanguageEnv
 
 import Helpers.Interpreter
 import Helpers.Language

@@ -104,9 +104,9 @@ toJavaScriptExpr dnn e@(App _ _)
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
     , n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
-    | v@(Var (Id n _)):e:es <- unApp e
+    | v@(Var (Id n _)):ex:es <- unApp e
     , n `S.member` dnn =
-        "(" ++ toJavaScriptExpr dnn e ++ "." ++ toJavaScriptExpr dnn v ++ "("
+        "(" ++ toJavaScriptExpr dnn ex ++ "." ++ toJavaScriptExpr dnn v ++ "("
         ++ (concat . intersperse ", " $ map (toJavaScriptExpr dnn) es) ++ "))"
     | otherwise = 
         "(" ++ toJavaScriptExpr dnn (appCenter e) ++ "("
