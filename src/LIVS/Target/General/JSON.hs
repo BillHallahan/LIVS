@@ -2,10 +2,12 @@
 
 module LIVS.Target.General.JSON where
 
+import LIVS.Language.Expr
+import LIVS.Language.Syntax
+import LIVS.Target.JavaScript.JSIdentifier
+
 import Data.Scientific
 import Data.Aeson
-import LIVS.Target.JavaScript.JSIdentifier
-import LIVS.Language.Syntax
 
 import Data.Attoparsec.ByteString
 import Data.Aeson
@@ -38,5 +40,5 @@ toValue = \case
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
   Object o -> undefined
   Array a  -> undefined
-  Bool b   -> undefined
+  Bool b -> if b then DataVal trueDC else DataVal falseDC
   Null     -> undefined
