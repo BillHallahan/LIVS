@@ -65,7 +65,7 @@ extractCalledFunctionsExpr' (JSStringLiteral _ s) =
         s' = jsJSONToVal $ s ++ "\n"
     in
     (FuncInfo { calls = [], consts = [s'] }, S.empty)
-extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
+-- extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
 extractCalledFunctionsExpr' (JSExpressionBinary _ bop _) =
     (FuncInfo { calls = [binOpToId bop], consts = mempty}, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
@@ -103,6 +103,7 @@ commaListLength JSLNil = 0
 
 binOpToId :: JSBinOp -> Id
 binOpToId (JSBinOpEq _) = binOp "=="
+binOpToId (JSBinOpGe _) = binOp ">="
 binOpToId (JSBinOpMinus _) = binOp "-"
 binOpToId (JSBinOpPlus _) = binOp "+"
 binOpToId (JSBinOpTimes _) = binOp "*"

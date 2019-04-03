@@ -9,6 +9,7 @@ import LIVS.Core.Fuzz
 import LIVS.Core.LIVS
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
+import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
@@ -45,7 +46,7 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     let is = nub $ map func exs
 
     -- Expand the call graph with the new id's
-    let def_ids = allDefIds h'
+    let def_ids = map (flip Id (TyCon (Name Ident "Unknown" Nothing) TYPE)) $ Sub.keys sub
         cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
 
     -- Synthesize based on the user provided examples
@@ -68,11 +69,11 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- since there is no way of getting new outputs
     fuzzFake _ _ _ _ _ _ = return []
 
-allDefIds :: H.Heap -> [Id]
-allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
-    where
-        getDefPairs (n, H.Def e) = Just (n, e)
-        getDefPairs _ = Nothing
+-- allDefIds :: H.Heap -> [Id]
+-- allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
+--     where
+--         getDefPairs (n, H.Def e) = Just (n, e)
+--         getDefPairs _ = Nothing
 
 -- | In general, we cannot convert SMT primitives back into the real language,
 -- so we filter them out here.

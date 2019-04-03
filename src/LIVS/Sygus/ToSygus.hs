@@ -19,6 +19,8 @@ import qualified Data.HashSet as HS
 import Data.List
 import Data.Maybe
 
+import Debug.Trace
+
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
@@ -63,6 +65,7 @@ toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
+    trace ("tyFilH = " ++ show tyFilH ++ "\nhsr = " ++ show hsr)
     "(set-logic SLIA)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n"
         ++ constraints ++ "\n(check-synth)"
 toSygusWithGrammar _ _ _ _ _ _ [] = error "toSygusWithGrammar: No examples"
@@ -224,11 +227,12 @@ filterTypeEnv h es tenv = T.filterWithKey (\n _ -> n `HS.member` tyConNs) tenv
 
         esTys = concatMap (\e -> (typeOf $ output e):map typeOf (input e)) es
 
-        cons = T.constructorNames tenv
-        h' = H.filterWithKey (\n _ -> n `notElem` cons) h
-        hRetTys = map returnType $ H.elems h'
+        -- cons = T.constructorNames tenv
+        -- h' = H.filterWithKey (\n _ -> n `notElem` cons) h
+        -- hRetTys = map returnType $ H.elems h'
 
-        tyConNs = HS.unions . map tyConNames $ esTys ++ hRetTys
+        -- tyConNs = HS.unions . map tyConNames $ esTys ++ hRetTys
+        tyConNs = HS.unions $ map tyConNames esTys
 
 -- | Filter a Heap to eliminate functions where the return type is not one of
 -- the primitives or in the TypeEnv

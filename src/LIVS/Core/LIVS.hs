@@ -71,7 +71,7 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
         gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)
 
-    liftIO $ putStrLn ("dir = " ++ show (map idName $ directlyCalls i cg) ++  "\nrelH = " ++ show relH ++ "\ngram = " ++ show gram ++ "\nsub = " ++ show sub)
+    liftIO $ putStrLn ("dir = " ++ show (map idName $ directlyCalls i cg) ++ "\ngram = " ++ show gram ++ "\nsub = " ++ show sub)
 
     -- Take a guess at the definition of the function
     (m, sub') <- gen relH sub tenv gram re''
