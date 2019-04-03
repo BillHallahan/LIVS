@@ -10,7 +10,6 @@
                        (str.at ntString ntInt)
                        (int.to.str ntInt)
                        (firstWord ntString)
-                       (replaceAll ntString ntString ntString)
                        (str.substr ntString ntInt ntInt)))
       (ntInt Int (0 1
                   (+ ntInt ntInt)
