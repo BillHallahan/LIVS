@@ -9,6 +9,7 @@ import LIVS.Language.CallGraph
 import LIVS.Language.Expr
 import qualified LIVS.Language.Heap as H
 import LIVS.Language.Naming
+import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
@@ -21,8 +22,8 @@ import Data.Maybe
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
-toSygus :: CallGraph  -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> String
-toSygus cg cons_val h tenv = toSygusWithGrammar cg cons_val h tenv (HS.fromList $ H.keys h)
+toSygus :: CallGraph  -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> String
+toSygus cg cons_val h sub tenv = toSygusWithGrammar cg cons_val h sub tenv (HS.fromList $ H.keys h)
 
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
@@ -31,11 +32,12 @@ toSygus cg cons_val h tenv = toSygusWithGrammar cg cons_val h tenv (HS.fromList 
 toSygusWithGrammar :: CallGraph
                    -> [Val]
                    -> H.Heap
+                   -> Sub.SubFunctions
                    -> T.TypeEnv
                    -> HS.HashSet Name
                    -> [Example]
                    -> String
-toSygusWithGrammar cg cons_val h tenv hsr es =
+toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
     let
         tenv' = filterTypeEnv h es tenv
         tspec = toSygusTypeEnv tenv'
@@ -43,9 +45,10 @@ toSygusWithGrammar cg cons_val h tenv hsr es =
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
         ks = H.keys h
-        post = concatMap (\n -> filter (\k -> nameToString n == nameToString k) ks) . map idName $ postOrderList cg
+        post = flip Sub.lookupAllNames sub . map idName $ postOrderList cg
 
-        tyFilH = filterHeapToValidTypes tenv' h
+        elimSynthH = H.filterWithKey (\n _ -> n /= idName (func e)) h
+        tyFilH = filterHeapToValidTypes tenv' elimSynthH
 
         h' = H.mapWithKeyDefs' toSygusFunExpr tyFilH
         hf = intercalate "\n" $ mapMaybe (flip HM.lookup h') post
@@ -62,6 +65,7 @@ toSygusWithGrammar cg cons_val h tenv hsr es =
     in
     "(set-logic SLIA)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n"
         ++ constraints ++ "\n(check-synth)"
+toSygusWithGrammar _ _ _ _ _ _ [] = error "toSygusWithGrammar: No examples"
 
 toSygusExample :: Example -> String
 toSygusExample (Example { func = f, input = is, output = out }) =

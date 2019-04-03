@@ -67,9 +67,9 @@ reachable n (CallGraph cg ti tv _) =
         Nothing -> S.empty
 
 -- | Returns all Id's directly called by the given Id
-directlyCalls :: Id -> CallGraph -> S.HashSet Id
+directlyCalls :: Id -> CallGraph -> [Id]
 directlyCalls i (CallGraph cg ti _ _) =
-    S.fromList . map snd . filter ((==) i . fst) 
+    map snd . filter ((==) i . fst) 
           . map (\(v1, v2) -> (ti v1, ti v2)) . G.edges $ cg
 
 -- | Gives a list of Id's in post-order

@@ -25,6 +25,7 @@ library
                        , LIVS.Language.Expr
                        , LIVS.Language.Heap
                        , LIVS.Language.Naming
+                       , LIVS.Language.SubFunctions
                        , LIVS.Language.Syntax
                        , LIVS.Language.TypeEnv
                        , LIVS.Language.Typing

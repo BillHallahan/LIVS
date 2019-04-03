@@ -14,6 +14,7 @@ module LIVS.Sygus.TypeValueRules ( typeValueRules
 import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
 import LIVS.Language.Syntax
+import qualified LIVS.Language.SubFunctions as Sub
 import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Sygus.SMTPrims
@@ -23,6 +24,7 @@ import qualified Data.HashSet as S
 import Data.List
 
 import Control.Applicative
+import Control.Monad.State.Lazy
 
 -- | Establish rules about which input types that always lead to the same value
 --   Identifies which input types generate an error value (or any fixed value)
@@ -122,14 +124,24 @@ groupInputTypeRules dcvs es = map (\dcv -> (dcv, filterInputTypeRule dcv es)) dc
 filterInputTypeRule :: ([DC], a) -> [Example] -> [Example]
 filterInputTypeRule (dc, _) = filter ((==) dc . fst . buildInputTypeRule)
 
-reassignFuncNames :: NameGenMonad m => [(([DC], Maybe DC), [Example])] -> m [(([DC], Maybe DC), [Example])]
-reassignFuncNames = mapM assignFuncName
+reassignFuncNames :: NameGenMonad m => Sub.SubFunctions -> Name -> [(([DC], Maybe DC), [Example])] -> m ([(([DC], Maybe DC), [Example])], Sub.SubFunctions)
+reassignFuncNames sub orig_n es = do
+  (es', sub') <- runStateT (mapM assignFuncName es) sub
+  return (es', sub')
   where
-    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> m (([DC], Maybe DC), [Example])
+    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m (([DC], Maybe DC), [Example])
     assignFuncName ((dcmdc, ess@(e:es))) = do
-      i <- freshIdM (idName $ func e) (mkTyFun $ map typeOf (input e) ++ [typeOf (output e)])
+      let t = exampleFuncType e
+      i <- case Sub.lookupName orig_n t sub of
+              Just n -> return (Id n t)
+              Nothing -> do
+                i@(Id new_n _) <- freshIdM (idName $ func e) t
+                sub <- get
+                put $ Sub.insert orig_n t new_n sub
+                return i
       return (dcmdc, map (\e -> e { func = i }) ess)
     assignFuncName _ = error "assignFuncNames: empty example list."
+
 
 generateTypeValueRulesFuncs :: [([DC], Val)] -> [Expr]
 generateTypeValueRulesFuncs = map dcValToExpr

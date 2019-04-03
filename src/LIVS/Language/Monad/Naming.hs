@@ -44,6 +44,9 @@ instance Monad m => NameGenMonad (NameGenT m) where
         put ng'
         return n'
 
+instance NameGenMonad m => NameGenMonad (StateT s m) where
+    freshNameM = lift . freshNameM
+
 instance MonadIO m => MonadIO (NameGenT m) where
     liftIO = lift . liftIO
 

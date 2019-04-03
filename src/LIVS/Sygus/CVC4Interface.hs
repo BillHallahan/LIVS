@@ -11,6 +11,7 @@ module LIVS.Sygus.CVC4Interface ( CVC4
 
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
+import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import LIVS.Language.Monad.Naming
 import LIVS.Sygus.Result
@@ -29,11 +30,11 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
-runSygus :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m Result
-runSygus cg const_vals h tenv = runSygusWithGrammar cg const_vals h tenv (HS.fromList $ H.keys h)
+runSygus :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
+runSygus cg const_vals h sub tenv = runSygusWithGrammar cg const_vals h sub tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar cg const_vals h tenv hsr es
+runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
+runSygusWithGrammar cg const_vals h sub tenv hsr es
     | (Example { func = Id n t }:_) <- es = do
         n' <- freshNameM n
 
@@ -49,19 +50,21 @@ runSygusWithGrammar cg const_vals h tenv hsr es
 
         let es''' = simplifyExamples es''
 
-        es4 <- reassignFuncNames es'''
+        (es4, sub') <- reassignFuncNames sub n es'''
         
         -- let in_typ_rules_func = generateInputTypeRulesFunc tenv (Id n' t) es4
 
-        res <- mapM (runSygusWithGrammar' cg const_vals h tenv hsr) $ map (\(_, x) -> x) es4
+        res <- mapM (runSygusWithGrammar' cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
 
-        return . flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
-    | otherwise = return $ Sat M.empty
+        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
 
-runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar' cg const_vals h tenv hsr es
+        return (res', sub')
+    | otherwise = return $ (Sat M.empty, sub)
+
+runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
+runSygusWithGrammar' cg const_vals h sub tenv hsr es
     | (Example { func = Id n _ }:_) <- es = do
-        let form = toSygusWithGrammar cg const_vals h tenv hsr es
+        let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ putStrLn form
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", "10000"]

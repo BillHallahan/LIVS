@@ -18,6 +18,7 @@ import LIVS.Config.Config
 import LIVS.Interpreter.Interpreter
 import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
+import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Naming
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
@@ -33,14 +34,14 @@ import qualified Data.HashSet as S
 import Data.List
 
 -- | Generates code satisfying a set of examples
-type Gen m = H.Heap -> T.TypeEnv -> S.HashSet Name -> [Example] -> m Result
+type Gen m = H.Heap -> Sub.SubFunctions -> T.TypeEnv -> S.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
 
 livsCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m H.Heap
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
 livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar cg const_val) fuzz fp cg
 
 livs :: MonadIO m
-     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m H.Heap
+     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
 livs con le b gen fuzz fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
@@ -49,29 +50,31 @@ livs con le b gen fuzz fp cg h tenv = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le b gen fuzz cg [] tenv h ord
+    livs' con le b gen fuzz cg [] tenv h Sub.empty ord
 
 livs' :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> [Id] -> m H.Heap
-livs' _ _ _ _ _ _ _ _ h [] = return h
-livs' con le b gen fuzz cg es tenv h (i:is) = do
+        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions)
+livs' _ _ _ _ _ _ _ _ h sub [] = return (h, sub)
+livs' con le b gen fuzz cg es tenv h sub (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
-    (h', es', is') <- livsStep con le b gen fuzz cg es tenv h i
-    livs' con le b gen fuzz cg es' tenv h' (is' ++ is)
+    (h', sub', es', is') <- livsStep con le b gen fuzz cg es tenv h sub i
+    livs' con le b gen fuzz cg es' tenv h' sub' (is' ++ is)
 
 livsStep :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Id -> m (H.Heap, [Example], [Id])
-livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
+        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> Id -> m (H.Heap, Sub.SubFunctions, [Example], [Id])
+livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
     re' <- fuzz le b es tenv (fuzz_num con) i
     let re'' = re ++ re'
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
-        gram = S.union (S.fromList $ core_funcs con) (expandSetIgnoringNum h $ S.map idName $ directlyCalls i cg)
+        gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)
+
+    liftIO $ putStrLn ("dir = " ++ show (map idName $ directlyCalls i cg) ++  "\nrelH = " ++ show relH ++ "\ngram = " ++ show gram ++ "\nsub = " ++ show sub)
 
     -- Take a guess at the definition of the function
-    m <- gen relH tenv gram re''
+    (m, sub') <- gen relH sub tenv gram re''
 
     case m of
         Sat m' -> do
@@ -80,13 +83,13 @@ livsStep con le b gen fuzz cg es tenv h i@(Id n _) = do
             let h' = H.union (H.fromExprHashMap m') h
 
             (es', is') <- livsSatCheckIncorrect le b (evalPrimitive h tenv) cg  (nub $ re'' ++ es) h' re''
-            return (h', es', is')
+            return (h', sub', es', is')
 
 
         _ -> do
             liftIO $ whenLoud (putStrLn $ "Synthesis failed for function " ++ show i)
             let is' = livsUnSatUnknown cg h i
-            return (h, nub $ re'' ++ es, is')
+            return (h, sub, nub $ re'' ++ es, is')
 
 -- | Takes a list of examples, and determines which functions (if any) need to
 -- be resynthesized, and which new examples should be used when doing so.
@@ -118,15 +121,14 @@ livsSatCheckIncorrect le b ep cg es h exs = do
 livsUnSatUnknown :: CallGraph -> H.Heap -> Id -> [Id]
 livsUnSatUnknown cg h i =
     let
-        dc = filter (not . flip H.isPrimitive h . idName)
-                                $ S.toList $ directlyCalls i cg
+        dc = filter (not . flip H.isPrimitive h . idName) $ directlyCalls i cg
     in
     dc ++ [i]
 
 -- | Filter the Heap to the functions relevant to the given function,
 -- based on the CallGraph
 filterToReachable :: LIVSConfigNames -> Id -> CallGraph -> H.Heap -> H.Heap
-filterToReachable con i cg =
+filterToReachable con i@(Id n _) cg =
     let
         r = S.map nameToString $ S.union (S.fromList $ core_funcs con) (S.map idName $ reachable i cg)
     in

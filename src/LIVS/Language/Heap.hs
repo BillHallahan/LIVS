@@ -41,7 +41,7 @@ import qualified Prelude as P
 newtype Heap = Heap { unHeap :: M.HashMap Name HeapObj } deriving (Show, Read)
 
 -- | A HeapObj is either a concrete function defintion, represented as an Expr
--- , or a primitive SMT/SyGuS operation, which only has a type.
+-- or a primitive SMT/SyGuS operation, which only has a type.
 data HeapObj = Def Expr
              | Primitive Type deriving (Eq, Show, Read)
 
