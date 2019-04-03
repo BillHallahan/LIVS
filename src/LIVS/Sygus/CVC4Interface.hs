@@ -43,7 +43,7 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
             es' = filterNotTypeValueRuleCovered rules es
             es'' = map (\e -> e { func = Id n' t}) es' 
 
-            ty_val_rules_funcs = generateTypeValueRulesFuncs rules -- ty_val_rules_func = generateTypeValueRulesFunc (Id n' t) rules
+            ty_val_rules_funcs = generateTypeValueRulesFuncs rules
 
         ty_val_rules_funcs' <- mapM (\e -> do 
                                         ty_val_n <- freshNameM n
@@ -53,8 +53,6 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
 
         (es4, sub') <- reassignFuncNames sub n es'''
         
-        -- let in_typ_rules_func = generateInputTypeRulesFunc tenv (Id n' t) es4
-
         res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
 
         let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
@@ -66,19 +64,16 @@ runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGr
 runSygusWithGrammar' con cg const_vals h sub tenv hsr es
     | (Example { func = Id n _ }:_) <- es = do
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
-        liftIO $ putStrLn form
+        liftIO $ whenLoud $ putStrLn form
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", show $ smt_timeout con]
-        let pars_m = parseSMT (H.map' typeOf h) tenv . lexSMT $ m
-        liftIO $ putStrLn $ "pars_m = " ++ show pars_m
-        return pars_m
+        return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
     | otherwise = return $ Sat M.empty
 
 runCVC4OnString :: MonadIO m => T.TypeEnv -> String -> m Result
 runCVC4OnString tenv s = do
     liftIO $ putStrLn s
     m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus", "--tlimit", "10000"]
-    liftIO $ print m
     return . parseSMT (M.empty) tenv . lexSMT $ m
 
 runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> T.TypeEnv -> String -> m Result

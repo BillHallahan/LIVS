@@ -46,15 +46,9 @@ main = do
 
 synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m ()
 synth config@(LIVSConfig { code_file = fp }) lenv = do
-    liftIO $ putStrLn $ "fp = " ++ fp
-
     synth_ex <- examplesFromFile jsJSONToVal fp
 
-    liftIO $ print synth_ex
-
     (ids, b) <- extract lenv fp
-
-    liftIO $ whenLoud (putStrLn "Verbose")
 
     let cg = createCallGraph (idsAndCalls ids)
         heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
@@ -77,8 +71,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let config' = toLIVSConfigNames heap config
 
-    liftIO $ print $ core_funcs config'
-
     let tenv = jsTypeEnv
 
     -- We want type constructors, selectors and testers to be available in the
@@ -98,10 +90,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let r = toRational (1 :: Double) 
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
-
-    liftIO $ putStrLn $ "cs' = " ++ show cs'
-
-    liftIO $ putStrLn $ "fuzz_with' = " ++ show (fuzz_with')
 
     let ng = mkNameGen []
 
