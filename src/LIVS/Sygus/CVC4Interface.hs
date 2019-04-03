@@ -66,22 +66,22 @@ runSygusWithGrammar' con cg const_vals h sub tenv hsr es
         liftIO $ whenLoud $ putStrLn form
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", show $ smt_timeout con]
-        return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+        return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
     | otherwise = return $ Sat M.empty
 
-runCVC4OnString :: MonadIO m => T.TypeEnv -> String -> m Result
-runCVC4OnString tenv s = do
+runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
+runCVC4OnString sub tenv s = do
     liftIO $ putStrLn s
     m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus", "--tlimit", "10000"]
-    return . parseSMT (M.empty) tenv . lexSMT $ m
+    return . parseSMT (M.empty) tenv sub . lexSMT $ m
 
-runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> T.TypeEnv -> String -> m Result
-runSMT2WithGrammar con h tenv s = do
+runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> m Result
+runSMT2WithGrammar con h sub tenv s = do
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
     m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", show $ smt_timeout con, "--produce-model"]
-    return . parseSMT (H.map' typeOf h) tenv . lexSMT $ m
+    return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
                 -> String

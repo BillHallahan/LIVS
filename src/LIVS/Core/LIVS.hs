@@ -49,7 +49,7 @@ livs con le b gen fuzz fp cg h tenv = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le b gen fuzz cg [] tenv h Sub.empty ord
+    livs' con le b gen fuzz cg [] tenv h (Sub.fromHeap h) ord
 
 livs' :: MonadIO m => 
         LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions)
@@ -79,7 +79,7 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
 
             let h' = H.union (H.fromExprHashMap m') h
 
-            (es', is') <- livsSatCheckIncorrect le b (evalPrimitive con h tenv) cg  (nub $ re'' ++ es) h' re''
+            (es', is') <- livsSatCheckIncorrect le b (evalPrimitive con h sub' tenv) cg  (nub $ re'' ++ es) h' re''
             return (h', sub', es', is')
 
 

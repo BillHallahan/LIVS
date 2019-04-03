@@ -78,11 +78,8 @@ mkTyFun :: [Type] -> Type
 mkTyFun = foldr1 TyFun
 
 unTyFun :: Type -> [Type]
-unTyFun = reverse . unTyFun'
-
-unTyFun' :: Type -> [Type]
-unTyFun' (TyFun t t') = t':unTyFun' t
-unTyFun' t = [t]
+unTyFun (TyFun t t') = t:unTyFun t'
+unTyFun t = [t]
 
 argTypes :: Typed t => t -> [Type]
 argTypes = argTypes' . typeOf

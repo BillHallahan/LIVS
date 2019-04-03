@@ -7,8 +7,10 @@ module LIVS.Sygus.SMTParser ( parseSMT ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Naming
+import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
+import LIVS.Language.Typing
 import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 
@@ -75,8 +77,12 @@ exprs_rev :: { [Expr] }
 
 expr :: { Expr }
      : '(' name exprs ')' {% do
-                                e <- varOrData $2 
-                                return $ mkApp (e:$3) }
+                                e <- varOrData $2
+                                case e of
+                                    Var i -> do
+                                        i'<- adjustSMTType i (mkTyFun $ map typeOf $3)
+                                        return $ mkApp (Var i':$3)
+                                    _ -> return $ mkApp (e:$3) }
      | name {% varOrData $1 }
      | string { Lit (LString $1) }
      | int { Lit (LInt $1) }
@@ -93,22 +99,24 @@ modelVal :: { (Name, Expr) }
 
 {
 data Parser = Parser { types :: HM.HashMap Name Type
-                     , type_env :: T.TypeEnv }
+                     , type_env :: T.TypeEnv
+                     , subfunctions :: Sub.SubFunctions }
 
 newtype ParserM a = ParserM (State Parser a) deriving (Applicative, Functor, Monad)
 
 instance MonadState Parser ParserM where
     state f = ParserM (state f)
 
-parseSMT :: HM.HashMap Name Type -> T.TypeEnv -> [Token] -> Result
-parseSMT m tenv t = fst $ runParserM m tenv (parse1 t)
+parseSMT :: HM.HashMap Name Type -> T.TypeEnv -> Sub.SubFunctions -> [Token] -> Result
+parseSMT m tenv sub t = fst $ runParserM m tenv sub (parse1 t)
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error."
 
 -- Helpers for the monad
-runParserM :: HM.HashMap Name Type -> T.TypeEnv -> ParserM a -> (a, Parser)
-runParserM m tenv (ParserM p) = runState p (Parser { types = m, type_env = tenv })
+runParserM :: HM.HashMap Name Type -> T.TypeEnv -> Sub.SubFunctions -> ParserM a -> (a, Parser)
+runParserM m tenv sub (ParserM p) =
+    runState p (Parser { types = m, type_env = tenv, subfunctions = sub })
 
 setTypes :: HM.HashMap Name Type -> ParserM ()
 setTypes m = do
@@ -131,6 +139,18 @@ getTypeEnv = return . type_env =<< get
 
 getTypeNamesAndSelectorDCs :: ParserM [(Name, T.SelectorDC)]
 getTypeNamesAndSelectorDCs = return . T.typeNamesAndSelectorDCs =<< getTypeEnv
+
+getSubFunctions :: ParserM (Sub.SubFunctions)
+getSubFunctions = return . subfunctions =<< get
+
+adjustSMTType :: Id -> Type -> ParserM Id
+adjustSMTType i@(Id n _) t = do
+    sub <- getSubFunctions
+    case n of
+        Name Ident _ _ -> return i
+        Name SMT _ _
+            | Just (n', t') <- Sub.lookupNameInputType n t sub -> return $ Id n' t'
+            | otherwise -> return i
 
 idM :: Name -> ParserM Id
 idM n@(Name ll n' i) = do
