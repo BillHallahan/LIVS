@@ -44,7 +44,7 @@ livsConfig =
     LIVSConfig {
           code_file = "" &= help "A code file, containing component functions." &= explicit &= name "code-file" &= typFile -- &= argPos 0
         , seed = Nothing &= help "A seed for the random number generator."
-        , fuzz_num = 3 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
+        , fuzz_num = 20 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
         , smt_timeout = 20 &= help "A timeout for the SMT solver, in seconds" &= explicit &= name "smt-timeout"
         } &= verbosity
