@@ -1,7 +1,10 @@
 function g ( x ) {
 if ( x.length > 3) {
   return x
-    .filter ( c => c == c.toLowerCase () )
+    .split('')
+    //.filter ( c => c == c.toLowerCase ())
+    .filter ( function h(c) { c = c.toLowerCase ()} )
+    .join('')
     .length;
   }
 }

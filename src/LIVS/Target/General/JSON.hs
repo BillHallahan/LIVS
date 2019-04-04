@@ -21,6 +21,7 @@ jsJSONToVal s =
       Fail _ _ _
         | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
         | "TypeError" <- P.take 9 s -> DataVal jsErrorDC
+        | "undefined" <- P.take 9 s -> DataVal jsUndefinedDC
       Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
       Partial _ -> error "Why does this happen?"
       Done _ v -> toValue v

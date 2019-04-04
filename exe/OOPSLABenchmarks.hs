@@ -22,10 +22,16 @@ main = do
     let benchmarkDir = "benchmarks/synthesis/"
     benchmarksFilepaths <- listDirectory benchmarkDir
 
+    config <- cmdArgs livsConfig
+    let config = config {
+          code_file = fp
+        }
     results <- mapM
        (\fp -> do
           putStrLn $ "File = " ++ show fp
-          synth (livsConfig {code_file = fp}) jsEnv)
-       (map (\b -> benchmarkDir++b++"/fullGrammar.js") $ take 1 benchmarksFilepaths)
+          
+          timeout $ synth config jsEnv
+       )
+       (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths)
 
     print results
