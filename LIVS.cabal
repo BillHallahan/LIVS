@@ -76,6 +76,7 @@ library
                        , language-javascript >= 0.6.0.10
                        , regex-compat
                        , unix
+                       , directory
   ghc-options:         -O2 -Wall
                        -- -ddump-splices
                        -- -fprof-auto

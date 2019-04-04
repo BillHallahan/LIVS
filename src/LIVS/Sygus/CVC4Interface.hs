@@ -30,6 +30,7 @@ import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
+import System.Directory
 
 runSygus :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
 runSygus con cg const_vals h sub tenv = runSygusWithGrammar con cg const_vals h sub tenv (HS.fromList $ H.keys h)
@@ -97,7 +98,13 @@ runCVC4WithFile sygus ext ars timeout = do
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            runProcessOnce "gtimeout" (show timeout:"cvc4":fp:ars))
+            toCommandOSX <- findExecutable "gtimeout" 
+            let toCommand = case toCommandOSX of
+                    Just c -> c          -- Mac
+                    Nothing -> "timeout" -- Linux
+
+            runProcessOnce toCommand (show timeout:"cvc4":fp:ars))
+
         ) :: IO (Either SomeException String)
 
     case out of
