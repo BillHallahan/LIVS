@@ -30,7 +30,7 @@ import Data.Maybe
 import System.Console.CmdArgs
 import System.Random
 
-synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m ()
+synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m String
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     synth_ex <- examplesFromFile jsJSONToVal fp
 
@@ -95,3 +95,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
+    
+    let finalFunc = concatMap (show . flip H.lookup final_heap . idName) is
+
+    return finalFunc
