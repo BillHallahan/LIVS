@@ -75,8 +75,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         ids' = map (\(i, fi) -> (i, addCalls fi core_func_ids) ) $ all_uc_fd ++ ids
         cg = createCallGraph (idsAndCalls ids')
 
-    liftIO $ putStrLn $ "ids' = " ++ show ids'
-
     let cs = concatMap (consts . snd) ids
         cs' = genConsts cs
         fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex

@@ -47,8 +47,6 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     let def_ids = filterNonPrimitives h' $ verts cg-- map (flip Id (TyCon (Name Ident "Unknown" Nothing) TYPE)) $ Sub.keys sub
         cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
 
-    liftIO $ putStrLn $ "verts = " ++ show def_ids
-
     -- Synthesize based on the user provided examples
     let con' = con -- con { core_funcs = filterNonPrimitives h' (core_funcs con)}
 
