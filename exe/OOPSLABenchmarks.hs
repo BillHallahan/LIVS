@@ -23,5 +23,7 @@ main = do
     benchmarksFilepaths <- listDirectory benchmarkDir
 
     mapM_
-       (\fp -> synth (livsConfig {code_file = fp}) jsEnv)
+       (\fp -> do
+          putStrLn $ "File = " ++ show fp
+          synth (livsConfig {code_file = fp}) jsEnv)
        (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths)

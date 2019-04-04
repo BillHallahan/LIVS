@@ -50,8 +50,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name SMT "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
                           , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
-                          , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
-                          , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
+                          -- , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
+                          -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
                           , (Name SMT "\"NaN\"" Nothing, H.Primitive $ stringType) ]
 
     let config' = toLIVSConfigNames heap config

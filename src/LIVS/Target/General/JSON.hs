@@ -38,6 +38,6 @@ toValue = \case
       | otherwise -> AppVal (DataVal undefined) $ LitVal (LFloat $ toRealFloat n)
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
   Object _ -> undefined
-  Array _  -> undefined
+  Array _  -> AppVal (DataVal jsIntDC) $ LitVal (LInt (-123456789))
   Bool b -> if b then DataVal trueDC else DataVal falseDC
   Null     -> undefined

@@ -8,5 +8,5 @@ function replaceAll(target, search, replace) {
 
 }
 
-//@pbe (constraint (= (f "Hello World Hello") "Hey World Hey"))
-//@pbe (constraint (= (f "Hello Moon") "Hey Moon"))
+//@pbe (constraint (= (f "Hey" "Hello World Hello") "Hey World Hey"))
+//@pbe (constraint (= (f "Hey" "Hello Moon") "Hey Moon"))

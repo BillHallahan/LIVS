@@ -24,6 +24,7 @@ import qualified LIVS.Language.TypeEnv as T
 import LIVS.Language.Typing
 import LIVS.Target.General.Process
 
+import Control.Exception
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
@@ -65,14 +66,14 @@ runSygusWithGrammar' con cg const_vals h sub tenv hsr es
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ whenLoud $ putStrLn form
 
-        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus", "--tlimit", show $ smt_timeout con]
+        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus"] (smt_timeout con)
         return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
     | otherwise = return $ Sat M.empty
 
 runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
 runCVC4OnString sub tenv s = do
     liftIO $ putStrLn s
-    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus", "--tlimit", "10000"]
+    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus"] 10
     return . parseSMT (M.empty) tenv sub . lexSMT $ m
 
 runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> m Result
@@ -80,21 +81,28 @@ runSMT2WithGrammar con h sub tenv s = do
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
-    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--tlimit", show $ smt_timeout con, "--produce-model"]
+    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--produce-model"] (smt_timeout con)
     return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
                 -> String
                 -> [String]
+                -> Int
                 -> IO String
-runCVC4WithFile sygus ext ars = do
-    withSystemTempFile ("cvc4_input" ++ ext)
+runCVC4WithFile sygus ext ars timeout = do
+    out <- try (
+        withSystemTempFile ("cvc4_input" ++ ext)
         (\fp h -> do
             hPutStr h sygus
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            runProcessOnce "cvc4" (fp:ars))
+            runProcessOnce "gtimeout" (show timeout:"cvc4":fp:ars))
+        ) :: IO (Either SomeException String)
+
+    case out of
+        Right out' -> return out'
+        Left _ -> return "unknown"
 
 newtype CVC4 = CVC4 Process
 
