@@ -116,7 +116,7 @@ toJavaScriptExpr dnn e@(App _ _)
         "(" ++ toJavaScriptExpr dnn e1 ++ "?" ++ toJavaScriptExpr dnn e2 ++ ":" ++ toJavaScriptExpr dnn e3 ++ ")"
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
-    , n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
+    , nameToString n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
     | v@(Var (Id n _)):ex:es <- unApp e
     , n `S.member` dnn =
         "(" ++ toJavaScriptExpr dnn ex ++ "." ++ toJavaScriptExpr dnn v ++ "("
@@ -134,11 +134,11 @@ toJavaScriptLit :: Lit -> String
 toJavaScriptLit (LInt i) = show i
 toJavaScriptLit (LString s) = show s
 
-operators :: [Name]
-operators = [ Name Ident "+" Nothing
-            , Name Ident "-" Nothing
-            , Name Ident "*" Nothing
-            , Name Ident "=" Nothing
-            , Name Ident "==" Nothing
-            , Name Ident ">=" Nothing
-            , Name Ident "<=" Nothing ]
+operators :: [String]
+operators = [ "+"
+            , "-"
+            , "*"
+            , "="
+            , "=="
+            , ">="
+            , "<=" ]

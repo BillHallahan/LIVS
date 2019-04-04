@@ -44,7 +44,7 @@ toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
 
         -- Functions in SMT formulas need to be declared before they are used,
         -- so we add them to the formula in post-order.
-        post = flip Sub.lookupAllNames sub . map idName $ postOrderList cg
+        post = nub $ flip Sub.lookupAllNames sub . map idName $ postOrderList cg
 
         elimSynthH = H.filterWithKey (\n _ -> n /= idName (func e)) h
         tyFilH = filterHeapToValidTypes tenv' elimSynthH
