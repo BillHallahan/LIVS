@@ -33,6 +33,7 @@ library
                        , LIVS.Language.Monad.Naming
                        , LIVS.Core.Fuzz
                        , LIVS.Core.GenConsts
+                       , LIVS.Core.Init
                        , LIVS.Core.LIVS
                        , LIVS.Core.LIVSSynth
                        , LIVS.Sygus.CVC4Interface
