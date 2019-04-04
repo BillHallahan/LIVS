@@ -57,7 +57,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
         filterNames s = filter (\(Name _ n _) -> n == s) ns
 
 coreFuncs :: [String]
-coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
+coreFuncs = ["=", "+", "-", "*", "ite", "int.to.str", "str.++", "str.substr", "str.replace", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
 
 addCoreFuncs :: LIVSConfig cf -> [cf] -> LIVSConfig cf
 addCoreFuncs config@(LIVSConfig { core_funcs = cf }) xs = config { core_funcs = cf ++ xs}

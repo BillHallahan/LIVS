@@ -52,12 +52,16 @@ loadFileJavaScript js p = do
 
 defJavaScript :: JavaScriptREPL -> DotNoteNames -> Id -> Expr -> IO ()
 defJavaScript js dnn (Id n _) e = do
-    _ <- runAndReadJavaScript js $ toJavaScriptDef dnn n e
+    let d = toJavaScriptDef dnn n e
+    putStrLn $ "def = " ++ d
+    _ <- runAndReadJavaScript js d
     return ()
 
 callJavaScript :: JavaScriptREPL -> DotNoteNames -> Expr -> IO Val
 callJavaScript js dnn e = do
-    r <- runAndReadJavaScript js (toJavaScriptCall dnn e)
+    let c = toJavaScriptCall dnn e
+    putStrLn $ "call = " ++ c
+    r <- runAndReadJavaScript js c
     -- putStrLn $ "call = " ++ toJavaScriptCall dnn e
     -- putStrLn $ "r = " ++ r
 
@@ -80,10 +84,21 @@ closeJavaScript (JavaScriptREPL js) = closeProcess js "process.exit()\n"
 toJavaScriptDef :: DotNoteNames -> Name -> Expr -> String
 toJavaScriptDef dnn n e =
     let
-        args = concat . intersperse " " . map toJavaScriptId $ leadingLams e
-        e' = toJavaScriptExpr dnn $ stripLeadingLams e
+        e' = putNothing e
+
+        args = concat . intersperse ", " . map toJavaScriptId $ leadingLams e'
+        e'' = toJavaScriptExpr dnn $ stripLeadingLams e'
     in
-    nameToString n ++ " = function (" ++ args ++ ") { return " ++ e' ++ "}\n"
+    nameToString n ++ " = function (" ++ args ++ ") { return " ++ e'' ++ "}\n"
+    where
+        putNothing (Var (Id n t)) = Var (Id (subsName n) t)
+        putNothing (Lam i e) = Lam i (putNothing e)
+        putNothing (App e1 e2) = App (putNothing e1) (putNothing e2)
+        putNothing (Let (b, e1) e2) = Let (b, putNothing e1) (putNothing e2)
+        putNothing e = e
+
+        subsName name@(Name ll n' _) =
+            if (Name ll n' Nothing) `S.member` dnn then Name ll n' Nothing else name
 
 toJavaScriptCall :: DotNoteNames -> Expr -> String
 toJavaScriptCall dnn e = toJavaScriptExpr dnn e ++ ";\n"

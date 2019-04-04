@@ -12,6 +12,7 @@ import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
+import LIVS.Language.Typing
 import LIVS.Language.Monad.Naming
 import LIVS.Sygus.CVC4Interface
 import LIVS.Target.General.LanguageEnv
@@ -49,13 +50,17 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Synthesize based on the user provided examples
     let con' = con { core_funcs = filterNonPrimitives h' (core_funcs con)}
 
-    (h'', _) <- livs' con' le b gen fuzzFake cg' exs tenv h' sub is
+    (h'', sub') <- livs' con' le b gen fuzzFake cg' exs tenv h' sub is
+
+    let is' = map (toId h'') . flip Sub.lookupAllNames sub' $ map idName is
 
     -- Check that the synthesized functions work in the real language
     mapM_ (\i -> case H.lookup (idName i) h'' of
                     Just (H.Def e) -> do
+                      liftIO $ putStrLn $ "i = " ++ show i ++ "\ne = " ++ show e
                       def le b i e
-                    _ -> error "livsSynth: No definition found") is
+                      liftIO $ putStrLn "AFTER DEF"
+                    _ -> error "livsSynth: No definition found") is'
     incor <- incorrectSuspects le b $ map Suspect exs
 
     case incor of
@@ -66,6 +71,9 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- since there is no way of getting new outputs
     fuzzFake _ _ _ _ _ _ = return []
 
+    toId heap n
+      | Just e <- H.lookup n heap = Id n (typeOf e)
+      | otherwise = error "toId: Name not in Heap"
 -- allDefIds :: H.Heap -> [Id]
 -- allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
 --     where

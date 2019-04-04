@@ -4,5 +4,5 @@ function firstWord(word) {
 
 function rep(s1, s2, s3) { return s1.replace(s2, s3) }
 
-//@pbe (constraint (= (f "Hello World") "Hey World"))
-//@pbe (constraint (= (f "Hello Moon") "Hey Moon"))
+//@pbe (constraint (= (f "Hey" "Hello World") "Hey World"))
+//@pbe (constraint (= (f "Hey" "Hello Moon") "Hey Moon"))
