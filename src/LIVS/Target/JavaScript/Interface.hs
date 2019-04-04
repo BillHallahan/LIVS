@@ -53,14 +53,12 @@ loadFileJavaScript js p = do
 defJavaScript :: JavaScriptREPL -> DotNoteNames -> Id -> Expr -> IO ()
 defJavaScript js dnn (Id n _) e = do
     let d = toJavaScriptDef dnn n e
-    putStrLn $ "def = " ++ d
     _ <- runAndReadJavaScript js d
     return ()
 
 callJavaScript :: JavaScriptREPL -> DotNoteNames -> Expr -> IO Val
 callJavaScript js dnn e = do
     let c = toJavaScriptCall dnn e
-    putStrLn $ "call = " ++ c
     r <- runAndReadJavaScript js c
     -- putStrLn $ "call = " ++ toJavaScriptCall dnn e
     -- putStrLn $ "r = " ++ r

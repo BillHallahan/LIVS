@@ -32,7 +32,7 @@ data Token = TokenSat
            | TokenDefineFun
            | TokenOpenParen
            | TokenCloseParen
-           deriving Show
+           deriving (Eq, Show)
 
 lexSMT :: String -> [Token]
 lexSMT = alexScanTokens
@@ -50,6 +50,6 @@ elimOpenCloseQuote _ = error "elimOpenCloseQuote: Bad string"
 
 elimOpenCloseQuote' :: String -> String
 elimOpenCloseQuote' ('"':[]) = []
-elimOpenCloseQuote' (_:xs) = elimOpenCloseQuote' xs
+elimOpenCloseQuote' (x:xs) = x:elimOpenCloseQuote' xs
 elimOpenCloseQuote' [] = error "elimOpenCloseQuote': Bad string"
 }

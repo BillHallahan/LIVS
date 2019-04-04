@@ -11,6 +11,7 @@ import Language.Typing
 import Language.Monad.Naming
 import LIVS.LIVS
 import UI.Parse
+import Sygus.SMTLexer
 import Sygus.TypeValueRules
 
 import Target.JavaScript
@@ -34,6 +35,7 @@ tests =  testGroup "Tests" [ interpreterTests
                            , livsTests
                            , uiParseTests 
                            , typeValueTests
+                           , smtLexerTests
                            ]
 
 targetTests :: IO TestTree
