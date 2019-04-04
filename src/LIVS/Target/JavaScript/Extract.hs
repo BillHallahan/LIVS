@@ -102,7 +102,10 @@ commaListLength JSLNil = 0
 
 binOpToId :: JSBinOp -> Id
 binOpToId (JSBinOpEq _) = binOp "=="
+binOpToId (JSBinOpGt _) = binOp ">"
 binOpToId (JSBinOpGe _) = binOp ">="
+binOpToId (JSBinOpLt _) = binOp "<"
+binOpToId (JSBinOpLe _) = binOp "<="
 binOpToId (JSBinOpMinus _) = binOp "-"
 binOpToId (JSBinOpPlus _) = binOp "+"
 binOpToId (JSBinOpTimes _) = binOp "*"
