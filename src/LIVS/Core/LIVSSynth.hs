@@ -21,7 +21,7 @@ import Control.Monad.Random
 import Data.List
 
 livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m H.Heap
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m (H.Heap, [Id])
 livsSynthCVC4 con le b fuzz fp cg const_val = livsSynth con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
 
 livsSynth :: MonadIO m
@@ -35,7 +35,7 @@ livsSynth :: MonadIO m
           -> H.Heap
           -> T.TypeEnv
           -> [Example] -- ^ The examples to synthesize a new function from
-          -> m H.Heap
+          -> m (H.Heap, [Id])
 livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Get the component functions
     (h', sub) <- livs con le b gen fuzz fp cg h tenv
@@ -57,14 +57,12 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Check that the synthesized functions work in the real language
     mapM_ (\i -> case H.lookup (idName i) h'' of
                     Just (H.Def e) -> do
-                      liftIO $ putStrLn $ "i = " ++ show i ++ "\ne = " ++ show e
                       def le b i e
-                      liftIO $ putStrLn "AFTER DEF"
                     _ -> error "livsSynth: No definition found") is'
     incor <- incorrectSuspects le b $ map Suspect exs
 
     case incor of
-        [] -> return h''
+        [] -> return (h'', is')
         _ -> error $ "livsSynth: Incorrect translation back to real language" 
   where
     -- We do not want to fuzz any inputs for the new synthesized function,
@@ -74,11 +72,6 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     toId heap n
       | Just e <- H.lookup n heap = Id n (typeOf e)
       | otherwise = error "toId: Name not in Heap"
--- allDefIds :: H.Heap -> [Id]
--- allDefIds = map (\(n, e) -> Id n (typeOf e)) . mapMaybe getDefPairs . H.toList
---     where
---         getDefPairs (n, H.Def e) = Just (n, e)
---         getDefPairs _ = Nothing
 
 -- | In general, we cannot convert SMT primitives back into the real language,
 -- so we filter them out here.

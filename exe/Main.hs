@@ -96,6 +96,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
-    lr <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
+    (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
-    liftIO $ print lr
+    mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
