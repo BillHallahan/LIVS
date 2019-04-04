@@ -7,6 +7,7 @@ module LIVS.Language.SubFunctions ( SubFunctions
                                   , lookup
                                   , lookupName
                                   , lookupAllNames
+                                  , lookupAllNamesDefSingleton
                                   , lookupNameInputType
                                   , keys ) where
 
@@ -20,8 +21,6 @@ import Data.Maybe
 import Data.Tuple
 
 import Prelude hiding (lookup)
-
-import Debug.Trace
 
 newtype SubFunctions = SubFunctions { unSubFunctions :: M.HashMap Name (M.HashMap Type Name)}
                        deriving (Eq, Show, Read)
@@ -43,8 +42,9 @@ fromHeap h =
                       $ filter (\(Name _ n2 mi, _) -> n1 == n2 && isJust mi) hs
                     )
                  ) nothing_ks
+        sf' = filter (not . null . snd ) sf
     in
-    SubFunctions $ M.fromList sf
+    SubFunctions $ M.fromList sf'
 
 insert :: Name -> Type -> Name -> SubFunctions -> SubFunctions
 insert n t fn (SubFunctions sub)
@@ -56,6 +56,9 @@ lookup n (SubFunctions s)
     | Just tn <- M.lookup n s = tn
     | otherwise = M.empty
 
+lookupMaybe :: Name -> SubFunctions -> Maybe (M.HashMap Type Name)
+lookupMaybe n (SubFunctions s) = M.lookup n s
+
 lookupName :: Name -> Type -> SubFunctions -> Maybe Name
 lookupName n t (SubFunctions s)
     | Just tn <- M.lookup n s = M.lookup t tn
@@ -63,6 +66,12 @@ lookupName n t (SubFunctions s)
 
 lookupAllNames :: [Name] -> SubFunctions -> [Name]
 lookupAllNames ns sub = concatMap (M.elems . flip lookup sub) ns
+
+lookupAllNamesDefSingleton :: [Name] -> SubFunctions -> [Name]
+lookupAllNamesDefSingleton ns sub =
+    concatMap (\n -> case lookupMaybe n sub of
+                    Just hm -> M.elems hm
+                    Nothing -> [n]) ns
 
 lookupNameInputType :: Name -> Type -> SubFunctions -> Maybe (Name, Type)
 lookupNameInputType n t (SubFunctions s)

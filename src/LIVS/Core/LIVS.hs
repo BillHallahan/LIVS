@@ -67,8 +67,13 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
     re' <- fuzz le b es tenv (fuzz_num con) i
     let re'' = re ++ re'
 
+    liftIO $ putStrLn $ "length re' = " ++ show (length re')
+
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
-        gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)
+        -- gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)
+        gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls i cg
+
+    liftIO $ putStrLn $ "i = " ++ show i ++ "\nrelH" ++ show (H.keys relH) ++ "\ndc = " ++  show (directlyCalls i cg) ++ "\ngram = " ++ (show gram)
 
     -- Take a guess at the definition of the function
     (m, sub') <- gen relH sub tenv gram re''

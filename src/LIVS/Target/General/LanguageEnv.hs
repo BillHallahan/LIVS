@@ -3,6 +3,7 @@
 module LIVS.Target.General.LanguageEnv ( FuncInfo (..)
                                        , idsAndCalls
                                        , idsAndConsts
+                                       , addCalls
                                        , Load
                                        , Def
                                        , Call
@@ -31,6 +32,9 @@ idsAndCalls = map (\(i, fi) -> (i, calls fi))
 
 idsAndConsts :: [(Id, FuncInfo)] -> [(Id, [Val])]
 idsAndConsts = map (\(i, fi) -> (i, consts fi))
+
+addCalls :: FuncInfo -> [Id] -> FuncInfo
+addCalls fi is = fi { calls = calls fi ++ is }
 
 -- | Given a code file, extracts:
 -- 1) Function declarations, i.e. function names and types

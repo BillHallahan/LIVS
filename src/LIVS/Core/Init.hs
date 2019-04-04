@@ -24,6 +24,8 @@ import Control.Monad.IO.Class
 import Control.Monad.Random.Class
 
 import qualified Data.HashMap.Lazy as HM
+import Data.List
+import Data.Maybe
 
 import System.Console.CmdArgs
 import System.Random
@@ -34,8 +36,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     (ids, b) <- extract lenv fp
 
-    let cg = createCallGraph (idsAndCalls ids)
-        heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
+    let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
                           , (Name SMT "=" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType boolType))
                           , (Name SMT ">" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
@@ -63,9 +64,18 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     -- elements to always be included
     let config'' = addCoreFuncs config'
                     (T.constructorNames tenv ++ T.selectorNames tenv ++ T.testerNames tenv)
-
-    let heap' = T.mergeConstructors tenv heap
+        heap' = T.mergeConstructors tenv heap
         heap'' = T.mergeSelectorsAndTesters tenv heap'
+
+    let all_calls = concatMap (calls . snd) ids
+        all_uncovered_calls = all_calls \\ map fst ids
+        all_uc_fd = map (\un -> (un, mempty)) all_uncovered_calls
+
+        core_func_ids = map (\n -> Id n (typeOf $ fromJust $ H.lookup n heap'')) $ core_funcs config''
+        ids' = map (\(i, fi) -> (i, addCalls fi core_func_ids) ) $ all_uc_fd ++ ids
+        cg = createCallGraph (idsAndCalls ids')
+
+    liftIO $ putStrLn $ "ids' = " ++ show ids'
 
     let cs = concatMap (consts . snd) ids
         cs' = genConsts cs

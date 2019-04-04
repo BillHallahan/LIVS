@@ -6,6 +6,7 @@ module LIVS.Language.CallGraph ( CallGraph
                                , createCallGraph
                                , addVertsToCallGraph
                                , dfs
+                               , verts
                                , vert
                                , trees
                                , reachable
@@ -52,6 +53,9 @@ addVertsToCallGraph is (CallGraph _ _ _ is') = createCallGraph $ is ++ is'
 
 dfs :: CallGraph -> CallForest
 dfs (CallGraph g ti tv _) = map (\x  -> CallTree x ti tv) (G.dff g)
+
+verts :: CallGraph -> [Id] 
+verts (CallGraph g ti _ _) = map ti $ G.vertices g
 
 vert :: CallTree -> Id
 vert (CallTree (G.Node a _) f _) = f a 
