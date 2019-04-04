@@ -38,7 +38,7 @@ livsSynth :: MonadIO m
           -> m (H.Heap, [Id])
 livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Get the component functions
-    (h', sub) <- livs con le b gen fuzz fp cg h tenv
+    (h', sub, exs') <- livs con le b gen fuzz fp cg h tenv
 
     -- Get the Id's of the new functions we have to synthesize
     let is = nub $ map func exs
@@ -50,7 +50,7 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Synthesize based on the user provided examples
     let con' = con -- con { core_funcs = filterNonPrimitives h' (core_funcs con)}
 
-    (h'', sub') <- livs' con' le b gen (fuzzFake is fuzz) cg' exs tenv h' sub is
+    (h'', sub', _) <- livs' con' le b gen (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
 
     let is' = map (toId h'') . flip Sub.lookupAllNames sub' $ map idName is
 

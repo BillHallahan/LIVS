@@ -36,11 +36,11 @@ import Data.List
 type Gen m = H.Heap -> Sub.SubFunctions -> T.TypeEnv -> S.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
 
 livsCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions, [Example])
 livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
 
 livs :: MonadIO m
-     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions)
+     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions, [Example])
 livs con le b gen fuzz fp cg h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
@@ -52,8 +52,8 @@ livs con le b gen fuzz fp cg h tenv = do
     livs' con le b gen fuzz cg [] tenv h (Sub.fromHeap h) ord
 
 livs' :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions)
-livs' _ _ _ _ _ _ _ _ h sub [] = return (h, sub)
+        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions, [Example])
+livs' _ _ _ _ _ _ es _ h sub [] = return (h, sub, es)
 livs' con le b gen fuzz cg es tenv h sub (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
     (h', sub', es', is') <- livsStep con le b gen fuzz cg es tenv h sub i
@@ -148,7 +148,7 @@ markSuspect (LanguageEnv { call = ca }) b (Suspect ex) = do
         else return $ MarkedIncorrect ex r
 
 synthOrder :: H.Heap -> CallGraph -> [Id]
-synthOrder h = filter (not . flip H.isPrimitive h . idName) . postOrderList
+synthOrder h = nub . filter (not . flip H.isPrimitive h . idName) . postOrderList
 
 synthOrderAfter :: H.Heap -> [Id] -> CallGraph -> [Id]
 synthOrderAfter h is =
