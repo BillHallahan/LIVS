@@ -30,7 +30,6 @@ import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
-import System.Directory
 
 runSygus :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
 runSygus con cg const_vals h sub tenv = runSygusWithGrammar con cg const_vals h sub tenv (HS.fromList $ H.keys h)
@@ -48,17 +47,20 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
 
         ty_val_rules_funcs' <- mapM (\e -> do 
                                         ty_val_n <- freshNameM n
-                                        return (ty_val_n, e)) ty_val_rules_funcs
+                                        return (n, ty_val_n, e)) ty_val_rules_funcs
+
+        let sub' = foldr (\(n_orig, n_new, e) -> Sub.insert n_orig (typeOf e) n_new) sub ty_val_rules_funcs'
+            ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
 
         let es''' = simplifyExamples es''
 
-        (es4, sub') <- reassignFuncNames sub n es'''
+        (es4, sub'') <- reassignFuncNames sub' n es'''
         
         res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
 
-        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs' $ foldr mergeRes (Sat M.empty) res
+        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res
 
-        return (res', sub')
+        return (res', sub'')
     | otherwise = return $ (Sat M.empty, sub)
 
 runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
@@ -98,13 +100,7 @@ runCVC4WithFile sygus ext ars timeout = do
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            toCommandOSX <- findExecutable "gtimeout" 
-            let toCommand = case toCommandOSX of
-                    Just c -> c          -- Mac
-                    Nothing -> "timeout" -- Linux
-
-            runProcessOnce toCommand (show timeout:"cvc4":fp:ars))
-
+            runProcessOnce "gtimeout" (show timeout:"cvc4":fp:ars))
         ) :: IO (Either SomeException String)
 
     case out of
