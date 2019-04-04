@@ -24,4 +24,4 @@ main = do
 
     mapM_
        (\fp -> synth (livsConfig {code_file = fp}) jsEnv)
-       (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths) --TODO fix naming convention for benchmarks
+       (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths)
