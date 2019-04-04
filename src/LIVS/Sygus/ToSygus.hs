@@ -140,7 +140,7 @@ genSynthFun h n ls it ot =
             "(" ++ nameToStringSMT (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
 
-        rts = nub . map returnType $ H.elems h
+        rts = nub $ map typeOf ls ++ map returnType (H.elems h)
         gs = concat . intersperse "\n" $ map (\t -> sygusGrammar t h ls vs') rts
     in
     "(synth-fun " ++ nameToStringSMT n ++ " (" ++ sit ++ ")" ++ sot ++ "\n"
