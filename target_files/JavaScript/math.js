@@ -14,4 +14,6 @@ function quadruple(n) {
     return square(n) * square(n)
 }
 
-//@pbe (constraint (= (f 2) 4))
+//@pbe (constraint (= (f 2) 32))
+//@pbe (constraint (= (f 3) 243))
+//@pbe (constraint (= (f 4) 1024))

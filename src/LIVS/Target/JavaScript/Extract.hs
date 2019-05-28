@@ -1,4 +1,4 @@
--- Hides the warnings about deriving 
+-- Hides the warnings about deriving
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE FlexibleContexts #-}
@@ -116,5 +116,5 @@ binOp s = Id (Name Ident s Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIden
 
 $(derivingASTWithContainers ''JSExpression)
 $(derivingASTWithContainers ''JSStatement)
-$(derivingASTContainer ''JSStatement ''JSExpression)
-$(derivingASTContainer ''JSAST ''JSExpression)
+-- $(derivingASTContainer ''JSStatement ''JSExpression)
+-- $(derivingASTContainer ''JSAST ''JSExpression)
