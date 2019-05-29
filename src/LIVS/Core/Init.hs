@@ -24,6 +24,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Random.Class
 
 import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as S
 import Data.List
 import Data.Maybe
 
@@ -86,7 +87,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
 
-    let r = toRational (1 :: Double) 
+    let r = toRational (1 :: Double)
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
 
     let ng = mkNameGen []
@@ -96,7 +97,10 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
-    
-    let finalFunc = concatMap (show . flip H.lookup final_heap . idName) is
+
+    -- Print function in JS as well for debugging
+    let finalFunc = concatMap (\i -> case H.lookup (idName i) final_heap of
+                                        Just (H.Def e) -> toJavaScriptDef S.empty (idName i) e
+                                        _ -> error "livsSynth: No definition found") is
 
     return finalFunc
