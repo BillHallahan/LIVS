@@ -12,6 +12,9 @@ module LIVS.Core.LIVS ( Load
                       , livs'
                       , livsStep
                       , livsSatCheckIncorrect
+                      , livsUnSatUnknown
+                      , filterToReachable
+                      , synthOrder
                       , incorrectSuspects) where
 
 import LIVS.Config.Config
@@ -51,7 +54,7 @@ livs con le b gen fuzz fp cg h tenv = do
     load le fp
     livs' con le b gen fuzz cg [] tenv h (Sub.fromHeap h) ord
 
-livs' :: MonadIO m => 
+livs' :: MonadIO m =>
         LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions, [Example])
 livs' _ _ _ _ _ _ es _ h sub [] = return (h, sub, es)
 livs' con le b gen fuzz cg es tenv h sub (i:is) = do
@@ -59,13 +62,13 @@ livs' con le b gen fuzz cg es tenv h sub (i:is) = do
     (h', sub', es', is') <- livsStep con le b gen fuzz cg es tenv h sub i
     livs' con le b gen fuzz cg es' tenv h' sub' (is' ++ is)
 
-livsStep :: MonadIO m => 
+livsStep :: MonadIO m =>
         LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> Id -> m (H.Heap, Sub.SubFunctions, [Example], [Id])
 livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
     re' <- fuzz le b es tenv (fuzz_num con) i
-    let re'' = re ++ re'
+    let re'' = re' ++ re
 
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
         -- gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)

@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module LIVS.Language.CallGraph ( CallGraph
+module LIVS.Language.CallGraph ( CallGraph (..)
                                , CallForest
                                , CallTree
                                , createCallGraph

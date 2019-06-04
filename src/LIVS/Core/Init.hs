@@ -3,6 +3,7 @@ module LIVS.Core.Init where
 import LIVS.Core.Fuzz
 import LIVS.Core.GenConsts
 import LIVS.Core.LIVSSynth
+import LIVS.Core.LIVSRepair
 
 import LIVS.Config.Config
 
@@ -94,11 +95,13 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
-    (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
+
+    -- TODO: Make this a branch on whether or not we're repairing (call livsSynthCVC4 or livsRepairCVC4)
+    (final_heap, is) <- evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
 
-    -- Print function in JS as well for debugging
+    -- Print function in JS as well
     let finalFunc = concatMap (\i -> case H.lookup (idName i) final_heap of
                                         Just (H.Def e) -> toJavaScriptDef S.empty (idName i) e
                                         _ -> error "livsSynth: No definition found") is

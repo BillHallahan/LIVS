@@ -2,7 +2,8 @@
 -- Unlike the general LIVS algorithm, guarantees that the translation back to
 -- the host language also satisfies the input/output counterexamples.
 module LIVS.Core.LIVSSynth ( livsSynthCVC4
-                           , livsSynth ) where
+                           , livsSynth
+                           , filterNonPrimitives ) where
 
 import LIVS.Config.Config
 import LIVS.Core.Fuzz
@@ -63,7 +64,7 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
 
     case incor of
         [] -> return (h'', is')
-        _ -> error $ "livsSynth: Incorrect translation back to real language" 
+        _ -> error $ "livsSynth: Incorrect translation back to real language"
   where
 
     toId heap n
@@ -75,7 +76,7 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
 fuzzFake :: Monad m => [Id] -> (Fuzz m b) -> Fuzz m b
 fuzzFake is fuzz le b es tenv n i
     | i `elem` is = return []
-    | otherwise = fuzz le b es tenv n i 
+    | otherwise = fuzz le b es tenv n i
 
 -- | In general, we cannot convert SMT primitives back into the real language,
 -- so we filter them out here.

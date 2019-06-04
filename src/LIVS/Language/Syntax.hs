@@ -10,6 +10,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , Type (..)
 
                             , Example (..)
+                            , Constraint (..)
                             , SuspectExample (..)
                             , MarkedExample (..)
                             , IncorrectExample (..)
@@ -45,7 +46,7 @@ data Name = Name LanguageLevel String (Maybe Integer)
 
 instance Hashable Name
 
-data LanguageLevel = Ident | SMT 
+data LanguageLevel = Ident | SMT
                    deriving (Eq, Ord, Show, Read, Generic)
 
 instance Hashable LanguageLevel
@@ -131,6 +132,13 @@ data Example = Example { func :: Id
                        deriving (Eq, Show, Read, Generic)
 
 instance Hashable Example
+
+data Constraint = Constraint { target :: Id
+                             , expr :: Expr
+                             , result :: Val }
+                             deriving (Eq, Show, Read, Generic)
+
+instance Hashable Constraint
 
 funcName :: Example -> Name
 funcName = idName . func
