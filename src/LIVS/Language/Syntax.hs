@@ -10,7 +10,6 @@ module LIVS.Language.Syntax ( Name (..)
                             , Type (..)
 
                             , Example (..)
-                            , Constraint (..)
                             , SuspectExample (..)
                             , MarkedExample (..)
                             , IncorrectExample (..)
@@ -23,6 +22,7 @@ module LIVS.Language.Syntax ( Name (..)
                             , subVals
 
                             , idName
+                            , idType
                             , funcName
                             , examplesForFunc
                             , exampleFuncCall
@@ -59,12 +59,16 @@ instance Hashable Id
 idName :: Id -> Name
 idName (Id n _) = n
 
+idType :: Id -> Type
+idType (Id _ t) = t
+
 data Expr = Var Id
           | Data DC
           | Lit Lit
           | Lam Id Expr
           | App Expr Expr
           | Let Binding Expr
+          | EmptyExpr
           deriving (Eq, Show, Read, Generic)
 
 instance Hashable Expr
@@ -126,19 +130,11 @@ data Type = TyCon Name Type
 
 instance Hashable Type
 
-data Example = Example { func :: Id
-                       , input :: [Val]
-                       , output :: Val }
-                       deriving (Eq, Show, Read, Generic)
+data Example = Example { func :: Id, input :: [Val], output :: Val }
+             | Constraint { func :: Id, input :: [Val], output :: Val, expr :: Expr }
+             deriving (Eq, Show, Read, Generic)
 
 instance Hashable Example
-
-data Constraint = Constraint { target :: Id
-                             , expr :: Expr
-                             , result :: Val }
-                             deriving (Eq, Show, Read, Generic)
-
-instance Hashable Constraint
 
 funcName :: Example -> Name
 funcName = idName . func

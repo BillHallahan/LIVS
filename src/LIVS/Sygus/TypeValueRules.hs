@@ -38,11 +38,11 @@ filterRules' :: Eq a => [([DC], a)] -> [([DC], a)]
 filterRules' rs = filterRules S.empty HM.empty rs
 
 filterRules :: Eq a => S.HashSet [DC] -> HM.HashMap [DC] a -> [([DC],a)] -> [([DC],a)]
-filterRules reject provisionalKeep ((dc,v):rs) = 
+filterRules reject provisionalKeep ((dc,v):rs) =
     if S.member dc reject || (HM.lookupDefault v dc provisionalKeep /= v)
     then filterRules (S.insert dc reject) (HM.delete dc provisionalKeep) rs
     else filterRules reject (HM.insert dc v provisionalKeep) rs
-filterRules _ provisionalKeep [] = HM.toList provisionalKeep 
+filterRules _ provisionalKeep [] = HM.toList provisionalKeep
 
 buildTypeValueRule :: Example -> ([DC],Val)
 buildTypeValueRule e =
@@ -65,7 +65,7 @@ filterNotTypeValueRuleCovered dcv = filter (flip notElem dcv . buildTypeValueRul
 -- | Split a list of exmaples into lists of examples of matching types
 --  :: [Example] -> [[Example]]
 
--- | 
+-- |
 inputTypeRules :: [Example] -> [([DC], Maybe DC)]
 inputTypeRules exs = let
     ttRules = HM.map Just $ HM.fromList $ typeTypeRules exs
@@ -78,7 +78,7 @@ inputTypeRules exs = let
 typeTypeRules :: [Example] -> [([DC], DC)]
 typeTypeRules es = let
     rs = map buildInputTypeRule es
-  in 
+  in
     filterRules' rs
 
 -- | Takes a list of examples, and splits them up by the input data constructors.
@@ -97,12 +97,14 @@ simplifyExamples' dcs es = simplifyExamples'' $ groupInputTypeRules dcs es
 
 simplifyExamples'' :: [(([DC], Maybe DC), [Example])] -> [(([DC], Maybe DC), [Example])]
 simplifyExamples'' = map simplifyExample
-  
+
 simplifyExample :: (([DC], Maybe DC), [Example]) -> (([DC], Maybe DC), [Example])
 simplifyExample ((dcs, mdc), es) = ((dcs, mdc), map simplifyExample' es)
   where
-    simplifyExample' e@(Example { input = is, output = out }) =
+    simplifyExample' e =
         let
+          is = tail $ exampleVals e
+          out = head $ exampleVals e
           is' = map (\(i, dc) -> case i of
                                   AppVal (DataVal dc') v
                                     | dc' == dc -> v
@@ -145,7 +147,7 @@ reassignFuncNames sub orig_n es = do
 
 generateTypeValueRulesFuncs :: [([DC], Val)] -> [Expr]
 generateTypeValueRulesFuncs = map dcValToExpr
-  where    
+  where
     dcValToExpr (dcs, v) =
       let
         xs = map (Name Ident "x" . Just) [0..]
@@ -190,14 +192,14 @@ generateInputTypeRulesFunc tenv i =
                   Nothing -> c
       in
       (dcs, c')
-    generateFunctionCall _ = error "generateInputTypeRulesFunc: no examples" 
+    generateFunctionCall _ = error "generateInputTypeRulesFunc: no examples"
 
     getSingleSelector dc@(DC dcn _)
       | dct@(TyCon n _) <- returnType dc
       , Just (T.ADTSpec selectors) <- T.lookup n tenv
       , Just sel <- find (\s -> T.selectorDCName s == dcn) selectors
-      , T.SelectorDC _ [nt] <- sel = Var $ Id (T.namedTypeName nt) (TyFun dct $ T.namedTypeType nt) 
-      | otherwise = error "Bad type" 
+      , T.SelectorDC _ [nt] <- sel = Var $ Id (T.namedTypeName nt) (TyFun dct $ T.namedTypeType nt)
+      | otherwise = error "Bad type"
 
 generateIfDCThenExprFunc :: [Id] -> Expr -> [([DC], Expr)] -> Expr
 generateIfDCThenExprFunc args def dcv =
@@ -213,7 +215,7 @@ generateIfDCThenExprFunc args def dcv =
       ret_type = returnType def
       ite = Var $ smtIte ret_type
 
-      check_testers = foldr (\(ch, e) -> App (App (App ite ch) e)) def testers_anded 
+      check_testers = foldr (\(ch, e) -> App (App (App ite ch) e)) def testers_anded
   in
   mkLams args $ check_testers
   where

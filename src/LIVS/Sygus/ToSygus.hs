@@ -1,4 +1,4 @@
-module LIVS.Sygus.ToSygus ( toSygus 
+module LIVS.Sygus.ToSygus ( toSygus
                           , toSygusWithGrammar
                           , toSygusTypeEnv
                           , toSygusFunExpr
@@ -69,10 +69,16 @@ toSygusWithGrammar _ _ _ _ _ _ [] = error "toSygusWithGrammar: No examples"
 toSygusExample :: Example -> String
 toSygusExample (Example { func = f, input = is, output = out }) =
     let
-        as = concat . intersperse " " $ map toSygusVal is 
+        as = concat . intersperse " " $ map toSygusVal is
         call = "(" ++ toSygusId f ++ " " ++ as ++ ")"
     in
     "(constraint (= " ++ call ++ " " ++ toSygusVal out ++ "))"
+toSygusExample (Constraint { func = f, input = is, output = out, expr = e }) =
+    let
+        as = concat . intersperse " " $ map toSygusVal is -- TODO: replace let with expression conversion and input replacement
+        call = "(" ++ toSygusId f ++ " " ++ as ++ ")" -- TODO: probably need helper function for input replacement – could be hard
+    in
+    "(constraint (= " ++ call ++ " " ++ toSygusVal out ++ "))" -- Use ExampleFuncCall to generate the function call...
 
 toSygusId :: Id -> String
 toSygusId (Id n _) = nameToStringSMT n
@@ -136,7 +142,7 @@ genSynthFun h n ls it ot =
 
         vs' = map (uncurry Id) $ zip vs it
 
-        sit = concatMap (\(i, t) -> 
+        sit = concatMap (\(i, t) ->
             "(" ++ nameToStringSMT (idName i) ++ " " ++ toSygusType t ++ ")") $ zip vs' it
         sot = toSygusType ot
 
@@ -149,7 +155,7 @@ genSynthFun h n ls it ot =
 
 -- | Get all unique function names and types
 collectFuncs :: [Example] -> [(Name, [Type], Type)]
-collectFuncs = nub 
+collectFuncs = nub
              . map (\e -> ( funcName e
                           , map typeOf . input $ e
                           , typeOf $ output e)
@@ -167,7 +173,7 @@ sygusGrammar t@(TyCon n _) h ls vs =
         vs' = map nameToStringSMT . map idName $ filter (\i -> typeOf i == t) vs
         ls' = map toSygusVal $ filter (\l -> typeOf l == t) ls
     in
-       "(" ++ typeSymbol t ++ " " ++ nameToStringSMT n ++ "\n" 
+       "(" ++ typeSymbol t ++ " " ++ nameToStringSMT n ++ "\n"
     ++ "(" ++ concat (intersperse " " ls') ++ " "
     ++ concat (intersperse " " vs') ++ "\n"
     ++ sc
@@ -177,7 +183,7 @@ sygusGrammar t _ _ _ = error $ "sygusGrammar: Bad type." ++ show t
 sygusGrammar' :: Type -> H.Heap -> String
 sygusGrammar' t =
     concat . H.mapWithKey'
-        (\n e -> 
+        (\n e ->
             let
                 at = argTypes e
                 ts = concat . intersperse " " $ map typeSymbol at
@@ -216,7 +222,7 @@ toSygusTesters tn (T.SelectorDC n _) =
    toSygusTester tn n
 
 toSygusTester :: Name -> Name -> String
-toSygusTester tn dcn = 
+toSygusTester tn dcn =
     "(define-fun is" ++ nameToStringSMT dcn ++ " ((i " ++ nameToStringSMT tn ++ ")) Bool ((_ is " ++ nameToStringSMT dcn ++ ") i))"
 
 -- | Filters out (some) unneeded types from the TypeEnv
