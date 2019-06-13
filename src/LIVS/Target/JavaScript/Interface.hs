@@ -1,8 +1,9 @@
-module LIVS.Target.JavaScript.Interface ( 
+module LIVS.Target.JavaScript.Interface (
           JavaScriptREPL
         , DotNoteNames
         , jsLanguageEnv
         , extractFileJavaScript
+        , extractJavaScriptDefinition
         , loadFileJavaScript
         , defJavaScript
         , callJavaScript
@@ -33,7 +34,8 @@ newtype JavaScriptREPL = JavaScriptREPL Process
 jsLanguageEnv :: IO (LanguageEnv IO (S.HashSet Name))
 jsLanguageEnv = do
     js <- initJavaScriptREPL
-    return $ LanguageEnv { extract = extractFileJavaScript
+    return $ LanguageEnv { extractCalls = extractFileJavaScript
+                         , extractDef = extractJavaScriptDefinition
                          , load = loadFileJavaScript js
                          , def = defJavaScript js
                          , call = callJavaScript js }
@@ -44,6 +46,13 @@ extractFileJavaScript fp = do
     case jsast of
         Left e -> error $ show e
         Right jsast' -> return $ Ext.extractFunctions jsast'
+
+extractJavaScriptDefinition :: FilePath -> Name -> IO Expr
+extractJavaScriptDefinition fp n = do
+    jsast <- Ext.parseJS fp
+    case jsast of
+        Left e -> error $ show e
+        Right jsast' -> return $ Ext.extractDefinition jsast' n
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = do
@@ -107,7 +116,7 @@ toJavaScriptExpr _ (Data dc)
     | dc == trueDC = "true"
     | dc == falseDC = "false"
     | dc == jsNaNDC = "NaN"
-    | dc == jsErrorDC = "(0).indexof(\"\")" -- Throws a JS type error intentionally 
+    | dc == jsErrorDC = "(0).indexof(\"\")" -- Throws a JS type error intentionally
     | otherwise = ""
 toJavaScriptExpr _ (Lit l) = "(" ++ toJavaScriptLit l ++ ")"
 toJavaScriptExpr dnn (Lam i e) = "(" ++ (nameToString $ idName i) ++ " => " ++ (toJavaScriptExpr dnn e) ++ ")"
@@ -121,11 +130,12 @@ toJavaScriptExpr dnn e@(App _ _)
     , n `S.member` dnn =
         "(" ++ toJavaScriptExpr dnn ex ++ "." ++ toJavaScriptExpr dnn v ++ "("
         ++ (concat . intersperse ", " $ map (toJavaScriptExpr dnn) es) ++ "))"
-    | otherwise = 
+    | otherwise =
         "(" ++ toJavaScriptExpr dnn (appCenter e) ++ "("
             ++ (concat . intersperse ", " . map (toJavaScriptExpr dnn) $ appArgs e) ++ "))"
 toJavaScriptExpr dnn (Let (i, b) e) =
     toJavaScriptId i ++ " = " ++ toJavaScriptExpr dnn b ++ " in " ++ toJavaScriptExpr dnn e
+toJavaScriptExpr dnn EmptyExpr = "_____"
 
 toJavaScriptId :: Id -> String
 toJavaScriptId (Id n _) = nameToString n
@@ -141,6 +151,6 @@ operators = [ "+"
             , "="
             , "=="
             , ">="
-            , "<=" 
+            , "<="
             , ">"
             , "<" ]

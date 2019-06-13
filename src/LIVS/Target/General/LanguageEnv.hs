@@ -40,7 +40,10 @@ addCalls fi is = fi { calls = calls fi ++ is }
 -- 1) Function declarations, i.e. function names and types
 -- 2) For each function f, the names and types of the functions f calls
 -- 3) For each function f, contained constant values
-type Extract m b = FilePath -> m ([(Id, FuncInfo)], b)
+type ExtractCalls m b = FilePath -> m ([(Id, FuncInfo)], b)
+
+-- Extracts the complete definition of the function with the given name from the given code file
+type ExtractDef m = FilePath -> Name -> m Expr
 
 -- | Load a file with the given name into a REPL
 type Load m = FilePath -> m ()
@@ -54,15 +57,16 @@ type Def m b = b -> Id -> Expr -> m ()
 type Call m b = b -> Expr -> m Val
 
 -- | An interface to interact with an external language interpreter/compiler
-data LanguageEnv m b = LanguageEnv { extract :: Extract m b
+data LanguageEnv m b = LanguageEnv { extractCalls :: ExtractCalls m b
+                                   , extractDef :: ExtractDef m
                                    , load :: Load m
                                    , def :: Def m b
                                    , call :: Call m b }
 
 liftLanguageEnv :: (forall a . m a -> m' a) -> LanguageEnv m b -> LanguageEnv m' b
-liftLanguageEnv f (LanguageEnv { extract = ex, load = l, def = d, call = c }) =
-    LanguageEnv { extract = \fp -> f $ ex fp
+liftLanguageEnv f (LanguageEnv { extractCalls = exc, extractDef = exd, load = l, def = d, call = c }) =
+    LanguageEnv { extractCalls = \fp -> f $ exc fp
+                , extractDef = \fp n -> f $ exd fp n
                 , load = \fp -> f $ l fp
                 , def = \b i e -> f $ d b i e
                 , call = \b e -> f $ c b e }
-                

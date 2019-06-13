@@ -36,7 +36,7 @@ synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m Stri
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     synth_ex <- examplesFromFile jsJSONToVal fp
 
-    (ids, b) <- extract lenv fp
+    (ids, b) <- extractCalls lenv fp
 
     let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
@@ -96,7 +96,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
 
-    -- TODO: Make this a branch on whether or not we're repairing (call livsSynthCVC4 or livsRepairCVC4)
     (final_heap, is) <- evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is

@@ -8,10 +8,13 @@
 module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
                                       , DotNoteNames
                                       , parseJS
-                                      , extractFunctions ) where
+                                      , extractFunctions
+                                      , extractDefinition ) where
 
 import LIVS.Language.AST
 import LIVS.Language.Syntax
+import LIVS.Language.Typing
+import LIVS.Language.Expr
 import LIVS.Target.General.LanguageEnv
 import LIVS.Target.General.JSON
 import LIVS.Target.JavaScript.JSIdentifier
@@ -75,6 +78,53 @@ extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _
     in
     (FuncInfo {calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
 extractCalledFunctionsExpr' _ = (mempty, S.empty)
+
+extractDefinition :: JSAST -> Name -> Expr
+extractDefinition (JSAstProgram stmts _) n = head $ filter (\e -> e /= EmptyExpr) $ map (flip extractDefinitionFxn n) stmts
+extractDefinition (JSAstStatement stmt _) n = extractDefinitionFxn stmt n
+extractDefinition _ _ = EmptyExpr
+
+extractDefinitionFxn :: JSStatement -> Name -> Expr
+extractDefinitionFxn (JSFunction _ ident _ args _ block _) n
+    | (identToName ident == n) = mkLams (argsToId args) (extractDefinitionBlock block)
+    | otherwise = EmptyExpr
+extractDefinitionFxn _ _ = EmptyExpr
+
+extractDefinitionBlock :: JSBlock -> Expr
+extractDefinitionBlock (JSBlock _ b@(x:xs) _)
+    | xs == [] = extractDefinitionStmt x
+    | otherwise = error "More than one statement in function body"
+extractDefinitionBlock _ = error "Empty function body"
+
+extractDefinitionStmt :: JSStatement -> Expr
+extractDefinitionStmt (JSReturn _ (Just e) _) = extractCallExpr e
+extractDefinitionStmt _ = error "Statement is not a return followed by an expression"
+
+extractCallExpr :: JSExpression -> Expr
+extractCallExpr (JSCallExpression (JSIdentifier _ n) _ args _) =
+    let
+        argExprs = map extractCallExpr (argsToExpr args)
+    in
+    mkApp $ [Var $ Id (Name Ident n Nothing) (mkTyFun $ (map typeOf argExprs) ++ [jsIdentType])] ++ argExprs
+extractCallExpr (JSMemberExpression (JSIdentifier _ n) _ args _) =
+    let
+        argExprs = map extractCallExpr (argsToExpr args)
+    in
+    mkApp $ [Var $ Id (Name Ident n Nothing) (mkTyFun $ (map typeOf argExprs) ++ [jsIdentType])] ++ argExprs
+extractCallExpr (JSStringLiteral _ s) = Lit (LString s)
+extractCallExpr (JSLiteral _ l) = error "JSLiteral"
+extractCallExpr (JSDecimal _ d) = Lit (LFloat (read d::Float))
+extractCallExpr i = case (jsExpressionToName i) of
+                        Just n -> Var (Id n jsIdentType)
+                        _ -> error "Expression not recognized"
+
+argsToId :: JSCommaList JSIdent -> [Id]
+argsToId (JSLCons list _ a) = argsToId list ++ [Id (identToName a) jsIdentType]
+argsToId (JSLOne a) = [Id (identToName a) jsIdentType]
+
+argsToExpr :: JSCommaList JSExpression -> [JSExpression]
+argsToExpr (JSLCons list _ e) = argsToExpr list ++ [e]
+argsToExpr (JSLOne e) = [e]
 
 nameCLToIdWithExtraArgs :: Name -> JSCommaList a -> Int -> Id
 nameCLToIdWithExtraArgs n args i =

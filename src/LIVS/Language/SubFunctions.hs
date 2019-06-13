@@ -5,6 +5,7 @@ module LIVS.Language.SubFunctions ( SubFunctions
                                   , fromHeap
                                   , insert
                                   , lookup
+                                  , lookupMaybe
                                   , lookupName
                                   , lookupAllNames
                                   , lookupAllNamesDefSingleton

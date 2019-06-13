@@ -56,10 +56,15 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
             ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
 
         let es''' = simplifyExamples es''
-
         (es4, sub'') <- reassignFuncNames sub' n es'''
 
-        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es4
+        --liftIO $ print sub''
+        let es5 = map (\(dcmdc, ess) -> (dcmdc, map (\e -> case e of
+                                                            Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub') }
+                                                            Example _ _ _ -> e) ess)) es4
+        --liftIO $ print (head $ snd $ head es5)
+
+        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es5
 
         let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res
 

@@ -6,6 +6,7 @@ module LIVS.Sygus.TypeValueRules ( typeValueRules
                                  , inputTypeRules
                                  , simplifyExamples
                                  , reassignFuncNames
+                                 , reassignConstraintNames
 
                                  , generateTypeValueRulesFuncs
                                  , generateTypeValueRulesFunc
@@ -136,14 +137,29 @@ reassignFuncNames sub orig_n es = do
       let t = exampleFuncType e
       nsub <- get
       i <- case Sub.lookupName orig_n t nsub of
-              Just n -> return (Id n t)
-              Nothing -> do
-                i@(Id new_n _) <- freshIdM (idName $ func e) t
-                put $ Sub.insert orig_n t new_n nsub
-                return i
+                    Just n -> return (Id n t)
+                    Nothing -> do
+                        i@(Id new_n _) <- freshIdM (idName $ func e) t
+                        put $ Sub.insert orig_n t new_n nsub
+                        return i
       return (dcmdc, map (\e' -> e' { func = i }) ess)
     assignFuncName _ = error "assignFuncNames: empty example list."
 
+reassignConstraintNames :: Expr -> Sub.SubFunctions -> Expr
+reassignConstraintNames d@(Data _) _ = d
+reassignConstraintNames l@(Lit _) _ = l
+reassignConstraintNames (App e1 e2) sub = App (reassignConstraintNames e1 sub) (reassignConstraintNames e2 sub)
+reassignConstraintNames (Var i) sub = Var (substituteSMTName i sub)
+reassignConstraintNames (Lam i e) sub = Lam (substituteSMTName i sub) (reassignConstraintNames e sub)
+reassignConstraintNames (Let (i, e1) e2) sub = Let (substituteSMTName i sub, reassignConstraintNames e1 sub) (reassignConstraintNames e2 sub)
+reassignConstraintNames EmptyExpr _ = EmptyExpr
+
+substituteSMTName :: Id -> Sub.SubFunctions -> Id
+substituteSMTName (Id n t) sub = case Sub.lookupMaybe n sub of
+                                    Just hm -> case length $ HM.elems hm of
+                                                  1 -> (Id (head $ HM.elems hm) t)
+                                                  _ -> error "More than one SMT function for this subfunction"
+                                    Nothing -> (Id n t)
 
 generateTypeValueRulesFuncs :: [([DC], Val)] -> [Expr]
 generateTypeValueRulesFuncs = map dcValToExpr

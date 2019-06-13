@@ -2,6 +2,10 @@ function add(m, n) {
   return m + n;
 }
 
+function mult(m, n) {
+    return m * n;
+}
+
 function square(n) {
   return n * n;
 }
@@ -14,8 +18,8 @@ function quadruple(n) {
     return square(n) * square(n)
 }
 
-function f(n) {
-    return n * quadruple(n);
+function f(x1_) {
+    return mult(x1_, mult(x1_, mult(x1_, mult(x1_, x1_))));
 }
 
 function g(n) {
