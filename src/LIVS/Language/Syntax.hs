@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module LIVS.Language.Syntax ( Name (..)
+                            , ProgramMode (..)
                             , LanguageLevel (..)
                             , Id (..)
                             , Expr (..)
@@ -41,10 +43,17 @@ import Data.Foldable
 import Data.Hashable
 import Data.Maybe
 
+import System.Console.CmdArgs
+
 data Name = Name LanguageLevel String (Maybe Integer)
             deriving (Eq, Ord, Show, Read, Generic)
 
 instance Hashable Name
+
+data ProgramMode = Synthesis | Repair String
+                 deriving (Eq, Ord, Show, Read, Generic, Data, Typeable)
+
+instance Hashable ProgramMode
 
 data LanguageLevel = Ident | SMT
                    deriving (Eq, Ord, Show, Read, Generic)

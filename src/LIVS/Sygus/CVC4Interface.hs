@@ -44,6 +44,9 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
 
         let rules = typeValueRules es
             es' = filterNotTypeValueRuleCovered rules es
+            -- es' = case (head es) of
+            --          Constraint _ _ _ _ -> es
+            --          Example _ _ _ -> filterNotTypeValueRuleCovered rules es -- TODO: problem line
             es'' = map (\e -> e { func = Id n' t}) es'
 
             ty_val_rules_funcs = generateTypeValueRulesFuncs rules
@@ -58,16 +61,23 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
         let es''' = simplifyExamples es''
         (es4, sub'') <- reassignFuncNames sub' n es'''
 
-        --liftIO $ print sub''
         let es5 = map (\(dcmdc, ess) -> (dcmdc, map (\e -> case e of
                                                             Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub') }
                                                             Example _ _ _ -> e) ess)) es4
-        --liftIO $ print (head $ snd $ head es5)
 
-        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map (\(_, x) -> x) es5
-
-        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res
-
+        -- case (head es) of
+        --     Constraint _ _ _ _ -> do
+        --         liftIO $ print es
+        --         liftIO $ print es'
+        --         liftIO $ print es''
+        --         liftIO $ print es'''
+        --         liftIO $ print es4
+        --         liftIO $ print es5
+        --     Example _ _ _ -> return ()
+        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map snd es5
+        -- liftIO $ print res
+        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res -- TODO: problem line
+        -- liftIO $ print res'
         return (res', sub'')
 
 runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
@@ -78,7 +88,9 @@ runSygusWithGrammar' con cg const_vals h sub tenv hsr es
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus"] (smt_timeout con)
         return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
-    | otherwise = return $ Sat M.empty
+    | otherwise = do
+        liftIO $ putStrLn "No examples!"
+        return $ Sat M.empty
 
 runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
 runCVC4OnString sub tenv s = do

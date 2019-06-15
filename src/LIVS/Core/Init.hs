@@ -33,7 +33,7 @@ import System.Console.CmdArgs
 import System.Random
 
 synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m String
-synth config@(LIVSConfig { code_file = fp }) lenv = do
+synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
     synth_ex <- examplesFromFile jsJSONToVal fp
 
     (ids, b) <- extractCalls lenv fp
@@ -96,9 +96,10 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
 
-    (final_heap, is) <- evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
-
-    mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
+    (final_heap, is) <- case mode of
+                            "synth" -> evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
+                            fname -> evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv fname synth_ex) ng
+    -- mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
 
     -- Print function in JS as well
     let finalFunc = concatMap (\i -> case H.lookup (idName i) final_heap of

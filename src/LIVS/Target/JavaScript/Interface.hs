@@ -142,6 +142,7 @@ toJavaScriptId (Id n _) = nameToString n
 
 toJavaScriptLit :: Lit -> String
 toJavaScriptLit (LInt i) = show i
+toJavaScriptLit (LFloat f) = show f
 toJavaScriptLit (LString s) = show s
 
 operators :: [String]

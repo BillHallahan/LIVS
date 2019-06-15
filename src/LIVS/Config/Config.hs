@@ -30,6 +30,7 @@ import System.Console.CmdArgs
 
 data LIVSConfig cf =
     LIVSConfig { code_file :: String
+               , program_mode :: String -- repair or synthesis
                , seed :: Maybe Int -- ^ The seed for the random number gerator
                , fuzz_num :: Int -- ^ The number of examples to fuzz
                , core_funcs :: [cf] -- ^ Functions that are always available in synthesis
@@ -43,7 +44,8 @@ livsConfig :: LIVSConfigCL
 livsConfig =
     LIVSConfig {
           code_file = "" &= help "A code file, containing component functions." &= explicit &= name "code-file" &= typFile -- &= argPos 0
-        , seed = Nothing &= help "A seed for the random number generator."
+        , program_mode = "synth" &= help "Repair an existing function." &= explicit &= name "repair" &= typ "FUNC_NAME"
+        , seed = Nothing &= help "A seed for the random number generator." &= explicit &= name "seed"
         , fuzz_num = 20 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
         , smt_timeout = 20 &= help "A timeout for the SMT solver, in seconds" &= explicit &= name "smt-timeout"

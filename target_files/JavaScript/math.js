@@ -18,14 +18,19 @@ function quadruple(n) {
     return square(n) * square(n)
 }
 
-function f(x1_) {
-    return mult(x1_, mult(x1_, mult(x1_, mult(x1_, x1_))));
+function f(n, m) {
+    return mult(n, mult(n, mult(n, m)));
 }
 
 function g(n) {
-    return f(n) * square(n);
+    return mult(f(n, n), n);
 }
 
-//@pbe (constraint (= (f 2) 32))
-//@pbe (constraint (= (f 3) 243))
-//@pbe (constraint (= (f 4) 1024))
+//@pbe (constraint (= (f 2 2) 32))
+//@pbe (constraint (= (f 2 3) 108))
+//@pbe (constraint (= (f 3 2) 72))
+//@pbe (constraint (= (f 3 3) 243))
+//@pbe (constraint (= (f 4 4) 1024))
+
+//@pbe (constraint (= (g 3) 729))
+//@pbe (constraint (= (g 4) 4096))

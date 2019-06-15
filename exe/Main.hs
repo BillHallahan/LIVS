@@ -20,4 +20,3 @@ main = do
     jsEnv <- jsLanguageEnv
 
     synth config jsEnv >>= print
-    

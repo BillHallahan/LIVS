@@ -112,8 +112,7 @@ extractCallExpr (JSMemberExpression (JSIdentifier _ n) _ args _) =
     in
     mkApp $ [Var $ Id (Name Ident n Nothing) (mkTyFun $ (map typeOf argExprs) ++ [jsIdentType])] ++ argExprs
 extractCallExpr (JSStringLiteral _ s) = Lit (LString s)
-extractCallExpr (JSLiteral _ l) = error "JSLiteral"
-extractCallExpr (JSDecimal _ d) = Lit (LFloat (read d::Float))
+extractCallExpr (JSDecimal _ d) = Lit (LInt (read d::Int))
 extractCallExpr i = case (jsExpressionToName i) of
                         Just n -> Var (Id n jsIdentType)
                         _ -> error "Expression not recognized"
