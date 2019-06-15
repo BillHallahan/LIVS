@@ -30,7 +30,18 @@ import qualified Data.Tuple as TP
 import Data.List
 
 livsRepairCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> String -> [Example] -> m (H.Heap, [Id])
+               => LIVSConfigNames
+               -> LanguageEnv m b
+               -> b
+               -> Fuzz m b
+               -> FilePath
+               -> CallGraph
+               -> [Val]
+               -> H.Heap
+               -> T.TypeEnv
+               -> String
+               -> [Example]
+               -> m (H.Heap, [Id])
 livsRepairCVC4 con le b fuzz fp cg const_val = livsRepair con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
 
 livsRepair :: MonadIO m
@@ -46,30 +57,32 @@ livsRepair :: MonadIO m
            -> String
            -> [Example]
            -> m (H.Heap, [Id])
-livsRepair con le b gen fuzz fp cg h tenv fname exs = do
+livsRepair con le b gen fuzz fp cg h tenv target exs = do
 
     -- Get the Id of the function to repair
-    let is = nub $ filter (\(Id (Name _ n _) _) -> n == fname) (verts cg)
-    _ <- case is of
-             [] -> error "LivsRepair: Repair target does not exist"
-             _ -> return ()
+    let ids = filter (\(Id (Name _ n _) _) -> n == target) (verts cg)
+        fid = case ids of
+                  [] -> error "LivsRepair: Repair target does not exist"
+                  _ -> head ids
+        fname = idName fid
 
     -- Get the relevant examples
-    let exs' = filter (\Example{func = i} -> i == (head is)) exs
+    let exs' = filter (\Example{func = i} -> i == fid) exs
     _ <- case exs' of
              [] -> error "LivsRepair: No relevant examples for repair target"
              _ -> return ()
 
-    -- Modify call graph so that it only includes the functions for which there is no path to the target function
-    let cg' = ( \g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, not $ path g (fst x) i] ) cg (head is)
+    -- Modify call graph so that it only includes the functions
+    -- for which there is no path to the target function
+    let cg' = ( \g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, not $ path g (fst x) i] ) cg fid
 
     -- Get definitions for usable component functions
     (h', sub, exs'') <- livs con le b gen fuzz fp cg' h tenv
-    let exs''' = examplesForFunc (idName (head is)) (exs' ++ exs'')
+    let exs''' = examplesForFunc fname (exs' ++ exs'')
 
     -- Convert the source code for the target function into an Expr
-    original_def <- extractDef le fp (idName (head is))
-    liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty (idName (head is)) original_def)
+    original_def <- extractDef le fp fname
+    liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty fname original_def)
 
     -- Map the variables in the target function to their sygus counterparts so that the variable
     -- names in synthesized sub-expressions will match up
@@ -79,16 +92,21 @@ livsRepair con le b gen fuzz fp cg h tenv fname exs = do
 
     -- Start repairing at the highest level (synthesized subexpression is the entire function)
     let partial_def = mkLams (leadingLams original_def') EmptyExpr
-    (h'', is', _) <- livsRepair' con le b gen cg' sub h' tenv exs' exs''' is original_def' (partial_def, (idType (head is)))
+        partial_def' = (partial_def, (idType fid))
+    (h'', success, _) <- livsRepair' con le b gen cg' sub h' tenv exs' exs''' fname original_def' partial_def'
+    let fid' = case success of
+                   Nothing -> error "livsRepair: Repair failed"
+                   Just i -> i
 
     -- Map the old variables back onto the function so that the returned function has it's original variable
     -- names and not the syugs variable names
+    let fname' = idName fid'
     let reverse_mapping = HM.fromList $ map TP.swap sygus_var_mapping
-        new_def = case H.lookup (idName $ head is') h'' of
+        new_def = case H.lookup fname' h'' of
                       Just (H.Def e) -> mapVars e reverse_mapping
                       _ -> error "livsRepair: No definition found"
-    let h''' = H.insertDef (idName $ head is') new_def (H.filterWithKey (\n' _ -> idName (head is') /= n') h'')
-    return (h''', is')
+    let h''' = H.insertDef fname' new_def (H.filterWithKey (\n' _ -> fname' /= n') h'')
+    return (h''', [fid'])
 
 livsRepair' :: MonadIO m
             => LIVSConfigNames
@@ -101,45 +119,47 @@ livsRepair' :: MonadIO m
             -> T.TypeEnv
             -> [Example]
             -> [Example]
-            -> [Id]
+            -> Name
             -> Expr
             -> (Expr, Type)
-            -> m (H.Heap, [Id], Int)
-livsRepair' con le b gen cg sub h tenv exs exs' is original_def (partial_def, t) = do
+            -> m (H.Heap, Maybe Id, Int)
+livsRepair' con le b gen cg sub h tenv exs exs' fname original_def (partial_def, t) = do
 
     -- Get I/O constraints and an id for the sub expression to synthesize
     let constraints = map (\(Example i it ot) -> Constraint i it ot partial_def) exs'
-    let is' = [Id (idName (head is)) t]
+    let fid = Id fname t
 
     -- Debugging
-    liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty (idName (head is)) partial_def)
+    liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
 
     -- Synthesize sub expression
-    (h', is'') <- callSynthesizer con gen cg sub h tenv constraints is'
-    case is'' of
-        [] -> do
+    (h', success) <- callSynthesizer con gen cg sub h tenv constraints fid
+    case success of
+        Nothing -> do
             liftIO $ (putStrLn "Synthesis failed for this repair area")
-            return (h', is'', -1000)
-        _ -> do
+            return (h', Nothing, -1000)
+        Just fid' -> do
 
-            -- Insert the synthesized subexpression into our partial definition to create a full version of the target function
-            let sub_def = case H.lookup (idName (head is'')) h' of
+            -- Insert the synthesized subexpression into our partial definition
+            -- to create a full version of the target function
+            let fname' = idName fid'
+            let sub_def = case H.lookup fname' h' of
                              Just (H.Def e) -> e
                              _ -> error "livsRepair: Partial definition not in heap"
             let new_def = insertSubExpr partial_def (stripLeadingLams sub_def)
 
             -- Add the new definition to the heap
-            let h'' = H.insertDef (idName (head is'')) new_def $ H.filterWithKey (\n' _ -> idName (head is'') /= n') h'
-            let is''' = [Id (idName (head is'')) (typeOf original_def)]
+            let h'' = H.insertDef fname' new_def $ H.filterWithKey (\n' _ -> fname' /= n') h'
+            let fid'' = Id fname' (typeOf original_def)
 
             -- Debugging
-            liftIO $ (putStr $ "Synthesized repair: " ++ toJavaScriptDef S.empty (idName (head is)) new_def)
+            liftIO $ (putStr $ "Synthesized repair: " ++ toJavaScriptDef S.empty fname' new_def)
 
             -- Check that new definition of the function works in the real langauge
-            mapM_ (\i -> case H.lookup (idName i) h'' of
-                            Just (H.Def e) -> do
-                              def le b i e
-                            _ -> error "livsRepair: No definition found") is'''
+            _ <- case H.lookup fname' h'' of
+                     Just (H.Def e) -> do
+                         def le b fid'' e
+                     _ -> error "livsRepair: No definition found"
             incor <- incorrectSuspects le b $ map Suspect exs
             case incor of
                 [] -> return ()
@@ -151,12 +171,13 @@ livsRepair' con le b gen cg sub h tenv exs exs' is original_def (partial_def, t)
             -- Debugging
             liftIO $ (putStrLn $ "Score: " ++ (show score) ++ "\n")
 
-            -- Call repair recursively to get the best scores for repairing all of the subexpressions of the target function
+            -- Call repair recursively to get the best of all possible repairs
             let at = mkTyFun (argTypes original_def)
-            all_scores <- mapM (livsRepair' con le b gen cg sub h tenv exs exs' is original_def) (getSubExprs at original_def partial_def)
+                sub_exprs = (getSubExprs at original_def partial_def)
+            all_scores <- mapM (livsRepair' con le b gen cg sub h tenv exs exs' fname original_def) sub_exprs
 
             -- Return the heap that scored the highest in similarity to the target function
-            let all_scores' = all_scores ++ [(h'', is''', score)]
+            let all_scores' = all_scores ++ [(h'', Just fid'', score)]
                 high_score = maximum $ map (\(_, _, s) -> s) all_scores'
             return (head $ filter (\(_, _, s) -> s == high_score) all_scores')
 
@@ -168,30 +189,31 @@ callSynthesizer :: MonadIO m
                 -> H.Heap
                 -> T.TypeEnv
                 -> [Example]
-                -> [Id]
-                -> m (H.Heap, [Id])
-callSynthesizer con gen cg sub h tenv exs is = do
+                -> Id
+                -> m (H.Heap, Maybe Id)
+callSynthesizer con gen cg sub h tenv exs fid = do
 
-    liftIO $ whenLoud (putStrLn $ "Synthesizing expression " ++ show (head is))
+    liftIO $ whenLoud (putStrLn $ "Synthesizing expression " ++ show fid)
 
     -- Expand the call graph with the new Id
     let def_ids = filterNonPrimitives h $ verts cg
-        cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
+        cg' = addVertsToCallGraph (zip [fid] $ repeat def_ids) cg
 
     -- The heap as seen from the function we're synthesizing
-    let relH = H.filterWithKey (\n' _ -> idName (head is) /= n') $ filterToReachable con (head is) cg' h
+    let fname = idName fid
+    let relH = H.filterWithKey (\n' _ -> fname /= n') $ filterToReachable con fid cg' h
 
     -- The grammar available to the function we're synthesizing
-    let gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls (head is) cg'
+    let gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls fid cg'
 
     -- Take a guess at the definition of the function
     (m, sub') <- gen relH sub tenv gram exs
     case m of
         Sat m' -> do
             let h' = H.union (H.fromExprHashMap m') h
-                is' = map (toId h') . flip Sub.lookupAllNames sub' $ map idName is
-            return (h', is')
-        _ -> return (h, [])
+                fid' = head $ map (toId h') $ Sub.lookupAllNames [fname] sub'
+            return (h', Just fid')
+        _ -> return (h, Nothing)
 
     where
         toId heap n
