@@ -14,6 +14,7 @@ import LIVS.Language.CallGraph
 import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
+import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
 import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
@@ -38,19 +39,22 @@ runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGra
 runSygusWithGrammar con cg const_vals h sub tenv hsr es
     | es == [] = return $ (Sat M.empty, sub)
     | otherwise = do
-        let n = funcName (head es)
-        let t = idType $ func (head es)
+        let n = (funcName (head es))
         n' <- freshNameM n
 
         let rules = typeValueRules es
-            es' = filterNotTypeValueRuleCovered rules es
-            -- es' = case (head es) of
-            --          Constraint _ _ _ _ -> es
-            --          Example _ _ _ -> filterNotTypeValueRuleCovered rules es -- TODO: problem line
-            es'' = map (\e -> e { func = Id n' t}) es'
 
-            ty_val_rules_funcs = generateTypeValueRulesFuncs rules
+        -- Type value rules are ignored when synthesizing from complex constraints, because input type to output
+        -- correspondence no longer holds when examples are entire expressions (and not just inputs and outputs)
+        let es_filtered = filterNotTypeValueRuleCovered rules es
+        let tvr_funcs = generateTypeValueRulesFuncs rules
+        let (es', ty_val_rules_funcs) = case (head es) of
+                                            Constraint _ _ _ _ -> if (simpleConstraint (head es)) then (es_filtered, tvr_funcs) else (es, [])
+                                            Example _ _ _ -> (es_filtered, tvr_funcs)
+                                        where
+                                            simpleConstraint e = (stripLeadingLams (expr e) == EmptyExpr)
 
+        let es'' = map (\e -> e { func = Id n' (idType $ func (head es))}) es'
         ty_val_rules_funcs' <- mapM (\e -> do
                                         ty_val_n <- freshNameM n
                                         return (n, ty_val_n, e)) ty_val_rules_funcs
@@ -65,20 +69,10 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
                                                             Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub') }
                                                             Example _ _ _ -> e) ess)) es4
 
-        -- case (head es) of
-        --     Constraint _ _ _ _ -> do
-        --         liftIO $ print es
-        --         liftIO $ print es'
-        --         liftIO $ print es''
-        --         liftIO $ print es'''
-        --         liftIO $ print es4
-        --         liftIO $ print es5
-        --     Example _ _ _ -> return ()
         res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) $ map snd es5
-        -- liftIO $ print res
-        let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res -- TODO: problem line
-        -- liftIO $ print res'
-        return (res', sub'')
+        let res' = foldr mergeRes (Sat M.empty) res
+            res'' = foldr (uncurry insertSat) res' ty_val_rules_funcs''
+        return (res'', sub'')
 
 runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
 runSygusWithGrammar' con cg const_vals h sub tenv hsr es

@@ -19,6 +19,15 @@ jsIntDC = DC jsIntDCName (TyFun intType jsIdentType)
 jsIntSelectorName :: Name
 jsIntSelectorName = Name Ident "jsInt" Nothing
 
+jsFloatDCName :: Name
+jsFloatDCName = Name Ident "JSFloat" Nothing
+
+jsFloatDC :: DC
+jsFloatDC = DC jsFloatDCName (TyFun floatType jsIdentType)
+
+jsFloatSelectorName :: Name
+jsFloatSelectorName = Name Ident "jsFloat" Nothing
+
 jsStringDCName :: Name
 jsStringDCName = Name Ident "JSString" Nothing
 
@@ -60,11 +69,14 @@ jsTypeEnv :: T.TypeEnv
 jsTypeEnv = T.fromList
     [ ( jsIdentName
       , T.ADTSpec
-            [ T.SelectorDC jsIntDCName [ T.NamedType jsIntSelectorName intType ]
+            [ T.SelectorDC jsIntDCName
+                [ T.NamedType jsIntSelectorName intType ]
             , T.SelectorDC jsStringDCName
                 [ T.NamedType jsStringSelectorName stringType ]
             , T.SelectorDC jsBoolDCName
                 [ T.NamedType jsBoolSelectorName boolType ]
+            , T.SelectorDC jsFloatDCName
+                [ T.NamedType jsFloatSelectorName floatType ]
             , T.SelectorDC jsNaNDCName []
             , T.SelectorDC jsErrorDCName []
             , T.SelectorDC jsUndefinedDCName []

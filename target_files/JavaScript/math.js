@@ -23,14 +23,12 @@ function f(n, m) {
 }
 
 function g(n) {
-    return mult(f(n, n), n);
+    return mult(f(n, 2.5), n);
 }
 
-//@pbe (constraint (= (f 2 2) 32))
-//@pbe (constraint (= (f 2 3) 108))
-//@pbe (constraint (= (f 3 2) 72))
-//@pbe (constraint (= (f 3 3) 243))
-//@pbe (constraint (= (f 4 4) 1024))
+// function h(n) {
+//     return add(2, n);
+// }
 
-//@pbe (constraint (= (g 3) 729))
-//@pbe (constraint (= (g 4) 4096))
+//@pbe (constraint (= (h 2) 4))
+//@pbe (constraint (= (h 3) 9))

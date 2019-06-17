@@ -36,7 +36,7 @@ toValue :: Value -> Val
 toValue = \case
   Number n
       | Just n' <- toBoundedInteger n -> AppVal (DataVal jsIntDC) $ LitVal (LInt n')
-      | otherwise -> AppVal (DataVal undefined) $ LitVal (LFloat $ toRealFloat n)
+      | otherwise -> AppVal (DataVal jsFloatDC) $ LitVal (LFloat $ toRealFloat n)
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
   Object _ -> undefined
   Array _  -> AppVal (DataVal jsIntDC) $ LitVal (LInt (-123456789))

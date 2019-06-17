@@ -89,7 +89,7 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
         ics = genIntsConsts cs
 
     let r = toRational (1 :: Double)
-        w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
+        w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r), (jsFloatDC, r)]
 
     let ng = mkNameGen []
 

@@ -136,7 +136,7 @@ livsRepair' con le b gen cg sub h tenv exs exs' fname original_def (partial_def,
     (h', success) <- callSynthesizer con gen cg sub h tenv constraints fid
     case success of
         Nothing -> do
-            liftIO $ (putStrLn "Synthesis failed for this repair area")
+            liftIO $ (putStrLn "Synthesis failed for this repair area\n")
             return (h', Nothing, -1000)
         Just fid' -> do
 

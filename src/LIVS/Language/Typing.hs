@@ -1,6 +1,7 @@
 module LIVS.Language.Typing ( Typed (..)
                             , PresType (..)
                             , intType
+                            , floatType
                             , stringType
                             , boolType
                             , exampleFuncType
@@ -57,7 +58,7 @@ instance Typed Type where
 newtype PresType = PresType Type
 
 instance Typed PresType where
-    typeOf (PresType t) = t 
+    typeOf (PresType t) = t
 
 intType :: Type
 intType = TyCon (Name SMT "Int" Nothing) TYPE
