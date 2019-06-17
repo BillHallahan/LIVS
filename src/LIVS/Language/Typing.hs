@@ -64,7 +64,7 @@ intType :: Type
 intType = TyCon (Name SMT "Int" Nothing) TYPE
 
 floatType :: Type
-floatType = TyCon (Name SMT "Float" Nothing) TYPE
+floatType = TyCon (Name SMT "Real" Nothing) TYPE
 
 stringType :: Type
 stringType = TyCon (Name SMT "String" Nothing) TYPE

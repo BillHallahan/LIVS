@@ -247,12 +247,12 @@ filterTypeEnv h es tenv = T.filterWithKey (\n _ -> n `HS.member` tyConNs) tenv
 
         esTys = concatMap (\e -> (typeOf $ output e):map typeOf (input e)) es
 
-        -- cons = T.constructorNames tenv
-        -- h' = H.filterWithKey (\n _ -> n `notElem` cons) h
-        -- hRetTys = map returnType $ H.elems h'
+        cons = T.constructorNames tenv
+        h' = H.filterWithKey (\n _ -> n `notElem` cons) h
+        hRetTys = map returnType $ H.elems h'
 
-        -- tyConNs = HS.unions . map tyConNames $ esTys ++ hRetTys
-        tyConNs = HS.unions $ map tyConNames esTys
+        tyConNs = HS.unions . map tyConNames $ esTys ++ hRetTys
+        -- tyConNs = HS.unions $ map tyConNames esTys
 
 -- | Filter a Heap to eliminate functions where the return type is not one of
 -- the primitives or in the TypeEnv
