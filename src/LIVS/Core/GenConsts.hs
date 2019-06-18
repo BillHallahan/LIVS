@@ -26,18 +26,25 @@ genIntsConsts vs = concatMap ints vs ++ concatMap strLens vs
         strLens _ = []
 
 genStrings :: [Val] -> [Val]
-genStrings vs =
-    let
-        vs' = concatMap strs vs
-    in
-    concatMap singleChars vs'
+genStrings = map (LitVal . LString) . concatMap strs
     where
         strs (LitVal (LString s)) = [s]
         strs (AppVal v1 v2) = strs v1 ++ strs v2
         strs _ = []
 
-        singleChars (x:xs) = (LitVal $ LString [x]):singleChars xs
-        singleChars [] = []
+-- genStrings :: [Val] -> [Val]
+-- genStrings vs =
+--     let
+--         vs' = concatMap strs vs
+--     in
+--     concatMap singleChars vs'
+--     where
+--         strs (LitVal (LString s)) = [s]
+--         strs (AppVal v1 v2) = strs v1 ++ strs v2
+--         strs _ = []
+
+--         singleChars (x:xs) = (LitVal $ LString [x]):singleChars xs
+--         singleChars [] = []
 
 genFuzzConsts :: [Val] -> [Val]
 genFuzzConsts vs = nub $ genFuzzStringConsts vs ++ genConsts vs

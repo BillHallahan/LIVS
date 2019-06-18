@@ -69,9 +69,27 @@ runSygusWithGrammar' con cg const_vals h sub tenv hsr es
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ whenLoud $ putStrLn form
 
-        m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus"] (smt_timeout con)
-        return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
+        r <- liftIO $ tryVariousCVC4Options h sub tenv form ".sl" (smt_timeout con) cvc4Options
+        liftIO $ whenLoud $ print r
+
+        return r
     | otherwise = return $ Sat M.empty
+    where
+        cvc4Options = [ ["--lang", "sygus", "--no-sygus-pbe"]
+                      , ["--lang", "sygus"] ]
+
+-- | Tries running CVC4 with various set's of options, until one set returns an answer in the given amount of time
+tryVariousCVC4Options :: H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> String -> Int -> [[String]] -> IO Result
+tryVariousCVC4Options _ _ _ _ _ _ [] = return Unknown
+tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
+    liftIO $ whenLoud $ putStrLn $ "Trying CVC4 with " ++ show opt
+
+    m <- runCVC4WithFile form ext opt timeout
+    let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
+
+    case r of
+        Unknown -> tryVariousCVC4Options h sub tenv form ext timeout opts
+        _ -> return r
 
 runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
 runCVC4OnString sub tenv s = do

@@ -39,7 +39,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
                           , (Name SMT "=" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType boolType))
-                          , (Name SMT "not" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
+                          , (Name SMT "not" Nothing, H.Primitive $ TyFun boolType boolType)
                           , (Name SMT "and" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
                           , (Name SMT "or" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
                           , (Name SMT ">" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
@@ -57,8 +57,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
                           -- , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
-                          -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
-                          , (Name SMT "\"NaN\"" Nothing, H.Primitive $ stringType) ]
+                          -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType) 
+                          ]
 
     let config' = toLIVSConfigNames heap config
 
@@ -82,9 +82,14 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let cs = concatMap (consts . snd) ids
         cs' = genConsts cs
-        fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
-        fuzz_with' = expandVals fuzz_with tenv
+        -- fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
+        fuzz_with = cs ++ concatMap exampleVals synth_ex
+        fuzz_with' = fuzz_with ++ genConsts fuzz_with
+        fuzz_with'' = expandVals fuzz_with' tenv
+        -- fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
+
+    liftIO $ putStrLn $ "fuzz_with'' = " ++ show fuzz_with''
 
     let r = toRational (1 :: Double) 
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
@@ -92,7 +97,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
     let ng = mkNameGen []
 
     let lenv' = liftLanguageEnv nameGenT lenv
-        fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
+        fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with'')
     (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
