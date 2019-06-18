@@ -1,15 +1,5 @@
 -- should we call this ExampleGrouping or something instead?
-module LIVS.Sygus.TypeValueRules ( typeValueRules
-                                 , filterNotTypeValueRuleCovered
-
-                                 , typeTypeRules
-                                 , inputTypeRules
-                                 , simplifyExamples
-                                 , reassignFuncNames
-
-                                 , generateTypeValueRulesFuncs
-                                 , generateTypeValueRulesFunc
-                                 , generateInputTypeRulesFunc ) where
+module LIVS.Sygus.TypeValueRules ( simplifyRules ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
@@ -25,6 +15,30 @@ import Data.List
 
 import Control.Applicative
 import Control.Monad.State.Lazy
+
+simplifyRules :: NameGenMonad m => Sub.SubFunctions -> [Example] -> m ([[Example]], [(Name, Expr)], Sub.SubFunctions)
+simplifyRules sub es@(Example { func = Id n t }:_) = do
+    n' <- freshNameM n
+
+    let rules = typeValueRules es
+        es1 = filterNotTypeValueRuleCovered rules es
+        es2 = map (\e -> e { func = Id n' t}) es1 
+
+        ty_val_rules_funcs = generateTypeValueRulesFuncs rules
+    
+    ty_val_rules_funcs' <- mapM (\e -> do 
+                                        ty_val_n <- freshNameM n
+                                        return (n, ty_val_n, e)) ty_val_rules_funcs
+
+    let sub' = foldr (\(n_orig, n_new, e) -> Sub.insert n_orig (typeOf e) n_new) sub ty_val_rules_funcs'
+        ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
+
+        es3 = simplifyExamples es2
+
+    (es4, sub'') <- reassignFuncNames sub' n es3
+
+    return (es4, ty_val_rules_funcs'', sub'')
+simplifyRules sub [] = return ([], [], sub)
 
 -- | Establish rules about which input types that always lead to the same value
 --   Identifies which input types generate an error value (or any fixed value)
@@ -124,12 +138,12 @@ groupInputTypeRules dcvs es = map (\dcv -> (dcv, filterInputTypeRule dcv es)) dc
 filterInputTypeRule :: ([DC], a) -> [Example] -> [Example]
 filterInputTypeRule (dc, _) = filter ((==) dc . fst . buildInputTypeRule)
 
-reassignFuncNames :: NameGenMonad m => Sub.SubFunctions -> Name -> [(([DC], Maybe DC), [Example])] -> m ([(([DC], Maybe DC), [Example])], Sub.SubFunctions)
+reassignFuncNames :: NameGenMonad m => Sub.SubFunctions -> Name -> [(([DC], Maybe DC), [Example])] -> m ([[Example]], Sub.SubFunctions)
 reassignFuncNames sub orig_n es = do
   (es', sub') <- runStateT (mapM assignFuncName es) sub
   return (es', sub')
   where
-    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m (([DC], Maybe DC), [Example])
+    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m [Example]
     assignFuncName ((dcmdc, ess@(e:_))) = do
       let t = exampleFuncType e
       nsub <- get
@@ -139,7 +153,7 @@ reassignFuncNames sub orig_n es = do
                 i@(Id new_n _) <- freshIdM (idName $ func e) t
                 put $ Sub.insert orig_n t new_n nsub
                 return i
-      return (dcmdc, map (\e' -> e' { func = i }) ess)
+      return $ map (\e' -> e' { func = i }) ess
     assignFuncName _ = error "assignFuncNames: empty example list."
 
 
