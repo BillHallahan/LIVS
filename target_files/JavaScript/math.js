@@ -19,13 +19,15 @@ function quadruple(n) {
 }
 
 function f(n) {
-    return mult(n, mult(n, mult(n, n)));
+    return mult(n, mult(n, square(n)));
 }
 
 //@pbe (constraint (= (f 2) 32))
-//@pbe (constraint (= (f 3) 243))
 //@pbe (constraint (= (f 4) 1024))
 
-// function g(n) {
-//     return mult(f(n, n), n);
-// }
+function g(n) {
+    return mult(f(n), n);
+}
+
+//@pbe (constraint (= (g 2) 64))
+//@pbe (constraint (= (g 3) 729))

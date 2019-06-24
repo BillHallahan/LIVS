@@ -52,9 +52,7 @@ runSygusWithGrammar con cg const_vals h sub tenv hsr es
                                             Constraint _ _ _ _ -> if (simpleConstraint (head es)) then (es_filtered, tvr_funcs) else (es, [])
                                             Example _ _ _ -> (es_filtered, tvr_funcs)
                                         where
-                                            simpleConstraint e = case stripLeadingLams (expr e) of
-                                                                     App (Var i) _ -> (i == func e)
-                                                                     _ -> False
+                                            simpleConstraint e = isCallExpr (idName $ func e) $ stripLeadingLams (expr e)
 
         let es'' = map (\e -> e { func = Id n' (idType $ func (head es))}) es'
         ty_val_rules_funcs' <- mapM (\e -> do
@@ -80,7 +78,7 @@ runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGr
 runSygusWithGrammar' con cg const_vals h sub tenv hsr es
     | (_:_) <- es = do
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
-        liftIO $ putStrLn form
+        liftIO $ whenLoud $ putStrLn form
 
         m <- liftIO $ runCVC4WithFile form ".sl" ["--lang", "sygus"] (smt_timeout con)
         return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m

@@ -88,15 +88,6 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
         target_def = head $ HM.elems $ HM.filterWithKey (\n _ -> n == fname) defs
     liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty fname target_def)
 
-    -- TODO: should only need to map sygus vals onto partial defs, and unmap from final result
-    -- Map the variables in the constraint expressions to their sygus counterparts
-    -- so that the variable names in synthesized sub-expressions will match up
-    -- let sygus_vars = map (flip Id TYPE) [Name Ident ("x" ++ show i ++ "_") Nothing | i <- [1..] :: [Integer]]
-    --     sygus_var_mappings = HM.fromList $ map (\(i, e) -> (i, zip (leadingLams e) $ map Var sygus_vars)) (HM.toList all_defs)
-    --     all_defs' = HM.fromList $ map (\(i, e) -> (i, mapVars e $ HM.fromList $ (case HM.lookup i sygus_var_mappings of
-    --                                                                                  Just m -> m
-    --                                                                                  _ -> error ""))) (HM.toList all_defs)
-
     -- Convert the relevant examples from external functions to constraints on the target function
     let ext_constraints = map (\ex -> extExampleToConstraint ex fid cg ext_defs) ext_exs
 
@@ -114,28 +105,17 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
     let exs''' = examplesForFunc fname (exs ++ exs'')
 
     -- Repair!
-    all_scores <- mapM (livsRepair' con le b gen cg sub h' tenv exs exs''' ext_constraints fname target_def) partial_defs
+    all_scores <- mapM (livsRepair' le b gen cg sub h' tenv exs exs''' ext_constraints fname target_def) partial_defs
     let high_score = maximum $ map (\(_, _, s) -> s) all_scores
         (h'', success, _) = (head $ filter (\(_, _, s) -> s == high_score) all_scores)
     let fid' = case success of
                    Nothing -> error "livsRepair: Repair failed"
                    Just i -> i
 
-    -- Map the old variables back onto the function so that the returned function has it's original variable
-    -- names and not the syugs variable names
-    -- let fname' = idName fid'
-    -- let reverse_mapping = HM.fromList $ map TP.swap $ (case HM.lookup fname sygus_var_mappings of
-    --                                                        Just m -> m
-    --                                                        _ -> error "livsRepair: Missing mapping")
-    -- let new_def = case H.lookup fname' h'' of
-    --                   Just (H.Def e) -> mapVars e reverse_mapping
-    --                   _ -> error "livsRepair: No definition found"
-    -- let h''' = H.insertDef fname' new_def (H.filterWithKey (\n' _ -> fname' /= n') h'')
     return (h'', [fid'])
 
 livsRepair' :: MonadIO m
-            => LIVSConfigNames
-            -> LanguageEnv m b
+            => LanguageEnv m b
             -> b
             -> Gen m
             -> CallGraph
@@ -149,7 +129,7 @@ livsRepair' :: MonadIO m
             -> Expr
             -> (Expr, Type)
             -> m (H.Heap, Maybe Id, Int)
-livsRepair' con le b gen cg sub h tenv exs exs' ext_constraints fname original_def (partial_def, t) = do
+livsRepair' le b gen cg sub h tenv exs exs' ext_constraints fname original_def (partial_def, t) = do
 
     -- Get I/O constraints and an id for the subexpression to synthesize
     let fid = Id fname t
@@ -161,7 +141,7 @@ livsRepair' con le b gen cg sub h tenv exs exs' ext_constraints fname original_d
     liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
 
     -- Synthesize sub expression
-    (h', success) <- callSynthesizer con gen cg sub h tenv constraints fid
+    (h', success) <- callSynthesizer gen cg sub h tenv constraints fid
     case success of
         Nothing -> do
             liftIO $ (putStrLn "Synthesis failed for this repair area\n")
@@ -199,8 +179,7 @@ livsRepair' con le b gen cg sub h tenv exs exs' ext_constraints fname original_d
             return (h'', Just fid'', score)
 
 callSynthesizer :: MonadIO m
-                => LIVSConfigNames
-                -> Gen m
+                => Gen m
                 -> CallGraph
                 -> Sub.SubFunctions
                 -> H.Heap
@@ -208,7 +187,7 @@ callSynthesizer :: MonadIO m
                 -> [Example]
                 -> Id
                 -> m (H.Heap, Maybe Id)
-callSynthesizer con gen cg sub h tenv exs fid = do
+callSynthesizer gen cg sub h tenv exs fid = do
 
     -- The grammar available to the function we're synthesizing
     let def_ids = filterNonPrimitives h $ verts cg
@@ -249,12 +228,11 @@ expandConstraintExpr i e fid cg defs =
     scanl inlineFromHash e expandable_ids !! 50 --TODO: want more intelligent way to decide we're done expanding
 
 inline :: Name -> Expr -> Expr -> Expr
-inline n (App v@(Var (Id n2 _)) e2) subExpr = if (n == n2)
-                                            then mapVars (stripLeadingLams subExpr) (HM.fromList $ zip (leadingLams subExpr) (unApp e2))
-                                            else App v (inline n e2 subExpr)
 inline n (Lam is e) subExpr = Lam is (inline n e subExpr)
 inline n (Let b e) subExpr = Let (fst b, inline n (snd b) subExpr) (inline n e subExpr)
-inline n (App e1 e2) subExpr = App (inline n e1 subExpr) (inline n e2 subExpr)
+inline n e@(App e1 e2) subExpr
+    | isCallExpr n e = mapVars (stripLeadingLams subExpr) (HM.fromList $ zip (leadingLams subExpr) (appArgs e))
+    | otherwise = App (inline n e1 subExpr) (inline n e2 subExpr)
 inline _ e _ = e
 
 mapVars :: Expr -> HM.HashMap Id Expr -> Expr
@@ -274,9 +252,6 @@ getPartialDefs c (Lam i e) = [(Lam i c, typeOf e)] ++ (map (\(e', tp) -> (Lam i 
 getPartialDefs c (App e1 e2) = [(App e1 c, typeOf e2)] ++ (map (\(e', tp) -> (App e1 e', tp)) $ getPartialDefs c e2) ++
                                                           (map (\(e', tp) -> (App e' e2, tp)) $ getPartialDefs c e1)
 getPartialDefs _ _ = []
-
-makeCallExpr :: Id -> [Expr] -> Expr
-makeCallExpr i args = mkApp $ [Var i] ++ args
 
 scoreExpr :: Expr -> Expr -> Int
 scoreExpr (Lam (Id n1 _) e1) (Lam (Id n2 _) e2) = (scoreExpr e1 e2) + (scoreEq n1 n2)

@@ -6,7 +6,9 @@ module LIVS.Language.Expr ( trueDC
                           , mkApp
                           , unApp
                           , appCenter
-                          , appArgs) where
+                          , appArgs
+                          , makeCallExpr
+                          , isCallExpr) where
 
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
@@ -27,7 +29,7 @@ leadingLams _ = []
 stripLeadingLams :: Expr -> Expr
 stripLeadingLams (Lam _ e) = stripLeadingLams e
 stripLeadingLams e = e
-    
+
 mkApp :: [Expr] -> Expr
 mkApp = foldl1 App
 
@@ -44,3 +46,9 @@ appCenter e = e
 
 appArgs :: Expr -> [Expr]
 appArgs = tail . unApp
+
+makeCallExpr :: Id -> [Expr] -> Expr
+makeCallExpr i args = mkApp $ [Var i] ++ args
+
+isCallExpr :: Name -> Expr -> Bool
+isCallExpr n e = (\(Var i) -> idName i) (appCenter e) == n
