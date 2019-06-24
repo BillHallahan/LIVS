@@ -159,7 +159,6 @@ livsRepair' con le b gen cg sub h tenv exs exs' ext_constraints fname original_d
     let constraints = int_constraints ++ ext_constraints'
 
     liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
-    --liftIO $ print partial_def
 
     -- Synthesize sub expression
     (h', success) <- callSynthesizer con gen cg sub h tenv constraints fid
@@ -211,25 +210,17 @@ callSynthesizer :: MonadIO m
                 -> m (H.Heap, Maybe Id)
 callSynthesizer con gen cg sub h tenv exs fid = do
 
-    liftIO $ whenLoud (putStrLn $ "Synthesizing expression " ++ show fid)
-
-    -- Expand the call graph with the new Id
+    -- The grammar available to the function we're synthesizing
     let def_ids = filterNonPrimitives h $ verts cg
         cg' = addVertsToCallGraph (zip [fid] $ repeat def_ids) cg
-
-    -- The heap as seen from the function we're synthesizing
-    let fname = idName fid
-    let relH = H.filterWithKey (\n' _ -> fname /= n') $ filterToReachable con fid cg' h
-
-    -- The grammar available to the function we're synthesizing
-    let gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls fid cg'
+        gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls fid cg'
 
     -- Take a guess at the definition of the function
-    (m, sub') <- gen relH sub tenv gram exs
+    (m, sub') <- gen h sub tenv gram exs
     case m of
         Sat m' -> do
             let h' = H.union (H.fromExprHashMap m') h
-                fid' = head $ map (toId h') $ Sub.lookupAllNames [fname] sub'
+                fid' = head $ map (toId h') $ Sub.lookupAllNames [idName fid] sub'
             return (h', Just fid')
         _ -> return (h, Nothing)
 
