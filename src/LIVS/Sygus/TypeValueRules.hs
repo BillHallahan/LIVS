@@ -152,7 +152,6 @@ reassignConstraintNames (App e1 e2) sub = App (reassignConstraintNames e1 sub) (
 reassignConstraintNames (Var i) sub = Var (substituteSMTName i sub)
 reassignConstraintNames (Lam i e) sub = Lam (substituteSMTName i sub) (reassignConstraintNames e sub)
 reassignConstraintNames (Let (i, e1) e2) sub = Let (substituteSMTName i sub, reassignConstraintNames e1 sub) (reassignConstraintNames e2 sub)
-reassignConstraintNames EmptyExpr _ = EmptyExpr
 
 substituteSMTName :: Id -> Sub.SubFunctions -> Id
 substituteSMTName (Id n t) sub = case Sub.lookupMaybe n sub of

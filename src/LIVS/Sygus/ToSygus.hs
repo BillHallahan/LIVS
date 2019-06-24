@@ -79,7 +79,7 @@ toSygusExample (Constraint { func = f, input = is, output = out, expr = e }) =
         call = "(" ++ toSygusId f ++ " " ++ as ++ ")"
         hm = HM.fromList $ zip (leadingLams e) is
     in
-    "(constraint (= " ++ toSygusConstraintExpr call hm e ++ " " ++ toSygusVal out ++ "))"
+    "(constraint (= " ++ toSygusConstraintExpr hm e ++ " " ++ toSygusVal out ++ "))"
 
 toSygusId :: Id -> String
 toSygusId (Id n _) = nameToStringSMT n
@@ -99,17 +99,16 @@ toSygusExpr (Let (i, b) e) =
     "(let ((" ++ toSygusId i
         ++ " (" ++ toSygusExpr b ++ ")))" ++ toSygusExpr e ++ ")"
 
-toSygusConstraintExpr :: String -> HM.HashMap Id Val -> Expr -> String
-toSygusConstraintExpr call hm EmptyExpr = call
-toSygusConstraintExpr call hm (Data dc) = toSygusDC dc
-toSygusConstraintExpr call hm (Lit l) = toSygusLit l
-toSygusConstraintExpr call hm (Lam _ e) = toSygusConstraintExpr call hm e
-toSygusConstraintExpr call hm e@(App _ _) =
-    "(" ++ (concat . intersperse " " . map (toSygusConstraintExpr call hm) $ unApp e) ++ ")"
-toSygusConstraintExpr call hm (Let (i, b) e) =
+toSygusConstraintExpr :: HM.HashMap Id Val -> Expr -> String
+toSygusConstraintExpr _ (Data dc) = toSygusDC dc
+toSygusConstraintExpr _ (Lit l) = toSygusLit l
+toSygusConstraintExpr hm (Lam _ e) = toSygusConstraintExpr hm e
+toSygusConstraintExpr hm e@(App _ _) =
+    "(" ++ (concat . intersperse " " . map (toSygusConstraintExpr hm) $ unApp e) ++ ")"
+toSygusConstraintExpr hm (Let (i, b) e) =
     "(let ((" ++ toSygusId i
-        ++ " (" ++ toSygusConstraintExpr call hm b ++ ")))" ++ toSygusConstraintExpr call hm e ++ ")"
-toSygusConstraintExpr call hm (Var i) = case (HM.lookup i hm) of
+        ++ " (" ++ toSygusConstraintExpr hm b ++ ")))" ++ toSygusConstraintExpr hm e ++ ")"
+toSygusConstraintExpr hm (Var i) = case (HM.lookup i hm) of
                                             Just val -> toSygusVal val
                                             _ -> toSygusId i
 

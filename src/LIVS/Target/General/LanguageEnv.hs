@@ -11,7 +11,7 @@ module LIVS.Target.General.LanguageEnv ( FuncInfo (..)
                                        , liftLanguageEnv ) where
 
 import LIVS.Language.Syntax
-
+import qualified Data.HashMap.Lazy as HM
 import Data.Semigroup
 
 -- Information about the body of a function
@@ -42,8 +42,9 @@ addCalls fi is = fi { calls = calls fi ++ is }
 -- 3) For each function f, contained constant values
 type ExtractCalls m b = FilePath -> m ([(Id, FuncInfo)], b)
 
--- Extracts the complete definition of the function with the given name from the given code file
-type ExtractDef m = FilePath -> Name -> m Expr
+-- Extracts the complete definition of the functions with the given names
+--  from the given code file
+type ExtractDefs m = FilePath -> [Name] -> m (HM.HashMap Name Expr)
 
 -- | Load a file with the given name into a REPL
 type Load m = FilePath -> m ()
@@ -58,15 +59,15 @@ type Call m b = b -> Expr -> m Val
 
 -- | An interface to interact with an external language interpreter/compiler
 data LanguageEnv m b = LanguageEnv { extractCalls :: ExtractCalls m b
-                                   , extractDef :: ExtractDef m
+                                   , extractDefs :: ExtractDefs m
                                    , load :: Load m
                                    , def :: Def m b
                                    , call :: Call m b }
 
 liftLanguageEnv :: (forall a . m a -> m' a) -> LanguageEnv m b -> LanguageEnv m' b
-liftLanguageEnv f (LanguageEnv { extractCalls = exc, extractDef = exd, load = l, def = d, call = c }) =
+liftLanguageEnv f (LanguageEnv { extractCalls = exc, extractDefs = exd, load = l, def = d, call = c }) =
     LanguageEnv { extractCalls = \fp -> f $ exc fp
-                , extractDef = \fp n -> f $ exd fp n
+                , extractDefs = \fp n -> f $ exd fp n
                 , load = \fp -> f $ l fp
                 , def = \b i e -> f $ d b i e
                 , call = \b e -> f $ c b e }

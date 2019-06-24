@@ -3,7 +3,7 @@ module LIVS.Target.JavaScript.Interface (
         , DotNoteNames
         , jsLanguageEnv
         , extractFileJavaScript
-        , extractJavaScriptDefinition
+        , extractJavaScriptDefinitions
         , loadFileJavaScript
         , defJavaScript
         , callJavaScript
@@ -28,6 +28,7 @@ import LIVS.Target.JavaScript.JSIdentifier
 import Data.List
 
 import qualified Data.HashSet as S
+import qualified Data.HashMap.Lazy as HM
 
 newtype JavaScriptREPL = JavaScriptREPL Process
 
@@ -35,7 +36,7 @@ jsLanguageEnv :: IO (LanguageEnv IO (S.HashSet Name))
 jsLanguageEnv = do
     js <- initJavaScriptREPL
     return $ LanguageEnv { extractCalls = extractFileJavaScript
-                         , extractDef = extractJavaScriptDefinition
+                         , extractDefs = extractJavaScriptDefinitions
                          , load = loadFileJavaScript js
                          , def = defJavaScript js
                          , call = callJavaScript js }
@@ -47,12 +48,12 @@ extractFileJavaScript fp = do
         Left e -> error $ show e
         Right jsast' -> return $ Ext.extractFunctions jsast'
 
-extractJavaScriptDefinition :: FilePath -> Name -> IO Expr
-extractJavaScriptDefinition fp n = do
+extractJavaScriptDefinitions :: FilePath -> [Name] -> IO (HM.HashMap Name Expr)
+extractJavaScriptDefinitions fp names = do
     jsast <- Ext.parseJS fp
     case jsast of
         Left e -> error $ show e
-        Right jsast' -> return $ Ext.extractDefinition jsast' n
+        Right jsast' -> return (HM.fromList $ map (\n -> (n, Ext.extractDefinition jsast' n)) names)
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = do
@@ -135,7 +136,6 @@ toJavaScriptExpr dnn e@(App _ _)
             ++ (concat . intersperse ", " . map (toJavaScriptExpr dnn) $ appArgs e) ++ "))"
 toJavaScriptExpr dnn (Let (i, b) e) =
     toJavaScriptId i ++ " = " ++ toJavaScriptExpr dnn b ++ " in " ++ toJavaScriptExpr dnn e
-toJavaScriptExpr dnn EmptyExpr = "_____"
 
 toJavaScriptId :: Id -> String
 toJavaScriptId (Id n _) = nameToString n

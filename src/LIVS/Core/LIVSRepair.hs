@@ -1,6 +1,6 @@
 -- | LIVS to repair functions.
 -- Unlike the general LIVS algorithm, modifies existing functions and tries to
--- preserve their properties using fault localization
+-- preserve their properties using fault localization via abstract interpretation
 module LIVS.Core.LIVSRepair ( livsRepairCVC4 ) where
 
 import LIVS.Config.Config
@@ -57,56 +57,81 @@ livsRepair :: MonadIO m
            -> String
            -> [Example]
            -> m (H.Heap, [Id])
-livsRepair con le b gen fuzz fp cg h tenv target exs = do
+livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
 
-    -- Get the Id of the function to repair
-    let ids = filter (\(Id (Name _ n _) _) -> n == target) (verts cg)
+    -- Get the function to repair
+    let v = verts cg
+        ids = filter (\(Id (Name _ n _) _) -> n == fstring) v
         fid = case ids of
                   [] -> error "LivsRepair: Repair target does not exist"
                   _ -> head ids
         fname = idName fid
 
-    -- Get the relevant examples
-    let exs' = filter (\Example{func = i} -> i == fid) exs
+    -- Get the list of functions whose examples we will need for this repair
+    let relevant_funcs = [fid] ++ filter (\i -> path cg i fid) v
+
+    -- Get the relevant examples for this repair
+    let exs' = filter (\Example{func = i} -> i `elem` relevant_funcs) exs
+    let ext_exs = filter (\e -> (func e) /= fid) exs'
     _ <- case exs' of
              [] -> error "LivsRepair: No relevant examples for repair target"
              _ -> return ()
 
-    -- Modify call graph so that it only includes the functions
-    -- for which there is no path to the target function
-    let cg' = ( \g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, not $ path g (fst x) i] ) cg fid
+    -- Constraining functions (functions that we need the syntactic definitions of)
+    -- are only those that the external example functions will actually call on the
+    -- way to the target function (along with the target function itself)
+    let constraining_funcs = [fid] ++ (nub $ concatMap (\Example{func = i} -> allPaths i fid cg) ext_exs)
+
+    -- Pull definitions from the source code and into the intermediate language
+    defs <- extractDefs le fp $ map idName constraining_funcs
+    let ext_defs = HM.filterWithKey (\n _ -> n /= fname) defs
+        target_def = head $ HM.elems $ HM.filterWithKey (\n _ -> n == fname) defs
+    liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty fname target_def)
+
+    -- TODO: should only need to map sygus vals onto partial defs, and unmap from final result
+    -- Map the variables in the constraint expressions to their sygus counterparts
+    -- so that the variable names in synthesized sub-expressions will match up
+    -- let sygus_vars = map (flip Id TYPE) [Name Ident ("x" ++ show i ++ "_") Nothing | i <- [1..] :: [Integer]]
+    --     sygus_var_mappings = HM.fromList $ map (\(i, e) -> (i, zip (leadingLams e) $ map Var sygus_vars)) (HM.toList all_defs)
+    --     all_defs' = HM.fromList $ map (\(i, e) -> (i, mapVars e $ HM.fromList $ (case HM.lookup i sygus_var_mappings of
+    --                                                                                  Just m -> m
+    --                                                                                  _ -> error ""))) (HM.toList all_defs)
+
+    -- Convert the relevant examples from external functions to constraints on the target function
+    let ext_constraints = map (\ex -> extExampleToConstraint ex fid cg ext_defs) ext_exs
+
+    -- Get all possible partial definitions to repair on
+    let inpt_types = mkTyFun (argTypes target_def)
+        otpt_type = returnType target_def
+        call_expr = (makeCallExpr fid $ map Var (leadingLams target_def))
+        partial_defs = map makeFuncAndType $ [(call_expr, otpt_type)] ++ getPartialDefs call_expr (stripLeadingLams target_def)
+            where
+                makeFuncAndType (e, t) = (mkLams (leadingLams target_def) e, TyFun inpt_types t)
 
     -- Get definitions for usable component functions
+    let cg' = ( \g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, not $ path g (fst x) i] ) cg fid
     (h', sub, exs'') <- livs con le b gen fuzz fp cg' h tenv
-    let exs''' = examplesForFunc fname (exs' ++ exs'')
+    let exs''' = examplesForFunc fname (exs ++ exs'')
 
-    -- Convert the source code for the target function into an Expr
-    original_def <- extractDef le fp fname
-    liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty fname original_def)
-
-    -- Map the variables in the target function to their sygus counterparts so that the variable
-    -- names in synthesized sub-expressions will match up
-    let sygus_vars = [Name Ident ("x" ++ show i ++ "_") Nothing | i <- [1..] :: [Integer]]
-        sygus_var_mapping = zip (map idName $ leadingLams original_def) sygus_vars
-        original_def' = mapVars original_def (HM.fromList sygus_var_mapping)
-
-    -- Start repairing at the highest level (synthesized subexpression is the entire function)
-    let partial_def = mkLams (leadingLams original_def') EmptyExpr
-        partial_def' = (partial_def, (idType fid))
-    (h'', success, _) <- livsRepair' con le b gen cg' sub h' tenv exs' exs''' fname original_def' partial_def'
+    -- Repair!
+    all_scores <- mapM (livsRepair' con le b gen cg sub h' tenv exs exs''' ext_constraints fname target_def) partial_defs
+    let high_score = maximum $ map (\(_, _, s) -> s) all_scores
+        (h'', success, _) = (head $ filter (\(_, _, s) -> s == high_score) all_scores)
     let fid' = case success of
                    Nothing -> error "livsRepair: Repair failed"
                    Just i -> i
 
     -- Map the old variables back onto the function so that the returned function has it's original variable
     -- names and not the syugs variable names
-    let fname' = idName fid'
-    let reverse_mapping = HM.fromList $ map TP.swap sygus_var_mapping
-        new_def = case H.lookup fname' h'' of
-                      Just (H.Def e) -> mapVars e reverse_mapping
-                      _ -> error "livsRepair: No definition found"
-    let h''' = H.insertDef fname' new_def (H.filterWithKey (\n' _ -> fname' /= n') h'')
-    return (h''', [fid'])
+    -- let fname' = idName fid'
+    -- let reverse_mapping = HM.fromList $ map TP.swap $ (case HM.lookup fname sygus_var_mappings of
+    --                                                        Just m -> m
+    --                                                        _ -> error "livsRepair: Missing mapping")
+    -- let new_def = case H.lookup fname' h'' of
+    --                   Just (H.Def e) -> mapVars e reverse_mapping
+    --                   _ -> error "livsRepair: No definition found"
+    -- let h''' = H.insertDef fname' new_def (H.filterWithKey (\n' _ -> fname' /= n') h'')
+    return (h'', [fid'])
 
 livsRepair' :: MonadIO m
             => LIVSConfigNames
@@ -119,18 +144,22 @@ livsRepair' :: MonadIO m
             -> T.TypeEnv
             -> [Example]
             -> [Example]
+            -> [Example]
             -> Name
             -> Expr
             -> (Expr, Type)
             -> m (H.Heap, Maybe Id, Int)
-livsRepair' con le b gen cg sub h tenv exs exs' fname original_def (partial_def, t) = do
+livsRepair' con le b gen cg sub h tenv exs exs' ext_constraints fname original_def (partial_def, t) = do
 
-    -- Get I/O constraints and an id for the sub expression to synthesize
-    let constraints = map (\(Example i it ot) -> Constraint i it ot partial_def) exs'
+    -- Get I/O constraints and an id for the subexpression to synthesize
     let fid = Id fname t
+    let int_constraints = map (\(Example _ it ot) -> Constraint fid it ot partial_def) exs'
+    let ext_constraints' = map ( \c@(Constraint{expr = ext_def}) ->
+                                  c{func = fid, expr = inline fname ext_def partial_def} ) ext_constraints
+    let constraints = int_constraints ++ ext_constraints'
 
-    -- Debugging
     liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
+    --liftIO $ print partial_def
 
     -- Synthesize sub expression
     (h', success) <- callSynthesizer con gen cg sub h tenv constraints fid
@@ -146,13 +175,11 @@ livsRepair' con le b gen cg sub h tenv exs exs' fname original_def (partial_def,
             let sub_def = case H.lookup fname' h' of
                              Just (H.Def e) -> e
                              _ -> error "livsRepair: Partial definition not in heap"
-            let new_def = insertSubExpr partial_def (stripLeadingLams sub_def)
+            let new_def = inline fname partial_def sub_def
 
             -- Add the new definition to the heap
             let h'' = H.insertDef fname' new_def $ H.filterWithKey (\n' _ -> fname' /= n') h'
             let fid'' = Id fname' (typeOf original_def)
-
-            -- Debugging
             liftIO $ (putStr $ "Synthesized repair: " ++ toJavaScriptDef S.empty fname' new_def)
 
             -- Check that new definition of the function works in the real langauge
@@ -167,19 +194,10 @@ livsRepair' con le b gen cg sub h tenv exs exs' fname original_def (partial_def,
 
             -- Score the new definition against the original definition for difference
             let score = scoreExpr original_def new_def
-
-            -- Debugging
             liftIO $ (putStrLn $ "Score: " ++ (show score) ++ "\n")
 
-            -- Call repair recursively to get the best of all possible repairs
-            let at = mkTyFun (argTypes original_def)
-                sub_exprs = (getSubExprs at original_def partial_def)
-            all_scores <- mapM (livsRepair' con le b gen cg sub h tenv exs exs' fname original_def) sub_exprs
-
-            -- Return the heap that scored the highest in similarity to the target function
-            let all_scores' = all_scores ++ [(h'', Just fid'', score)]
-                high_score = maximum $ map (\(_, _, s) -> s) all_scores'
-            return (head $ filter (\(_, _, s) -> s == high_score) all_scores')
+            -- Return the heap with it's score
+            return (h'', Just fid'', score)
 
 callSynthesizer :: MonadIO m
                 => LIVSConfigNames
@@ -220,16 +238,54 @@ callSynthesizer con gen cg sub h tenv exs fid = do
             | Just e <- H.lookup n heap = Id n (typeOf e)
             | otherwise = error "toId: Name not in Heap"
 
-mapVars :: Expr -> HM.HashMap Name Name -> Expr
-mapVars (Var (Id n t)) hm = case (HM.lookup n hm) of
-                                Just new_n -> Var (Id new_n t)
-                                _ -> Var (Id n t)
-mapVars (Lam (Id n t) e) hm = case (HM.lookup n hm) of
-                                Just new_n -> Lam (Id new_n t) (mapVars e hm)
-                                _ -> Lam (Id n t) (mapVars e hm)
+extExampleToConstraint :: Example -> Id -> CallGraph -> HM.HashMap Name Expr -> Example
+extExampleToConstraint (Example i inpts otpts) fid cg defs =
+    let
+        e = case HM.lookup (idName i) defs of
+                Just e' -> e'
+                _ -> error "Missing definition"
+    in
+    Constraint i inpts otpts (expandConstraintExpr i e fid cg defs)
+
+expandConstraintExpr :: Id -> Expr -> Id -> CallGraph -> HM.HashMap Name Expr -> Expr
+expandConstraintExpr i e fid cg defs =
+    let
+        expandable_ids = cycle $ allPaths i fid cg
+        inlineFromHash = (\e' i' -> inline (idName i') e' (case HM.lookup (idName i') defs of
+                                                               Just e'' -> e''
+                                                               _ -> error "Missing definition"))
+    in
+    scanl inlineFromHash e expandable_ids !! 50 --TODO: want more intelligent way to decide we're done expanding
+
+inline :: Name -> Expr -> Expr -> Expr
+inline n (App v@(Var (Id n2 _)) e2) subExpr = if (n == n2)
+                                            then mapVars (stripLeadingLams subExpr) (HM.fromList $ zip (leadingLams subExpr) (unApp e2))
+                                            else App v (inline n e2 subExpr)
+inline n (Lam is e) subExpr = Lam is (inline n e subExpr)
+inline n (Let b e) subExpr = Let (fst b, inline n (snd b) subExpr) (inline n e subExpr)
+inline n (App e1 e2) subExpr = App (inline n e1 subExpr) (inline n e2 subExpr)
+inline _ e _ = e
+
+mapVars :: Expr -> HM.HashMap Id Expr -> Expr
+mapVars (Var i) hm = case (HM.lookup i hm) of
+                                Just new_i -> new_i
+                                _ -> Var i
+mapVars (Lam i e) hm = case (HM.lookup i hm) of
+                                Just _ -> error "Unexpected Lam"
+                                _ -> Lam i (mapVars e hm)
 mapVars (App e1 e2) hm = App (mapVars e1 hm) (mapVars e2 hm)
 mapVars (Let (b, e1) e2) hm = Let (b, mapVars e1 hm) (mapVars e2 hm)
 mapVars e _ = e
+
+getPartialDefs :: Expr -> Expr -> [(Expr, Type)]
+getPartialDefs c (Let b e) = [(Let b c, typeOf e)] ++ (map (\(e', tp) -> (Let b e', tp)) $ getPartialDefs c e)
+getPartialDefs c (Lam i e) = [(Lam i c, typeOf e)] ++ (map (\(e', tp) -> (Lam i e', tp)) $ getPartialDefs c e)
+getPartialDefs c (App e1 e2) = [(App e1 c, typeOf e2)] ++ (map (\(e', tp) -> (App e1 e', tp)) $ getPartialDefs c e2) ++
+                                                          (map (\(e', tp) -> (App e' e2, tp)) $ getPartialDefs c e1)
+getPartialDefs _ _ = []
+
+makeCallExpr :: Id -> [Expr] -> Expr
+makeCallExpr i args = mkApp $ [Var i] ++ args
 
 scoreExpr :: Expr -> Expr -> Int
 scoreExpr (Lam (Id n1 _) e1) (Lam (Id n2 _) e2) = (scoreExpr e1 e2) + (scoreEq n1 n2)
@@ -242,22 +298,3 @@ scoreExpr _ _ = -1
 
 scoreEq :: Eq a => a -> a -> Int
 scoreEq a b = if (a == b) then 0 else -1
-
-getSubExprs :: Type -> Expr -> Expr -> [(Expr, Type)]
-getSubExprs t (Lam i e) EmptyExpr = [(Lam i EmptyExpr, TyFun t (typeOf e))]
-getSubExprs t (App e1 e2) EmptyExpr = [(App e1 EmptyExpr, TyFun t (typeOf e2))] ++
-                                      map (\(e, tp) -> (App e e2, tp)) (getSubExprs t e1 EmptyExpr)
-getSubExprs t (Let b e) EmptyExpr = [(Let b EmptyExpr, TyFun t (typeOf e))]
-getSubExprs t (Lam i e1) (Lam _ e2) = map (\(e, tp) -> (Lam i e, tp)) (getSubExprs t e1 e2)
-getSubExprs t (App e11 e12) (App e21 e22) = map (\(e, tp) -> (App e e12, tp)) (getSubExprs t e11 e21) ++
-                                            map (\(e, tp) -> (App e11 e, tp)) (getSubExprs t e12 e22)
-getSubExprs t (Let b1 e1) (Let b2 e2) = map (\(e, tp) -> (Let b1 e, tp)) (getSubExprs t e1 e2) ++
-                                        map (\(e, tp) -> (Let (fst b1, e) e1, tp)) (getSubExprs t (snd b1) (snd b2))
-getSubExprs _ _ _ = []
-
-insertSubExpr :: Expr -> Expr -> Expr
-insertSubExpr EmptyExpr subExpr = subExpr
-insertSubExpr (Lam i e) subExpr = Lam i (insertSubExpr e subExpr)
-insertSubExpr (App e1 e2) subExpr = App (insertSubExpr e1 subExpr) (insertSubExpr e2 subExpr)
-insertSubExpr (Let b e) subExpr = Let (fst b, insertSubExpr (snd b) subExpr) (insertSubExpr e subExpr)
-insertSubExpr e _ = e

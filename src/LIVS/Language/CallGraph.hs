@@ -14,6 +14,7 @@ module LIVS.Language.CallGraph ( CallGraph (..)
                                , postOrderList
                                , postOrderListAfter
                                , path
+                               , allPaths
                                , findVert) where
 
 import LIVS.Language.Syntax
@@ -33,7 +34,7 @@ createCallGraph iss =
         -- We want to make sure that all names are included as nodes, even if
         -- they are only in the outlist.  Data.Graph does not guarantee this,
         -- so we do it ourselves.
-        iss_f = map fst iss 
+        iss_f = map fst iss
         iss_s = nub $ concatMap snd iss
         iss_s' = iss_s \\ iss_f
         iss' = iss ++ map (,[]) iss_s'
@@ -54,11 +55,11 @@ addVertsToCallGraph is (CallGraph _ _ _ is') = createCallGraph $ is ++ is'
 dfs :: CallGraph -> CallForest
 dfs (CallGraph g ti tv _) = map (\x  -> CallTree x ti tv) (G.dff g)
 
-verts :: CallGraph -> [Id] 
+verts :: CallGraph -> [Id]
 verts (CallGraph g ti _ _) = map ti $ G.vertices g
 
 vert :: CallTree -> Id
-vert (CallTree (G.Node a _) f _) = f a 
+vert (CallTree (G.Node a _) f _) = f a
 
 trees :: CallTree -> CallForest
 trees (CallTree (G.Node _ ts) ti tv) = map (\x  -> CallTree x ti tv) ts
@@ -73,7 +74,7 @@ reachable n (CallGraph cg ti tv _) =
 -- | Returns all Id's directly called by the given Id
 directlyCalls :: Id -> CallGraph -> [Id]
 directlyCalls i (CallGraph cg ti _ _) =
-    map snd . filter ((==) i . fst) 
+    map snd . filter ((==) i . fst)
           . map (\(v1, v2) -> (ti v1, ti v2)) . G.edges $ cg
 
 -- | Gives a list of Id's in post-order
@@ -91,6 +92,9 @@ path (CallGraph g _ tv _) i1 i2 =
     case (tv i1, tv i2) of
         (Just i1', Just i2') -> G.path g i1' i2'
         _ -> False
+
+allPaths :: Id -> Id -> CallGraph -> [Id]
+allPaths i1 i2 cg = filter (\i -> path cg i i2) ([i1] ++ S.toList (reachable i1 cg))
 
 findVert :: Id -> CallGraph -> Maybe CallTree
 findVert i g
