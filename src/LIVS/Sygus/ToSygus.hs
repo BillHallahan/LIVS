@@ -75,8 +75,6 @@ toSygusExample (Example { func = f, input = is, output = out }) =
     "(constraint (= " ++ call ++ " " ++ toSygusVal out ++ "))"
 toSygusExample (Constraint { func = f, input = is, output = out, expr = e }) =
     let
-        as = concat . intersperse " " $ map toSygusVal is
-        call = "(" ++ toSygusId f ++ " " ++ as ++ ")"
         hm = HM.fromList $ zip (leadingLams e) is
     in
     "(constraint (= " ++ toSygusConstraintExpr hm e ++ " " ++ toSygusVal out ++ "))"
@@ -169,11 +167,12 @@ genSynthFun h n ls it ot =
 
 -- | Get all unique function names and types
 collectFuncs :: [Example] -> [(Name, [Type], Type)]
-collectFuncs = nub
-             . map (\e -> ( funcName e
-                          , map typeOf . input $ e
-                          , typeOf $ output e)
-                   )
+collectFuncs = nub . map collectFuncs'
+
+-- TODO: infer type if there are no examples for the target function
+collectFuncs' :: Example -> (Name, [Type], Type)
+collectFuncs' (Example fid i o) = (idName fid, map typeOf i, typeOf o)
+collectFuncs' (Constraint fid i o _) = (idName fid, map typeOf i, typeOf o)
 
 -- | Returns a grammar to return values of the given type
 sygusGrammar :: Type

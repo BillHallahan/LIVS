@@ -29,6 +29,10 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.Tuple as TP
 import Data.List
 
+import Debug.Trace
+
+-- CORE
+
 livsRepairCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
                => LIVSConfigNames
                -> LanguageEnv m b
@@ -90,6 +94,8 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
 
     -- Convert the relevant examples from external functions to constraints on the target function
     let ext_constraints = map (\ex -> extExampleToConstraint ex fid cg ext_defs) ext_exs
+    -- liftIO $ (putStrLn $ "ext_defs: " ++ show ext_defs)
+    -- liftIO $ (putStrLn $ "ext_constraints: " ++ show ext_constraints)
 
     -- Get all possible partial definitions to repair on
     let inpt_types = mkTyFun (argTypes target_def)
@@ -106,8 +112,8 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
 
     -- Repair!
     all_scores <- mapM (livsRepair' le b gen cg sub h' tenv exs exs''' ext_constraints fname target_def) partial_defs
-    let high_score = maximum $ map (\(_, _, s) -> s) all_scores
-        (h'', success, _) = (head $ filter (\(_, _, s) -> s == high_score) all_scores)
+    let best_score = minimum $ map (\(_, _, s) -> s) all_scores
+        (h'', success, _) = (head $ filter (\(_, _, s) -> s == best_score) all_scores)
     let fid' = case success of
                    Nothing -> error "livsRepair: Repair failed"
                    Just i -> i
@@ -139,13 +145,14 @@ livsRepair' le b gen cg sub h tenv exs exs' ext_constraints fname original_def (
     let constraints = int_constraints ++ ext_constraints'
 
     liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
+    -- liftIO $ (putStrLn $ "Constraints: " ++ show constraints)
 
     -- Synthesize sub expression
     (h', success) <- callSynthesizer gen cg sub h tenv constraints fid
     case success of
         Nothing -> do
             liftIO $ (putStrLn "Synthesis failed for this repair area\n")
-            return (h', Nothing, -1000)
+            return (h', Nothing, 1000)
         Just fid' -> do
 
             -- Insert the synthesized subexpression into our partial definition
@@ -208,6 +215,8 @@ callSynthesizer gen cg sub h tenv exs fid = do
             | Just e <- H.lookup n heap = Id n (typeOf e)
             | otherwise = error "toId: Name not in Heap"
 
+-- CONSTRAINT ACCUMULATION
+
 extExampleToConstraint :: Example -> Id -> CallGraph -> HM.HashMap Name Expr -> Example
 extExampleToConstraint (Example i inpts otpts) fid cg defs =
     let
@@ -220,10 +229,10 @@ extExampleToConstraint (Example i inpts otpts) fid cg defs =
 expandConstraintExpr :: Id -> Expr -> Id -> CallGraph -> HM.HashMap Name Expr -> Expr
 expandConstraintExpr i e fid cg defs =
     let
-        expandable_ids = cycle $ allPaths i fid cg
+        expandable_ids = cycle $ delete fid (allPaths i fid cg)
         inlineFromHash = (\e' i' -> inline (idName i') e' (case HM.lookup (idName i') defs of
                                                                Just e'' -> e''
-                                                               _ -> error "Missing definition"))
+                                                               _ -> error $ "Missing definition: " ++ show (idName i')))
     in
     scanl inlineFromHash e expandable_ids !! 50 --TODO: want more intelligent way to decide we're done expanding
 
@@ -253,14 +262,146 @@ getPartialDefs c (App e1 e2) = [(App e1 c, typeOf e2)] ++ (map (\(e', tp) -> (Ap
                                                           (map (\(e', tp) -> (App e' e2, tp)) $ getPartialDefs c e1)
 getPartialDefs _ _ = []
 
-scoreExpr :: Expr -> Expr -> Int
-scoreExpr (Lam (Id n1 _) e1) (Lam (Id n2 _) e2) = (scoreExpr e1 e2) + (scoreEq n1 n2)
-scoreExpr (App e11 e12) (App e21 e22) = (scoreExpr e11 e21) + (scoreExpr e12 e22)
-scoreExpr (Let b1 e1) (Let b2 e2) = (scoreExpr e1 e2) + (scoreExpr (snd b1) (snd b2))
-scoreExpr (Var (Id n1 _)) (Var (Id n2 _)) = scoreEq n1 n2
-scoreExpr (Data d1) (Data d2) = scoreEq d1 d2
-scoreExpr (Lit l1) (Lit l2) = scoreEq l1 l2
-scoreExpr _ _ = -1
+-- AST SCORING
 
-scoreEq :: Eq a => a -> a -> Int
-scoreEq a b = if (a == b) then 0 else -1
+type ForestKey = (Maybe (Int, Int), Maybe (Int, Int))
+type ForestMap = HM.HashMap ForestKey Int
+type DistanceTable = [[Int]]
+
+scoreExpr :: Expr -> Expr -> Int
+scoreExpr e1 e2 =
+    let
+        forest1 = postOrderLabel e1
+        forest2 = postOrderLabel e2
+
+        l1 = getLeftLeaf forest1
+        l2 = getLeftLeaf forest2
+
+        lr_keyroots1 = getKeyroots forest1 l1
+        lr_keyroots2 = getKeyroots forest2 l2
+
+        distTable = replicate (exprSize e1) $ replicate (exprSize e2) (-1)
+
+        computeRow tbl i = foldl (flip $ treeDistance forest1 forest2 l1 l2 i) tbl lr_keyroots2
+        computeTable tbl = foldl computeRow tbl lr_keyroots1
+    in
+    last . last $ computeTable distTable
+
+tableGet :: DistanceTable -> Int -> Int -> Int
+tableGet tbl i j = (tbl !! i) !! j
+
+tableSet :: DistanceTable -> Int -> Int -> Int -> DistanceTable
+tableSet tbl i j val =
+    let
+        listSet lst i' val' = take i' lst ++ val' : drop (i' + 1) lst
+    in
+    if val < 0
+    then error "negative tree distance"
+    else listSet tbl i (listSet (tbl !! i) j val)
+
+exprSize :: Expr -> Int
+exprSize (Lam _ e') = 1 + exprSize e'
+exprSize (App e' e'') = 1 + exprSize e' + exprSize e''
+exprSize (Let (_, e') e'') = 1 + exprSize e' + exprSize e''
+exprSize _ = 1
+
+postOrderLabel :: Expr -> [Expr]
+postOrderLabel e@(Lam _ e') = postOrderLabel e' ++ [e]
+postOrderLabel e@(App e' e'') = postOrderLabel e' ++ postOrderLabel e'' ++ [e]
+postOrderLabel e@(Let (_, e') e'') = postOrderLabel e' ++ postOrderLabel e'' ++ [e]
+postOrderLabel e = [e]
+
+getLeftLeaf :: [Expr] -> Int -> Int
+getLeftLeaf f i = i - (exprSize $ f !! i) + 1
+
+getKeyroots :: [Expr] -> (Int -> Int) -> [Int]
+getKeyroots forest l =
+    let
+        end = (length forest) - 1
+    in
+    filter (\k -> all (\k' -> l k /= l k') [(k + 1)..end]) [0..end]
+
+treeDistance :: [Expr] -> [Expr] -> (Int -> Int) -> (Int -> Int) -> Int -> Int -> DistanceTable -> DistanceTable
+treeDistance f1 f2 l1 l2 i j distTable =
+    let
+        li = l1 i
+        lj = l2 j
+        ikeys = [li..i]
+        jkeys = [lj..j]
+
+        fInsert = forestInsert f1 f2 l1 l2 li lj
+        fInsertM = forestInsertMaybe f1 f2
+
+        forestDist = HM.singleton (Nothing :: Maybe (Int, Int), Nothing :: Maybe (Int, Int)) (0 :: Int)
+        forestDist' = foldl (\hm k -> fInsertM (Just k) Nothing (Just (li, k-1), Nothing) (Just (li, k), Nothing) hm) forestDist ikeys
+        forestDist'' = foldl (\hm k -> fInsertM Nothing (Just k) (Nothing, Just (lj, k-1)) (Nothing, Just (lj, k)) hm) forestDist' jkeys
+
+        computeRow (tbl, hm) i' = foldl (\(tbl', hm') j' -> fInsert i' j' hm' tbl') (tbl, hm) jkeys
+        computeTable hm = fst $ foldl computeRow (distTable, hm) ikeys
+    in
+    case tableGet distTable i j of
+        (-1) -> computeTable forestDist''
+        _ -> distTable
+
+forestInsert :: [Expr] -> [Expr] -> (Int -> Int) -> (Int -> Int) -> Int -> Int -> Int -> Int -> ForestMap -> DistanceTable -> (DistanceTable, ForestMap)
+forestInsert f1 f2 l1 l2 li lj i' j' hm distTable
+    | (li == l1 i') && (lj == l2 j') = (tableSet distTable i' j' tree_val, forestDistSet hm key tree_val)
+    | otherwise = (distTable, forestDistSet hm key forest_val)
+    where
+        deleteCost = forestDistGet hm (makeForestKey li (i' - 1) lj j') + editCost f1 f2 (Just i') Nothing
+        insertCost = forestDistGet hm (makeForestKey li i' lj (j' - 1)) + editCost f1 f2 Nothing (Just j')
+        swapCost = forestDistGet hm (makeForestKey li (i' - 1) lj (j' - 1)) + editCost f1 f2 (Just i') (Just j')
+        distCost = forestDistGet hm (makeForestKey li (i' - 1) lj (j' - 1)) + case tableGet (treeDistance f1 f2 l1 l2 i' j' distTable) i' j' of
+                                                                                  (-1) -> error $ "bad distance table lookup at " ++ show (i', j')
+                                                                                  val -> val
+        tree_val = minimum [deleteCost, insertCost, swapCost]
+        forest_val = minimum [deleteCost, insertCost, distCost]
+        key = makeForestKey li i' lj j'
+
+forestInsertMaybe :: [Expr] -> [Expr] -> Maybe Int -> Maybe Int -> ForestKey -> ForestKey -> ForestMap -> ForestMap
+forestInsertMaybe f1 f2 i' j' prev_key key hm =
+    let
+        prev = forestDistGet hm prev_key
+        cost = editCost f1 f2 i' j'
+    in
+    forestDistSet hm key (prev + cost)
+
+makeForestKey :: Int -> Int -> Int -> Int -> ForestKey
+makeForestKey i i' j j' = (Just (i, i'), Just (j, j'))
+
+forestDistGet :: ForestMap -> ForestKey -> Int
+forestDistGet hm k = case HM.lookup (validKey k) hm of
+                         Just val -> val
+                         _ -> error $ "Bad forest mapping: " ++ show (validKey k)
+
+forestDistSet :: ForestMap -> ForestKey -> Int -> ForestMap
+forestDistSet hm k val = if val < 0
+                         then error "negative forest distance"
+                         else HM.insert (validKey k) val hm
+
+editCost :: [Expr] -> [Expr] -> Maybe Int -> Maybe Int -> Int
+editCost f1 f2 (Just i) (Just j) = editCost' (Just (f1 !! i)) (Just (f2 !! j))
+editCost _ f2 Nothing (Just j) = editCost' Nothing (Just (f2 !! j))
+editCost f1 _ (Just i) Nothing = editCost' (Just (f1 !! i)) Nothing
+editCost _ _ _ _ = error "Bad edit operation"
+
+editCost' :: Maybe Expr -> Maybe Expr -> Int
+editCost' Nothing _ = 1
+editCost' _ Nothing = 1
+editCost' (Just (Var i)) (Just (Var i')) = eqCost i i'
+editCost' (Just (Data dc)) (Just (Data dc')) = eqCost dc dc'
+editCost' (Just (Lit l)) (Just (Lit l')) = eqCost l l'
+editCost' (Just (Let (i, _) _)) (Just (Let (i', _) _)) = eqCost i i'
+editCost' (Just (Lam i _)) (Just (Lam i' _)) = eqCost i i'
+editCost' (Just (App _ _)) (Just (App _ _)) = 0
+editCost' _ _ = 1
+
+eqCost :: Eq a => a -> a -> Int
+eqCost a b = if (a == b) then 0 else 1
+
+validKey :: ForestKey -> ForestKey
+validKey (ibounds, jbounds) = (checkOrdered ibounds, checkOrdered jbounds)
+
+checkOrdered :: Maybe (Int, Int) -> Maybe (Int, Int)
+checkOrdered k@(Just (lo, hi)) = if lo <= hi then k else Nothing
+checkOrdered _ = Nothing

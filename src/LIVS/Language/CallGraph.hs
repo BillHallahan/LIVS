@@ -94,7 +94,7 @@ path (CallGraph g _ tv _) i1 i2 =
         _ -> False
 
 allPaths :: Id -> Id -> CallGraph -> [Id]
-allPaths i1 i2 cg = filter (\i -> path cg i i2) ([i1] ++ S.toList (reachable i1 cg))
+allPaths i1 i2 cg = nub $ filter (\i -> path cg i i2) ([i1] ++ S.toList (reachable i1 cg))
 
 findVert :: Id -> CallGraph -> Maybe CallTree
 findVert i g
