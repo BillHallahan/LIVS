@@ -15,16 +15,16 @@ function quadruple(n) {
 }
 
 function f(n) {
-    return mult(mult(n, n), n);
+    return mult(mult(n, n), add(n,n));
 }
+//
+// function h(m) {
+//     return add(m, f(m));
+// }
+//
+// function g(k) {
+//     return mult(h(k), k);
+// }
 
-function h(m) {
-    return add(m, f(m));
-}
-
-function g(k) {
-    return mult(h(k), k);
-}
-
-//@pbe (constraint (= (f 2) 4))
-//@pbe (constraint (= (f 3) 9))
+//@pbe (constraint (= (f 2) 16))
+//@pbe (constraint (= (f 3) 81))
