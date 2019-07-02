@@ -37,9 +37,9 @@ trim = f . f
 
 run :: IO TestTree
 run = do
-    v <- callConstFxn 
+    v <- callConstFxn
     return $ testCase "Run JS Test 1"
-              $ assertBool "Correct run1" 
+              $ assertBool "Correct run1"
                 (v == AppVal (DataVal jsIntDC) (LitVal (LInt 3)))
 
 callConstFxn :: IO Val
@@ -48,9 +48,9 @@ callConstFxn = do
   (call j S.empty) testFxn
 
 testFxn :: Expr
-testFxn = 
+testFxn =
   App (
-    Lam 
+    Lam
       (Id (Name Ident "x" Nothing) (intType))
       (Lit $ LInt 3)
     )

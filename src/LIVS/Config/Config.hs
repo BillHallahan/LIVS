@@ -13,6 +13,7 @@ module LIVS.Config.Config ( LIVSConfig (..)
 
                           , livsConfig
                           , toLIVSConfigNames
+                          , coreFuncs
                           , addCoreFuncs
                           , livsConfigT
                           , runLIVSConfigT

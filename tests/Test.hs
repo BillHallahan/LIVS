@@ -10,6 +10,7 @@ import Language.Naming
 import Language.Typing
 import Language.Monad.Naming
 import LIVS.LIVS
+import LIVS.Repair
 import UI.Parse
 import Sygus.SMTLexer
 import Sygus.TypeValueRules
@@ -33,12 +34,13 @@ tests =  testGroup "Tests" [ interpreterTests
                            , typingTests
                            , monadNamingTests
                            , livsTests
-                           , uiParseTests 
+                           , uiParseTests
                            , typeValueTests
                            , smtLexerTests
                            ]
 
 targetTests :: IO TestTree
-targetTests = do 
+targetTests = do
    j <- javascriptTests
-   return $ testGroup "Targets" [ j ]
+   r <- repairTests
+   return $ testGroup "Targets" [ j, r ]

@@ -4,6 +4,7 @@ module LIVS.Target.JavaScript.Interface (
         , jsLanguageEnv
         , extractFileJavaScript
         , extractJavaScriptDefinitions
+        , extractJavaScriptDefinition
         , loadFileJavaScript
         , defJavaScript
         , callJavaScript
@@ -54,6 +55,13 @@ extractJavaScriptDefinitions fp names = do
     case jsast of
         Left e -> error $ show e
         Right jsast' -> return (HM.fromList $ map (\n -> (n, Ext.extractDefinition jsast' n)) names)
+
+extractJavaScriptDefinition :: FilePath -> Name -> IO Expr
+extractJavaScriptDefinition fp n = do
+    jsast <- Ext.parseJS fp
+    case jsast of
+        Left e -> error $ show e
+        Right jsast' -> return $ Ext.extractDefinition jsast' n
 
 loadFileJavaScript :: JavaScriptREPL -> FilePath -> IO ()
 loadFileJavaScript js p = do
