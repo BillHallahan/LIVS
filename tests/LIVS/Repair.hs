@@ -137,7 +137,7 @@ testStringLiteral = do
             expected_output = "" -- TODO
 
 testConstCollection :: IO TestTree
-testStringLiteral = do
+testConstCollection = do
     actual_output <- defaultSynth testfile
     return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
         where
