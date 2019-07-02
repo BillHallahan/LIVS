@@ -22,13 +22,14 @@ import Data.List
 
 livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m (H.Heap, [Id])
-livsSynthCVC4 con le b fuzz fp cg const_val = livsSynth con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
+livsSynthCVC4 con le b fuzz fp cg const_val = livsSynth con le b (runSygusWithGrammarWithIteFallBack con cg const_val) (runSygusWithGrammar con cg const_val) fuzz fp cg
 
 livsSynth :: MonadIO m
           => LIVSConfigNames
           -> LanguageEnv m b
           -> b
-          -> Gen m
+          -> Gen m -- ^ Synthesize component functions
+          -> Gen m -- ^ Synthesize the output function
           -> Fuzz m b
           -> FilePath
           -> CallGraph
@@ -36,7 +37,7 @@ livsSynth :: MonadIO m
           -> T.TypeEnv
           -> [Example] -- ^ The examples to synthesize a new function from
           -> m (H.Heap, [Id])
-livsSynth con le b gen fuzz fp cg h tenv exs = do
+livsSynth con le b gen gen_out fuzz fp cg h tenv exs = do
     -- Get the component functions
     (h', sub, exs') <- livs con le b gen fuzz fp cg h tenv
 
@@ -50,7 +51,9 @@ livsSynth con le b gen fuzz fp cg h tenv exs = do
     -- Synthesize based on the user provided examples
     let con' = con -- con { core_funcs = filterNonPrimitives h' (core_funcs con)}
 
-    (h'', sub', _) <- livs' con' le b gen (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
+    -- (h'', sub', _) <- livs' con' le b gen_out (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
+
+    (h'', sub', _) <- livs' con' le b (genNew is gen gen_out) (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
 
     let is' = map (toId h'') . flip Sub.lookupAllNames sub' $ map idName is
 
@@ -76,6 +79,16 @@ fuzzFake :: Monad m => [Id] -> (Fuzz m b) -> Fuzz m b
 fuzzFake is fuzz le b es tenv n i
     | i `elem` is = return []
     | otherwise = fuzz le b es tenv n i 
+
+genNew :: Monad m
+       => [Id]
+       -> Gen m -- ^ Synthesize component functions
+       -> Gen m -- ^ Synthesize the output function
+       -> Gen m
+genNew is gen gen_out h sub tenv hs es@(Example { func = i }:_)
+  | i `elem` is = gen_out h sub tenv hs es
+  | otherwise = gen h sub tenv hs es
+genNew _ _ _ _ _ _ _ _ = error "genNew: No examples"
 
 -- | In general, we cannot convert SMT primitives back into the real language,
 -- so we filter them out here.

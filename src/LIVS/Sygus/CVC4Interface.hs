@@ -1,6 +1,10 @@
 module LIVS.Sygus.CVC4Interface ( CVC4
+                                , runSygusWithIteFallback
+                                , runSygusWithFallback
                                 , runSygus
                                 , runSygusWithGrammar
+                                , runSygusWithGrammarWithIteFallBack
+                                , runSygusWithGrammarWithFallBack
                                 , runCVC4OnString
                                 , runSMT2WithGrammar
                                 , runCVC4WithFile
@@ -15,6 +19,7 @@ import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import LIVS.Language.Monad.Naming
+import LIVS.Sygus.ExamplesToIte
 import LIVS.Sygus.Result
 import LIVS.Sygus.SMTLexer
 import LIVS.Sygus.SMTParser
@@ -31,23 +36,73 @@ import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
 
+runSygusWithIteFallback :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
+runSygusWithIteFallback con cg const_vals h sub tenv es =
+    runSygusWithFallback con cg const_vals h sub tenv es examplesToIteResult
+
+runSygusWithFallback :: (NameGenMonad m, MonadIO m) =>
+                        LIVSConfigNames
+                     -> CallGraph
+                     -> [Val]
+                     -> H.Heap
+                     -> Sub.SubFunctions
+                     -> T.TypeEnv
+                     -> [Example]
+                     -> ([Example] -> Result)
+                     -> m (Result, Sub.SubFunctions)
+runSygusWithFallback con cg const_vals h sub tenv =
+    runSygusWithGrammarWithFallBack con cg const_vals h sub tenv (HS.fromList $ H.keys h)
+
 runSygus :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
 runSygus con cg const_vals h sub tenv = runSygusWithGrammar con cg const_vals h sub tenv (HS.fromList $ H.keys h)
 
-runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
-runSygusWithGrammar con cg const_vals h sub tenv hsr es
+runSygusWithGrammarWithIteFallBack :: (NameGenMonad m, MonadIO m) =>
+                                      LIVSConfigNames
+                                   -> CallGraph
+                                   -> [Val]
+                                   -> H.Heap
+                                   -> Sub.SubFunctions
+                                   -> T.TypeEnv
+                                   -> HS.HashSet Name
+                                   -> [Example]
+                                   -> m (Result, Sub.SubFunctions)
+runSygusWithGrammarWithIteFallBack con cg const_vals h sub tenv hsr es =
+    runSygusWithGrammarWithFallBack con cg const_vals h sub tenv hsr es examplesToIteResult
+
+runSygusWithGrammarWithFallBack :: (NameGenMonad m, MonadIO m) =>
+                                   LIVSConfigNames
+                                -> CallGraph
+                                -> [Val]
+                                -> H.Heap
+                                -> Sub.SubFunctions
+                                -> T.TypeEnv
+                                -> HS.HashSet Name
+                                -> [Example]
+                                -> ([Example] -> Result)
+                                -> m (Result, Sub.SubFunctions)
+runSygusWithGrammarWithFallBack con cg const_vals h sub tenv hsr es fallback
     | (Example { func = Id n t }:_) <- es = do
         (es4, ty_val_rules_funcs'', sub'') <- simplifyRules sub es
         
-        res <- mapM (runSygusWithGrammar' con cg const_vals h sub tenv hsr) es4
+        res <- mapM (runSygusWithGrammarWithFallBack' con cg const_vals h sub tenv hsr fallback) es4
 
         let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res
 
         return (res', sub'')
     | otherwise = return $ (Sat M.empty, sub)
 
-runSygusWithGrammar' :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m Result
-runSygusWithGrammar' con cg const_vals h sub tenv hsr es
+runSygusWithGrammarWithFallBack' :: (NameGenMonad m, MonadIO m) =>
+                                    LIVSConfigNames
+                                 -> CallGraph
+                                 -> [Val]
+                                 -> H.Heap
+                                 -> Sub.SubFunctions
+                                 -> T.TypeEnv
+                                 -> HS.HashSet Name
+                                 -> ([Example] -> Result)
+                                 -> [Example]
+                                 -> m Result
+runSygusWithGrammarWithFallBack' con cg const_vals h sub tenv hsr fallback es
     | (_:_) <- es = do
         let form = toSygusWithGrammar cg const_vals h sub tenv hsr es
         liftIO $ whenLoud $ putStrLn form
@@ -55,11 +110,17 @@ runSygusWithGrammar' con cg const_vals h sub tenv hsr es
         r <- liftIO $ tryVariousCVC4Options h sub tenv form ".sl" (smt_timeout con) cvc4Options
         liftIO $ whenLoud $ print r
 
-        return r
+        case r of
+            Unknown -> return $ fallback es
+            _ -> return r
     | otherwise = return $ Sat M.empty
     where
         cvc4Options = [ ["--lang", "sygus", "--no-sygus-pbe"]
                       , ["--lang", "sygus"] ]
+
+runSygusWithGrammar :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> HS.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
+runSygusWithGrammar con cg const_vals h sub tenv hsr es =
+    runSygusWithGrammarWithFallBack con cg const_vals h sub tenv hsr es (\_ -> Unknown)
 
 -- | Tries running CVC4 with various set's of options, until one set returns an answer in the given amount of time
 tryVariousCVC4Options :: H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> String -> Int -> [[String]] -> IO Result

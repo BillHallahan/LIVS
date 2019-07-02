@@ -116,5 +116,5 @@ binOp s = Id (Name Ident s Nothing) (TyFun jsIdentType (TyFun jsIdentType jsIden
 
 $(derivingASTWithContainers ''JSExpression)
 $(derivingASTWithContainers ''JSStatement)
-$(derivingASTContainer ''JSStatement ''JSExpression)
-$(derivingASTContainer ''JSAST ''JSExpression)
+-- $(derivingASTContainer ''JSStatement ''JSExpression)
+-- $(derivingASTContainer ''JSAST ''JSExpression)
