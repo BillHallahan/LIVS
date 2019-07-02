@@ -89,6 +89,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         -- fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
 
+        cnst = fromListConstants $ map (\(i, fi) -> (idName i, genConsts $ consts fi)) ids
+
     liftIO $ putStrLn $ "fuzz_with'' = " ++ show fuzz_with''
 
     let r = toRational (1 :: Double) 
@@ -98,7 +100,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with'')
-    (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
+    (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv synth_ex) ng
 
     mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
     

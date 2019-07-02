@@ -33,15 +33,34 @@ import qualified Data.HashSet as S
 import Data.List
 
 -- | Generates code satisfying a set of examples
-type Gen m = H.Heap -> Sub.SubFunctions -> T.TypeEnv -> S.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
+type Gen m = [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> S.HashSet Name -> [Example] -> m (Result, Sub.SubFunctions)
 
 livsCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions, [Example])
-livsCVC4 con le b fuzz fp cg const_val = livs con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
+         => LIVSConfigNames
+         -> LanguageEnv m b
+         -> b
+         -> Fuzz m b
+         -> FilePath
+         -> CallGraph
+         -> Constants
+         -> H.Heap
+         -> T.TypeEnv
+         -> m (H.Heap, Sub.SubFunctions, [Example])
+livsCVC4 con le b fuzz fp cg consts = livs con le b (runSygusWithGrammar con cg) fuzz fp cg consts
 
 livs :: MonadIO m
-     => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath -> CallGraph -> H.Heap -> T.TypeEnv -> m (H.Heap, Sub.SubFunctions, [Example])
-livs con le b gen fuzz fp cg h tenv = do
+     => LIVSConfigNames
+     -> LanguageEnv m b
+     -> b
+     -> Gen m
+     -> Fuzz m b
+     -> FilePath
+     -> CallGraph
+     -> Constants
+     -> H.Heap
+     -> T.TypeEnv
+     -> m (H.Heap, Sub.SubFunctions, [Example])
+livs con le b gen fuzz fp cg consts h tenv = do
     -- before synthesizing a function f, we want to synthesize all
     -- function's it calls, f_1...f_n.
     -- This is always possible, except in the case of mutual recursion, which we
@@ -49,19 +68,43 @@ livs con le b gen fuzz fp cg h tenv = do
     let ord = synthOrder h cg
 
     load le fp
-    livs' con le b gen fuzz cg [] tenv h (Sub.fromHeap h) ord
+    livs' con le b gen fuzz cg consts [] tenv h (Sub.fromHeap h) ord
 
 livs' :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> [Id] -> m (H.Heap, Sub.SubFunctions, [Example])
-livs' _ _ _ _ _ _ es _ h sub [] = return (h, sub, es)
-livs' con le b gen fuzz cg es tenv h sub (i:is) = do
+         LIVSConfigNames
+      -> LanguageEnv m b
+      -> b
+      -> Gen m
+      -> Fuzz m b
+      -> CallGraph
+      -> Constants
+      -> [Example]
+      -> T.TypeEnv
+      -> H.Heap
+      -> Sub.SubFunctions
+      -> [Id]
+      -> m (H.Heap, Sub.SubFunctions, [Example])
+livs' _ _ _ _ _ _ _ es _ h sub [] = return (h, sub, es)
+livs' con le b gen fuzz cg consts es tenv h sub (i:is) = do
     liftIO $ whenLoud (putStrLn $ "Synthesizing function " ++ show i )
-    (h', sub', es', is') <- livsStep con le b gen fuzz cg es tenv h sub i
-    livs' con le b gen fuzz cg es' tenv h' sub' (is' ++ is)
+    (h', sub', es', is') <- livsStep con le b gen fuzz cg consts es tenv h sub i
+    livs' con le b gen fuzz cg consts es' tenv h' sub' (is' ++ is)
 
 livsStep :: MonadIO m => 
-        LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> CallGraph -> [Example] -> T.TypeEnv -> H.Heap -> Sub.SubFunctions -> Id -> m (H.Heap, Sub.SubFunctions, [Example], [Id])
-livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
+           LIVSConfigNames
+         -> LanguageEnv m b
+         -> b
+         -> Gen m
+         -> Fuzz m b
+         -> CallGraph
+         -> Constants
+         -> [Example]
+         -> T.TypeEnv
+         -> H.Heap
+         -> Sub.SubFunctions
+         -> Id
+         -> m (H.Heap, Sub.SubFunctions, [Example], [Id])
+livsStep con le b gen fuzz cg consts es tenv h sub i@(Id n _) = do
     -- Get examples
     let re = examplesForFunc n es
     re' <- fuzz le b es tenv (fuzz_num con) i
@@ -72,7 +115,7 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
         gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls i cg
 
     -- Take a guess at the definition of the function
-    (m, sub') <- gen relH sub tenv gram re''
+    (m, sub') <- gen (lookupConstantsDefEmpty n consts) relH sub tenv gram re''
 
     case m of
         Sat m' -> do
@@ -91,7 +134,15 @@ livsStep con le b gen fuzz cg es tenv h sub i@(Id n _) = do
 
 -- | Takes a list of examples, and determines which functions (if any) need to
 -- be resynthesized, and which new examples should be used when doing so.
-livsSatCheckIncorrect :: Monad m => LanguageEnv m b -> b -> EvalPrimitive m -> CallGraph -> [Example] -> H.Heap -> [Example] -> m ([Example], [Id])
+livsSatCheckIncorrect :: Monad m =>
+                         LanguageEnv m b
+                      -> b
+                      -> EvalPrimitive m
+                      -> CallGraph
+                      -> [Example]
+                      -> H.Heap
+                      -> [Example]
+                      -> m ([Example], [Id])
 livsSatCheckIncorrect le b ep cg es h exs = do
     -- Run the example inputs in the interpreter, collecting the suspect
     -- examples from function calls
