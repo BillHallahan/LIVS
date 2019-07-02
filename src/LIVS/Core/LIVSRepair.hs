@@ -76,7 +76,7 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
         partial_defs = getPartialDefs call_expr (stripLeadingLams target_def)
 
     -- Get definitions for usable component functions
-    let cg' = ( \g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, not $ path g (fst x) i] ) cg fid
+    let cg' = (\g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, (fst x /= i) && (not $ path g (fst x) i)]) cg fid
     (h', sub, exs'') <- livs con le b gen fuzz fp cg' h tenv
     let exs''' = examplesForFunc fname (exs ++ exs'')
 
@@ -125,13 +125,13 @@ livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_de
                                   c{func = fid, expr = inline fname ext_def partial_def} ) ext_constraints
     let constraints = int_constraints ++ ext_constraints'
 
-    liftIO $ (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
+    liftIO $ whenLoud (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
 
     -- Synthesize sub expression
     (h', success) <- callSynthesizer gen cg sub h tenv constraints fid
     case success of
         Nothing -> do
-            liftIO $ (putStrLn "Synthesis failed for this repair area\n")
+            liftIO $ whenLoud (putStrLn "Synthesis failed for this repair area\n")
             return (h', Nothing, 0)
         Just fid' -> do
 
@@ -146,7 +146,7 @@ livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_de
             -- Add the new definition to the heap
             let h'' = H.insertDef fname' new_def $ H.filterWithKey (\n' _ -> fname' /= n') h'
             let fid'' = Id fname' (typeOf original_def)
-            liftIO $ (putStr $ "Synthesized repair: " ++ toJavaScriptDef S.empty fname' new_def)
+            liftIO $ whenLoud (putStr $ "Synthesized repair: " ++ toJavaScriptDef S.empty fname' new_def)
 
             -- Check that new definition of the function works in the real langauge
             _ <- case H.lookup fname' h'' of
@@ -160,7 +160,7 @@ livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_de
 
             -- Score the new definition against the original definition for difference
             let score = scoreExpr original_def new_def
-            liftIO $ (putStrLn $ "Score: " ++ (show score) ++ "\n")
+            liftIO $ whenLoud (putStrLn $ "Score: " ++ (show score) ++ "\n")
 
             -- Return the heap with it's score
             return (h'', Just fid'', score)
@@ -170,9 +170,9 @@ callSynthesizer :: MonadIO m => Gen m -> CallGraph -> Sub.SubFunctions -> H.Heap
 callSynthesizer gen cg sub h tenv exs fid = do
 
     -- The grammar available to the function we're synthesizing
-    let def_ids = filterNonPrimitives h $ verts cg
-        cg' = addVertsToCallGraph (zip [fid] $ repeat def_ids) cg
-        gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls fid cg'
+    let def_ids = nub $ filterNonPrimitives h $ verts cg
+        gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName def_ids
+    liftIO $ whenLoud (putStrLn $ "Grammar: " ++ (show gram))
 
     -- Take a guess at the definition of the function
     (m, sub') <- gen h sub tenv gram exs

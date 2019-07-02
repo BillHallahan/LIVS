@@ -19,7 +19,7 @@ import Test.Tasty.HUnit
 repairTests :: IO TestTree
 repairTests = do
     ts <- testSimple
-    return $ testGroup "Repair" [ ts ]
+    return $ testGroup "js Repair" [ ts ]
 
 defaultConfig :: FilePath -> String -> IO (LIVSConfigCL, (LanguageEnv IO (S.HashSet Name)))
 defaultConfig fp fname = do
@@ -40,7 +40,7 @@ defaultSynth fp fname = do
 
 testSimple :: IO TestTree
 testSimple = do
-    res <- defaultSynth "simple.js" "f"
-    return $ testCase "Simple Functions" $ assertBool "Correct simple.js" (res == expected_res)
+    actual <- defaultSynth "simple.js" "f"
+    return $ testCase "Simple Functions" $ assertBool "Failed test_files/simple.js" (actual == expected)
         where
-            expected_res = "f = function (n) { return (add(add(n, n), add(n, n))}"
+            expected = "f = function (n) { return (add((add(n, n)), (n + n) ))}\n"
