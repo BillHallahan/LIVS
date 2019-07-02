@@ -52,6 +52,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name SMT "ite" (Just 3), H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
                           , (Name SMT "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
                           , (Name SMT "str.replace" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
+                          , (Name SMT "str.replaceall" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
                           , (Name SMT "str.len" Nothing, H.Primitive $ TyFun stringType intType)
                           , (Name SMT "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
                           , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
