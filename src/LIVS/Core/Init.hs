@@ -36,6 +36,8 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
     (ids, b) <- extract lenv fp
 
+    liftIO $ print ids
+
     let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
                           , (Name SMT "=" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType boolType))
@@ -91,8 +93,6 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         ics = genIntsConsts cs
 
         cnst = fromListConstants $ map (\(i, fi) -> (idName i, genConsts $ consts fi)) ids
-
-    liftIO $ putStrLn $ "fuzz_with'' = " ++ show fuzz_with''
 
     let r = toRational (1 :: Double) 
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]

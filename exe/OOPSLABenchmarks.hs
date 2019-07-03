@@ -47,8 +47,8 @@ main = do
           whileM_ 
             (do
                currTime <- getCurrentTime
-               print benchmarkTimeout
-               print (realToFrac $ diffUTCTime currTime startTime)
+               -- print benchmarkTimeout
+               -- print (realToFrac $ diffUTCTime currTime startTime)
                return ((realToFrac $ diffUTCTime currTime startTime) < benchmarkTimeout)
             )
             (do 

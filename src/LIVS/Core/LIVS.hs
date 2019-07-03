@@ -110,6 +110,8 @@ livsStep con le b gen fuzz cg consts es tenv h sub i@(Id n _) = do
     re' <- fuzz le b es tenv (fuzz_num con) i
     let re'' = re ++ re'
 
+    -- liftIO $ putStrLn $ "re'' = " ++ show re''
+
     let relH = H.filterWithKey (\n' _ -> n /= n') $ filterToReachable con i cg h
         -- gram = S.union (S.fromList $ core_funcs con) (S.fromList $ flip Sub.lookupAllNames sub $ map idName $ directlyCalls i cg)
         gram = S.fromList $ flip Sub.lookupAllNamesDefSingleton sub $ map idName $ directlyCalls i cg

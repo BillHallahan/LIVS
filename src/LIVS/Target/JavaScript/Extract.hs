@@ -54,6 +54,7 @@ extractCalledFunctionsExpr :: ASTContainer c JSExpression => c -> (FuncInfo, Dot
 extractCalledFunctionsExpr = evalASTs extractCalledFunctionsExpr'
 
 extractCalledFunctionsExpr' :: JSExpression -> (FuncInfo, DotNoteNames)
+-- extractCalledFunctionsExpr' e@(JSIdentifier _ _) = error $ "extractCalledFunctionsExpr: JSIdentifier" ++ show e
 extractCalledFunctionsExpr' (JSDecimal _ d) =
     let
         d' = jsJSONToVal $ d ++ "\n"
@@ -64,11 +65,22 @@ extractCalledFunctionsExpr' (JSStringLiteral _ s) =
         s' = jsJSONToVal $ s ++ "\n"
     in
     (FuncInfo { calls = [], consts = [s'] }, S.empty)
--- extractCalledFunctionsExpr' (JSLiteral _ l) = error $ "lit = " ++ show l
+-- extractCalledFunctionsExpr' e@(JSCallExpression _ _ _ _) = error $ "extractCalledFunctionsExpr: JSCallExpression" ++ show e
+-- extractCalledFunctionsExpr' e@(JSCallExpressionDot _ _ (JSIdentifier _ n)) =
+--     let
+--         nm = Name Ident n Nothing
+--     in
+--     (FuncInfo {calls = [nameCLToId nm], consts = mempty }, S.singleton nm)
+-- extractCalledFunctionsExpr' e@(JSCallExpressionDot _ _ _) = error $ "extractCalledFunctionsExpr: JSCallExpressionDot" ++ show e
 extractCalledFunctionsExpr' (JSExpressionBinary _ bop _) =
     (FuncInfo { calls = [binOpToId bop], consts = mempty}, S.empty)
 extractCalledFunctionsExpr' (JSMemberExpression (JSIdentifier _ n) _ args _) =
     (FuncInfo { calls = [nameCLToId (Name Ident n Nothing) args], consts = mempty }, S.empty)
+extractCalledFunctionsExpr' (JSCallExpression (JSCallExpressionDot _ _ (JSIdentifier _ n)) _ args _) =
+    let
+        nm = Name Ident n Nothing
+    in
+    (FuncInfo { calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
 extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _ n)) _ args _) =
     let
         nm = Name Ident n Nothing
