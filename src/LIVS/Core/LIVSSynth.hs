@@ -19,6 +19,7 @@ import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
 import Data.List
+import Data.Maybe
 
 livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
          => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> Constants -> H.Heap -> T.TypeEnv -> [Example] -> m (H.Heap, [Id])
@@ -48,14 +49,11 @@ livsSynth con le b gen gen_out fuzz fp cg consts h tenv exs = do
 
     -- Expand the call graph with the new id's
     let def_ids = filterNonPrimitives h' $ verts cg-- map (flip Id (TyCon (Name Ident "Unknown" Nothing) TYPE)) $ Sub.keys sub
-        cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
+        def_ids' = def_ids ++ mapMaybe (flip H.nameToId h') (T.constructorNames tenv ++ T.selectorNames tenv)
+        cg' = addVertsToCallGraph (zip is $ repeat def_ids') cg
 
     -- Synthesize based on the user provided examples
-    let con' = con -- con { core_funcs = filterNonPrimitives h' (core_funcs con)}
-
-    -- (h'', sub', _) <- livs' con' le b gen_out (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
-
-    (h'', sub', _) <- livs' con' le b (genNew is gen gen_out) (fuzzFake is fuzz) cg' consts (exs ++ exs') tenv h' sub is
+    (h'', sub', _) <- livs' con le b (genNew is gen gen_out) (fuzzFake is fuzz) cg' consts (exs ++ exs') tenv h' sub is
 
     let is' = map (toId h'') . flip Sub.lookupAllNames sub' $ map idName is
 

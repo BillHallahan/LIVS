@@ -39,7 +39,7 @@ toSygusWithGrammar :: CallGraph
                    -> String
 toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
     let
-        tenv' = filterTypeEnv h es tenv
+        tenv' = tenv -- filterTypeEnv h es tenv
         tspec = toSygusTypeEnv tenv'
 
         -- Functions in SMT formulas need to be declared before they are used,
@@ -62,6 +62,7 @@ toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
+    -- trace ("ex func = " ++ show (func e) ++ "\nhsr = " ++ show hsr ++ "\n")
     "(set-logic SLIA)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n"
         ++ constraints ++ "\n(check-synth)"
 toSygusWithGrammar _ _ _ _ _ _ [] = error "toSygusWithGrammar: No examples"

@@ -117,6 +117,10 @@ toJavaScriptExpr dnn e@(App _ _)
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
     , nameToString n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
+    | App (Var (Id n _)) e2 <- e
+    , n == jsIntSelectorName
+        || n == jsStringSelectorName
+        || n == jsBoolSelectorName = toJavaScriptExpr dnn e2
     | v@(Var (Id n _)):ex:es <- unApp e
     , n `S.member` dnn =
         "(" ++ toJavaScriptExpr dnn ex ++ "." ++ toJavaScriptExpr dnn v ++ "("
