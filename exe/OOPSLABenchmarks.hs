@@ -32,7 +32,7 @@ main = do
 
     config <- cmdArgs livsConfig
 
-    let benchmarkTimeout = 1
+    let benchmarkTimeout = 100
 
     results <- mapM
        (\fp -> do
@@ -49,7 +49,8 @@ main = do
                currTime <- getCurrentTime
                -- print benchmarkTimeout
                -- print (realToFrac $ diffUTCTime currTime startTime)
-               return ((realToFrac $ diffUTCTime currTime startTime) < benchmarkTimeout)
+               emp <- isEmptyMVar result
+               return ((realToFrac $ diffUTCTime currTime startTime) < benchmarkTimeout && emp)
             )
             (do 
                return ()
@@ -60,7 +61,8 @@ main = do
           stopTime <- getCurrentTime
 
           --calc time
-          let x = realToFrac $ diffUTCTime stopTime startTime 
+          let x = realToFrac $ diffUTCTime stopTime startTime
+          print r
           return (x, isRight r)
        )
        (map (\b -> benchmarkDir++b++"/fullGrammar.js") benchmarksFilepaths)

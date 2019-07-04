@@ -8,6 +8,7 @@
 module LIVS.Target.JavaScript.Extract ( module Language.JavaScript.Parser
                                       , DotNoteNames
                                       , parseJS
+                                      , extractDefinedFunctions
                                       , extractFunctions ) where
 
 import LIVS.Language.AST
@@ -29,6 +30,17 @@ parseJS :: FilePath -> IO (Either String JSAST)
 parseJS fp = do
     js <- readFile fp
     return $ parse js fp
+
+extractDefinedFunctions :: JSAST -> [Id]
+extractDefinedFunctions (JSAstProgram stmts _) =
+    map extractDefinedFunctions' stmts
+extractDefinedFunctions (JSAstStatement stmt _) =
+    [extractDefinedFunctions' stmt]
+extractDefinedFunctions _ = mempty
+
+extractDefinedFunctions' :: JSStatement -> Id
+extractDefinedFunctions' (JSFunction _ ident _ args _ block _) =
+    nameCLToId (identToName ident) args
 
 extractFunctions :: JSAST -> ([(Id, FuncInfo)], S.HashSet Name)
 extractFunctions (JSAstProgram stmts _) = mconcat $ map extractFunctionsStmt stmts

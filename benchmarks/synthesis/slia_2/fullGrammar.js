@@ -19,17 +19,17 @@ function usedBeforeError() {
   return "You already used a version of this password"
 }
 
-function checkBadPassword(u,p) {
-  if (usedBefore(u.toLowerCase(),p)) {
-    return usedBeforeError();
-  }
-  else if (!containsNum(p)){
-    return noNum();
-  }
-  else {
-    return false;
-  }
-}
+// function checkBadPassword(u,p) {
+//   if (usedBefore(u.toLowerCase(),p)) {
+//     return usedBeforeError();
+//   }
+//   else if (!containsNum(p)){
+//     return noNum();
+//   }
+//   else {
+//     return false;
+//   }
+// }
 
 
 //@pbe (constraint (= (checkBadPassword "mark" "mark")  "Your password must have a number")

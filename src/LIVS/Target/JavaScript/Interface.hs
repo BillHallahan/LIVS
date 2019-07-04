@@ -2,6 +2,7 @@ module LIVS.Target.JavaScript.Interface (
           JavaScriptREPL
         , DotNoteNames
         , jsLanguageEnv
+        , extractDefinedFileJavaScript
         , extractFileJavaScript
         , loadFileJavaScript
         , defJavaScript
@@ -25,6 +26,7 @@ import LIVS.Target.JavaScript.Extract (DotNoteNames)
 import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
+import Data.Maybe
 
 import qualified Data.HashSet as S
 
@@ -33,10 +35,27 @@ newtype JavaScriptREPL = JavaScriptREPL Process
 jsLanguageEnv :: IO (LanguageEnv IO (S.HashSet Name))
 jsLanguageEnv = do
     js <- initJavaScriptREPL
-    return $ LanguageEnv { extract = extractFileJavaScript
+    return $ LanguageEnv { extract = extractDefinedFileJavaScript -- extractFileJavaScript
                          , load = loadFileJavaScript js
                          , def = defJavaScript js
                          , call = callJavaScript js }
+
+extractDefinedFileJavaScript :: FilePath -> IO ([(Id, FuncInfo)], S.HashSet Name)
+extractDefinedFileJavaScript fp = do
+    jsast <- Ext.parseJS fp
+    case jsast of
+        Left e -> error $ show e
+        Right jsast' -> do
+            let def = Ext.extractDefinedFunctions jsast'
+                (allF, hsn) = Ext.extractFunctions jsast'
+
+            return (mapMaybe (rel def) allF, hsn)
+
+    where
+        rel :: [Id] -> (Id, FuncInfo) -> Maybe (Id, FuncInfo)
+        rel is (i, fi@(FuncInfo {calls = ci }))
+            | i `elem` is = Just (i, fi { calls = filter (`elem` is) ci })
+            | otherwise = Nothing
 
 extractFileJavaScript :: FilePath -> IO ([(Id, FuncInfo)], S.HashSet Name)
 extractFileJavaScript fp = do
@@ -99,6 +118,7 @@ toJavaScriptDef dnn n e =
             if (Name ll n' Nothing) `S.member` dnn then Name ll n' Nothing else name
 
 toJavaScriptCall :: DotNoteNames -> Expr -> String
+toJavaScriptCall dnn (Var i) = toJavaScriptId i ++ "();\n"
 toJavaScriptCall dnn e = toJavaScriptExpr dnn e ++ ";\n"
 
 toJavaScriptExpr :: DotNoteNames -> Expr -> String
