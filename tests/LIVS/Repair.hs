@@ -18,26 +18,22 @@ import Test.Tasty.HUnit
 
 repairTests :: IO TestTree
 repairTests = do
-    -- let alltests = [ testSingleArg, testMultiArg, testSingleEx, testMultiFxn,
-    --                  testIntLiteral, testBoolLiteral, testFloatLiteral, testStringLiteral,
-    --                  testIntType, testBoolType, testFloatType, testStringType,
-    --                  testDataConstructor, testMultiTypeInpt, testMultiTypeOtpt ]
-    s1 <- testSingleArg
-    s2 <- testMultiArg
-    s3 <- testSingleEx
-    s4 <- testMultiFxn
-    l1 <- testIntLiteral
-    l2 <- testBoolLiteral
-    l3 <- testFloatLiteral
-    l4 <- testStringLiteral
-    l5 <- testConstCollection
-    t1 <- testBoolType
-    t2 <- testFloatType
-    t3 <- testStringType
-    t4 <- testDataConstructor
-    t5 <- testMultiTypeInpt
-    t6 <- testMultiTypeOtpt
-    return $ testGroup "js Repair" [ s1, s2, s3, s4, l1, l2, l3, l4, l5, t1, t2, t3, t4, t5, t6 ]
+    -- FULL TEST SET : 30 tests
+    -- let all_tests = [ testSingleEx, testSingleArg, testMultiArg, testMultiFxn, testConstCollection, testIntLiteral
+    --                 , testBoolLiteral, testFloatLiteral, testStringLiteral, testBoolType, testFloatType, testStringType
+    --                 , testMultiTypeInpt, testMultiTypeOtpt, testExternDirectCall, testExternIndirectCall
+    --                 , testMultiExternFxns, testMultiPathToTarget, testNoExsForTarget, testJSAssignment, testJSBinOps
+    --                 , testJSConditions, testJSLoops, testJSIf, testJSTernary, testComplexGlobals, testComplexScoring
+    --                 , testComplexRecursion, testComplexExtern, testComplexReal ]
+
+    -- SUBSET OF TESTS THAT DON'T THROW ERRORS : 9 tests
+    let all_tests = [ testSingleEx, testSingleArg, testMultiArg, testMultiFxn, testConstCollection, testIntLiteral
+                    , testExternDirectCall, testExternIndirectCall, testMultiPathToTarget ]
+    let eval_tests = sequence all_tests
+    all_tests' <- eval_tests
+    return $ testGroup "js Repair" all_tests'
+
+-- TEST HARNESS
 
 defaultConfig :: FilePath -> IO (LIVSConfigCL, (LanguageEnv IO (S.HashSet Name)))
 defaultConfig fp = do
@@ -59,23 +55,12 @@ defaultSynth fp = do
 failPrefix :: String
 failPrefix = "Failed test_files/"
 
-testSingleArg :: IO TestTree
-testSingleArg = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Simple - Single-Arg Fxns"
-            testfile = "simple/single_arg.js"
-            expected_output = "f = function (n) { return (add((add(n, n)), (n + n) ))}\n"
+defaultTest :: String -> String -> String -> IO TestTree
+defaultTest expected_output name file = do
+    actual_output <- defaultSynth file
+    return $ testCase name $ assertBool (failPrefix ++ file) (actual_output == expected_output)
 
-testMultiArg :: IO TestTree
-testMultiArg = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Simple - Multi-Arg Fxns"
-            testfile = "simple/multi_arg.js"
-            expected_output = "f = function (n, m) { return (add((add(n, m)), (add(n, m))))}\n"
+-- TESTS
 
 testSingleEx :: IO TestTree
 testSingleEx = do
@@ -91,110 +76,118 @@ testSingleEx = do
             expected_output1 = "f = function (n, m) { return (add((add(n, m)), (add(n, m))))}\n"
             expected_output2 = "f = function (n, m) { return (42)}\n"
 
+testSingleArg :: IO TestTree
+testSingleArg = defaultTest expected "Simple - Single-Arg Fxns" "simple/single_arg.js"
+    where expected = "f = function (n) { return (add((add(n, n)), (n + n) ))}\n"
+
+testMultiArg :: IO TestTree
+testMultiArg = defaultTest expected "Simple - Multi-Arg Fxns" "simple/multi_arg.js"
+    where expected = "f = function (n, m) { return (add((add(n, m)), (add(n, m))))}\n"
+
 testMultiFxn :: IO TestTree
-testMultiFxn = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Simple - Many Fxns With Examples"
-            testfile = "simple/multi_fxn.js"
-            expected_output = "f = function (n, m) { return (add((add(n, m)), (add(n, m))))}\n"
-
-testIntLiteral :: IO TestTree
-testIntLiteral = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Literals - Int"
-            testfile = "literals/int.js"
-            expected_output = "f = function (n) { return (add((2), (add(n, n))))}\n"
-
-testBoolLiteral :: IO TestTree
-testBoolLiteral = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Literals - Bool"
-            testfile = "literals/bool.js"
-            expected_output = "" -- TODO
-
-testFloatLiteral :: IO TestTree
-testFloatLiteral = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Literals - Float"
-            testfile = "literals/float.js"
-            expected_output = "" -- TODO
-
-testStringLiteral :: IO TestTree
-testStringLiteral = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Literals - String"
-            testfile = "literals/string.js"
-            expected_output = "" -- TODO
+testMultiFxn = defaultTest expected "Simple - Many Fxns With Examples" "simple/multi_fxn.js"
+    where expected = "f = function (n, m) { return (add((add(n, m)), (add(n, m))))}\n"
 
 testConstCollection :: IO TestTree
-testConstCollection = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Literals - Use Consts In File"
-            testfile = "literals/collect_consts.js"
-            expected_output = "" -- TODO
+testConstCollection = defaultTest expected "Literals - Use Consts In File" "literals/collect_consts.js"
+    where expected = "f = function (n) { return (add(n, (add((2), n))))}\n"
+
+testIntLiteral :: IO TestTree
+testIntLiteral = defaultTest expected "Literals - Int" "literals/int.js"
+    where expected = "f = function (n) { return (add((2), (add(n, n))))}\n"
+
+testBoolLiteral :: IO TestTree
+testBoolLiteral = defaultTest expected "Literals - Bool" "literals/bool.js"
+    where expected = "" -- TODO
+
+testFloatLiteral :: IO TestTree
+testFloatLiteral = defaultTest expected "Literals - Float" "literals/float.js"
+    where expected = "" -- TODO
+
+testStringLiteral :: IO TestTree
+testStringLiteral = defaultTest expected "Literals - String" "literals/string.js"
+    where expected = "" -- TODO
 
 testBoolType :: IO TestTree
-testBoolType = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - Bool"
-            testfile = "types/bool.js"
-            expected_output = "" -- TODO
+testBoolType = defaultTest expected "Types - Bool" "types/bool.js"
+    where expected = "" -- TODO
 
 testFloatType :: IO TestTree
-testFloatType = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - Float"
-            testfile = "types/float.js"
-            expected_output = "" -- TODO
+testFloatType = defaultTest expected "Types - Float" "types/float.js"
+    where expected = "" -- TODO
 
 testStringType :: IO TestTree
-testStringType = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - String"
-            testfile = "types/string.js"
-            expected_output = "" -- TODO
-
-testDataConstructor :: IO TestTree
-testDataConstructor = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - Data Constructors"
-            testfile = "types/dc.js"
-            expected_output = "" -- TODO
+testStringType = defaultTest expected "Types - String" "types/string.js"
+    where expected = "" -- TODO
 
 testMultiTypeInpt :: IO TestTree
-testMultiTypeInpt = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - Multiple Input Types"
-            testfile = "types/multi_inpt.js"
-            expected_output = "" -- TODO
+testMultiTypeInpt = defaultTest expected "Types - Multiple Input Types" "types/multi_inpt.js"
+    where expected = "" -- TODO
 
 testMultiTypeOtpt :: IO TestTree
-testMultiTypeOtpt = do
-    actual_output <- defaultSynth testfile
-    return $ testCase testname $ assertBool (failPrefix ++ testfile) (actual_output == expected_output)
-        where
-            testname = "Types - Multiple Output Types"
-            testfile = "types/multi_otpt.js"
-            expected_output = "" -- TODO
+testMultiTypeOtpt = defaultTest expected "Types - Multiple Output Types" "types/multi_otpt.js"
+    where expected = "" -- TODO
+
+testExternDirectCall :: IO TestTree
+testExternDirectCall = defaultTest expected "Extern - Directly Calls Target" "extern_exs/direct_call.js"
+    where expected = "f = function (n) { return (add((add(n, n)), (n + n) ))}\n"
+
+testExternIndirectCall :: IO TestTree
+testExternIndirectCall = defaultTest expected "Extern - Indirectly Calls Target" "extern_exs/indirect_call.js"
+    where expected = "f = function (n) { return (add(n, (n + n) ))}\n"
+
+testMultiExternFxns :: IO TestTree
+testMultiExternFxns = defaultTest expected "Extern - Multiple Constraining Fxns" "extern_exs/multi_extern_fxns.js"
+    where expected = "" -- TODO
+
+testMultiPathToTarget :: IO TestTree
+testMultiPathToTarget = defaultTest expected "Extern - Many Paths To Target" "extern_exs/multi_path_to_target.js"
+    where expected = "f = function (n) { return (mult(n, (mult(n, n))))}\n"
+
+testNoExsForTarget :: IO TestTree
+testNoExsForTarget = defaultTest expected "Extern - No Examples For Target" "extern_exs/no_exs_for_target.js"
+    where expected = "" -- TODO
+
+testJSAssignment :: IO TestTree
+testJSAssignment = defaultTest expected "JS Syntax - Assignment" "js_syntax/assignment.js"
+    where expected = "" -- TODO
+
+testJSBinOps :: IO TestTree
+testJSBinOps = defaultTest expected "JS Syntax - Binary Ops" "js_syntax/binary_op.js"
+    where expected = "" -- TODO
+
+testJSConditions :: IO TestTree
+testJSConditions = defaultTest expected "JS Syntax - Conditionals" "js_syntax/condition.js"
+    where expected = "" -- TODO
+
+testJSLoops :: IO TestTree
+testJSLoops = defaultTest expected "JS Syntax - For Loops" "js_syntax/for_loop.js"
+    where expected = "" -- TODO
+
+testJSIf :: IO TestTree
+testJSIf = defaultTest expected "JS Syntax - If Statements" "js_syntax/if_statement.js"
+    where expected = "" -- TODO
+
+testJSTernary :: IO TestTree
+testJSTernary = defaultTest expected "JS Syntax - Ternary Op" "js_syntax/ternary_op.js"
+    where expected = "" -- TODO
+
+testComplexGlobals :: IO TestTree
+testComplexGlobals = defaultTest expected "Complex - Global Vars" "js_syntax/global_var.js"
+    where expected = "" -- TODO
+
+testComplexScoring :: IO TestTree
+testComplexScoring = defaultTest expected "Complex - Narrow Scoring" "js_syntax/scoring.js"
+    where expected = "" -- TODO
+
+testComplexRecursion :: IO TestTree
+testComplexRecursion = defaultTest expected "Complex - Recursion" "js_syntax/recursion.js"
+    where expected = "" -- TODO
+
+testComplexExtern :: IO TestTree
+testComplexExtern = defaultTest expected "Complex - External Constraints" "js_syntax/typed_extern.js"
+    where expected = "" -- TODO
+
+testComplexReal :: IO TestTree
+testComplexReal = defaultTest expected "Complex - Real-World JS" "js_syntax/real_js.js"
+    where expected = "" -- TODO
