@@ -103,7 +103,7 @@ fromListWeighted m d = fromList . map (\v -> (v, HM.lookupDefault d v m))
 -- Fuzzes randomly when no value of the given type exists.
 fuzzFromValsAndOutputsM :: MonadRandom m => Weights DC -> [Val] -> Fuzz m b
 fuzzFromValsAndOutputsM w vs le b es tenv n i = do
-    let vs' = L.nub (vs ++ concatMap subVals (concatMap exampleVals es))
+    let vs' = L.nub (vs ++ concatMap exampleVals es ++ concatMap subVals (concatMap exampleVals es))
     mapM (\_ -> fuzzFromOutputsM' (call le b) w vs' tenv i) [1..n]
 
 -- | Fuzzes, drawing random values from the existing examples when possible.
@@ -150,3 +150,10 @@ fuzzFromOutputVal w vs tenv t
             | otherwise = Nothing
 
         filterToDC dc = filter ((==) (DataVal dc) . appValCenter)
+
+------------------------------
+------------------------------
+
+-- | `allCominations n xs` returns a list of lists of all combinations of n elements from xs
+allCombinations :: Int -> [a] -> [[a]]
+allCombinations n = sequence . replicate n

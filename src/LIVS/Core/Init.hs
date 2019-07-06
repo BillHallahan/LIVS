@@ -34,9 +34,9 @@ synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m Stri
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     synth_ex <- examplesFromFile jsJSONToVal fp
 
-    (ids, b) <- extract lenv fp
+    liftIO $ print synth_ex
 
-    liftIO $ print ids
+    (ids, b) <- extract lenv fp
 
     let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
