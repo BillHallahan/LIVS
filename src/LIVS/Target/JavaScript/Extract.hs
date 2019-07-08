@@ -151,6 +151,7 @@ commaListLength (JSLOne _) = 1
 commaListLength JSLNil = 0
 
 binOpToId :: JSBinOp -> Id
+binOpToId (JSBinOpAnd _) = binOp "&&"
 binOpToId (JSBinOpEq _) = binOp "=="
 binOpToId (JSBinOpGt _) = binOp ">"
 binOpToId (JSBinOpGe _) = binOp ">="

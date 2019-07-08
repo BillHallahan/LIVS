@@ -18,17 +18,17 @@ import Test.Tasty.HUnit
 
 repairTests :: IO TestTree
 repairTests = do
-    -- FULL TEST SET : 30 tests
+    -- FULL TEST SET : 31 tests
     -- let all_tests = [ testSingleEx, testSingleArg, testMultiArg, testMultiFxn, testConstCollection, testIntLiteral
     --                 , testBoolLiteral, testFloatLiteral, testStringLiteral, testBoolType, testFloatType, testStringType
     --                 , testMultiTypeInpt, testMultiTypeOtpt, testExternDirectCall, testExternIndirectCall
     --                 , testMultiExternFxns, testMultiPathToTarget, testNoExsForTarget, testJSAssignment, testJSBinOps
     --                 , testJSConditions, testJSLoops, testJSIf, testJSTernary, testComplexGlobals, testComplexScoring
-    --                 , testComplexRecursion, testComplexExtern, testComplexReal ]
+    --                 , testComplexRecursion, testComplexExtern, testComplexLibraryFxn, testComplexReal ]
 
-    -- SUBSET OF TESTS THAT DON'T THROW ERRORS : 9 tests
+    -- SUBSET OF TESTS THAT DON'T THROW ERRORS : 11 tests
     let all_tests = [ testSingleEx, testSingleArg, testMultiArg, testMultiFxn, testConstCollection, testIntLiteral
-                    , testExternDirectCall, testExternIndirectCall, testMultiPathToTarget ]
+                    , testBoolLiteral, testFloatLiteral, testExternDirectCall, testExternIndirectCall, testMultiPathToTarget ]
     let eval_tests = sequence all_tests
     all_tests' <- eval_tests
     return $ testGroup "js Repair" all_tests'
@@ -98,11 +98,11 @@ testIntLiteral = defaultTest expected "Literals - Int" "literals/int.js"
 
 testBoolLiteral :: IO TestTree
 testBoolLiteral = defaultTest expected "Literals - Bool" "literals/bool.js"
-    where expected = "" -- TODO
+    where expected = "f = function (x) { return (convert(x))}\n"
 
 testFloatLiteral :: IO TestTree
 testFloatLiteral = defaultTest expected "Literals - Float" "literals/float.js"
-    where expected = "" -- TODO
+    where expected = "f = function (n) { return (add((round2((2.345))), (add(n, n))))}\n"
 
 testStringLiteral :: IO TestTree
 testStringLiteral = defaultTest expected "Literals - String" "literals/string.js"
@@ -186,6 +186,10 @@ testComplexRecursion = defaultTest expected "Complex - Recursion" "js_syntax/rec
 
 testComplexExtern :: IO TestTree
 testComplexExtern = defaultTest expected "Complex - External Constraints" "js_syntax/typed_extern.js"
+    where expected = "" -- TODO
+
+testComplexLibraryFxn :: IO TestTree
+testComplexLibraryFxn = defaultTest expected "Complex - Library Functions" "js_syntax/library_fxns.js"
     where expected = "" -- TODO
 
 testComplexReal :: IO TestTree

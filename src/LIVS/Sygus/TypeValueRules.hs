@@ -157,7 +157,7 @@ substituteSMTName :: Id -> Sub.SubFunctions -> Id
 substituteSMTName (Id n t) sub = case Sub.lookupMaybe n sub of
                                     Just hm -> case length $ HM.elems hm of
                                                   1 -> (Id (head $ HM.elems hm) t)
-                                                  _ -> error "More than one SMT function for this subfunction"
+                                                  _ -> error $ "Multiple SMT functions: " ++ show n ++ ": " ++ show hm
                                     Nothing -> (Id n t)
 
 generateTypeValueRulesFuncs :: [([DC], Val)] -> [Expr]
