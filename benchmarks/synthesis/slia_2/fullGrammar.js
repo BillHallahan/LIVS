@@ -36,6 +36,6 @@ function jsIte(b, x, y) {
 // }
 
 
-//@pbe (constraint (= (checkBadPassword "mark" "mark")  "Your password must have a number"))
-//@pbe (constraint (= (checkBadPassword "mark" "mark1") "You already used a version of this password"))
-//@pbe (constraint (= (checkBadPassword "mark" "mark2") false))
+//@pbe (constraint (= (checkBadPassword "benchmarks/synthesis/slia_2/mark" "mark")  "Your password must have a number"))
+//@pbe (constraint (= (checkBadPassword "benchmarks/synthesis/slia_2/mark" "mark1") "You already used a version of this password"))
+//@pbe (constraint (= (checkBadPassword "benchmarks/synthesis/slia_2/mark" "mark2") false))

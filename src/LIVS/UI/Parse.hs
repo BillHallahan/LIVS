@@ -34,7 +34,7 @@ parseExample stv s =
         _ -> Nothing
 
 exampleRegex :: Regex
-exampleRegex = mkRegex "@pbe[ ]*\\(constraint[ ]\\(=[ ]*\\(([a-zA-Z0-9 \"-]*)\\)[ ]*([a-zA-Z0-9 \"-]*)\\)\\)"
+exampleRegex = mkRegex "@pbe[ ]*\\(constraint[ ]\\(=[ ]*\\(([a-zA-Z0-9 /\"-_]*)\\)[ ]*([a-zA-Z0-9 /\"-_]*)\\)\\)"
 
 parseExample' :: (String -> Val) -> String -> String -> Maybe Example
 parseExample' stv call out
