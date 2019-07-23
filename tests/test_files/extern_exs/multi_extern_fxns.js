@@ -15,14 +15,14 @@ function g(x) {
 }
 
 function k(z) {
-    return f(f(z))
+    return f(f(z));
 }
 
 //@pbe (constraint (= (f 2) 6))
 
 //@pbe (constraint (= (h 3) 12))
 
-//@pbe (constraint (= (g 2)) 32))
+//@pbe (constraint (= (g 2) 32))
 
 //@pbe (constraint (= (k 5) 45))
 

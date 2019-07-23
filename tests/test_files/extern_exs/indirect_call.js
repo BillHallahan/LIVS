@@ -16,7 +16,7 @@ function g(x) {
 
 //@pbe (constraint (= (f 2) 6))
 
-//@pbe (constraint (= (g 2)) 32))
+//@pbe (constraint (= (g 2) 32))
 
 // Correct function
 // function f(n) {

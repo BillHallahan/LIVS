@@ -52,7 +52,8 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
 
     -- Get the relevant examples for this repair
     let exs' = filter (\Example{func = i} -> i `elem` relevant_funcs) exs
-    let ext_exs = filter (\e -> (func e) /= fid) exs'
+        (target_exs, ext_exs) = partition (\e -> (func e) == fid) exs'
+
     _ <- case exs' of
              [] -> error "LivsRepair: No relevant examples for repair target"
              _ -> return ()
@@ -68,8 +69,29 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
         target_def = head $ HM.elems $ HM.filterWithKey (\n _ -> n == fname) defs
     liftIO $ whenLoud (putStrLn $ "Original function: " ++ toJavaScriptDef S.empty fname target_def)
 
+    -- TODO: with that done, rewrite reassignConstraintNames to index into the second map by type
+    -- (see string literal case to make sure there aren't any added complexities with this)
+
+    -- TODO: get all test cases except the no-examples-for-target case
+
+    -- TODO: If there's no example for the target, we need to infer the SMT type of the target
+    -- function and give it to all of the constraints. To infer a type:
+        -- Take a random constraint
+        -- Isolate a single call to the target within that constraint (there may be multiple). It
+            -- must be a call which does NOT contain any calls to functions which aren't synthed components
+        -- Get the arguments to the target.
+            -- These will be expressions on the constraint inputs (which have known types) and
+            -- functions we've already synthesized (which have known types), so we can infer the type
+        -- Parse the expressions to deduce the SMT type of each input argument to the target function
+            -- consider a recursive getSMTType function that, for a function call, gets the type of args
+            -- and matches to a return val.  For a var, throws an error (or guess type). Short circuits for functions
+            -- where there is only one possible return type – if no such function exists it will get all
+            -- the way down to the vars and will have to guess a type.
+        -- To get the return type, run the function in the interpreter and parse the resulting JSON.
+
     -- Convert the relevant examples from external functions to constraints on the target function
     let ext_constraints = map (\ex -> extExampleToConstraint ex fid cg ext_defs) ext_exs
+    --    ext_constraints' = map (getConstraintTypeSMT target_exs) ext_constraints
 
     -- Get all possible partial definitions to repair on
     let call_expr = (makeCallExpr fid $ map Var (leadingLams target_def))
@@ -105,7 +127,7 @@ livsRepair' le b gen cg sub h tenv exs exs' ext_cons fname target_def (DefT part
             return (h', Nothing, score)
         Just _ -> do
 
-            -- If the repair succeeded, try repair on child subexpressions too
+            -- If the repair succeeded, try repair on child partial definitions too
             all_scores <- mapM (livsRepair' le b gen cg sub h' tenv exs exs' ext_cons fname target_def) children
             let all_scores' = [(h', fid, score)] ++ filter (\(_, f, _) -> isJust f) all_scores
 
@@ -209,6 +231,14 @@ expandConstraintExpr i e fid cg defs =
                                                                _ -> error $ "Missing definition: " ++ show (idName i')))
     in
     scanl inlineFromHash e expandable_ids !! 50 --TODO: want more intelligent way to decide we're done expanding
+
+getConstraintTypeSMT :: [Example] -> [Example] -> [Example]
+cetConstraintTypeSMT (ex:es) ext_exs =
+    let
+        replaceExTypes (Constraint i _ _ ext_def) = Constraint i (input ex) (output ex) ext_def
+    in
+    map replaceExTypes ext_exs
+getConstraintTypeSMT [] ext_exs = error "No pbe examples for target function"
 
 inline :: Name -> Expr -> Expr -> Expr
 inline n (Lam is e) subExpr = Lam is (inline n e subExpr)

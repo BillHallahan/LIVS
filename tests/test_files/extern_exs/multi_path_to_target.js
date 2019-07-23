@@ -22,7 +22,7 @@ function k(z) {
 
 //@pbe (constraint (= (h 3) 81))
 
-//@pbe (constraint (= (g 2 3)) 216))
+//@pbe (constraint (= (g 2 3) 216))
 
 //@pbe (constraint (= (k 2) 32))
 

@@ -1,3 +1,7 @@
+function and(x, y) {
+    return x && y;
+}
+
 function convert(x) {
     if(x) {
         return 1;

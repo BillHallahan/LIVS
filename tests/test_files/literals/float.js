@@ -3,7 +3,7 @@ function add(m, n) {
 }
 
 function round2(n) {
-    return 2;
+    return Math.round(n);
 }
 
 function f(n) {
