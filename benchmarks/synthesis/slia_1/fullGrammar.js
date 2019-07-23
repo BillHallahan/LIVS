@@ -1,9 +1,13 @@
+function h(x) {
+	return x - 1;
+}
+
 function g ( x ) {
 if ( x.length > 3) {
   return x
     .split('')
-    //.filter ( c => c == c.toLowerCase ())
-    .filter ( function h(c) { c = c.toLowerCase ()} )
+    .filter ( c => c == c.toLowerCase ())
+    // .filter ( function h(c) { c == c.toLowerCase ()} )
     .join('')
     .length;
   }

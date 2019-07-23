@@ -3,6 +3,8 @@
 module LIVS.Language.CallGraph ( CallGraph (..)
                                , CallForest
                                , CallTree
+                               , Constants
+
                                , createCallGraph
                                , addVertsToCallGraph
                                , dfs
@@ -15,13 +17,20 @@ module LIVS.Language.CallGraph ( CallGraph (..)
                                , postOrderListAfter
                                , path
                                , allPaths
-                               , findVert) where
+                               , findVert
+
+                               , emptyConstants
+                               , fromListConstants
+                               , insertConstants
+                               , lookupConstants
+                               , lookupConstantsDefEmpty) where
 
 import LIVS.Language.Syntax
 
 import qualified Data.Graph as G
 import Data.List
 import Data.Maybe
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as S
 
 data CallGraph =
@@ -106,3 +115,21 @@ findVertTree i ct
     | vert ct == i = Just ct
     | (r:_) <- mapMaybe (findVertTree i) (trees ct) = Just r
     | otherwise = Nothing
+
+-- | Maps a function to the constant values used in that function
+newtype Constants = Constants { unConstants :: HM.HashMap Name [Val] }
+
+emptyConstants :: Constants
+emptyConstants = Constants HM.empty
+
+fromListConstants :: [(Name, [Val])] -> Constants
+fromListConstants = Constants . HM.fromList
+
+insertConstants :: Name -> [Val] -> Constants -> Constants
+insertConstants n vs = Constants . HM.insert n vs . unConstants
+
+lookupConstants :: Name -> Constants -> Maybe [Val]
+lookupConstants n = HM.lookup n . unConstants
+
+lookupConstantsDefEmpty :: Name -> Constants -> [Val]
+lookupConstantsDefEmpty n = HM.lookupDefault [] n . unConstants

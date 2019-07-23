@@ -17,6 +17,8 @@ import LIVS.Sygus.SMTLexer
 import Control.Monad.State.Lazy
 import qualified Data.HashMap.Lazy as HM
 import Data.List
+
+import Debug.Trace
 }
 
 %name parse1
@@ -81,7 +83,7 @@ expr :: { Expr }
                                 case e of
                                     Var i -> do
                                         i'<- adjustSMTType i (mkTyFun $ map typeOf $3)
-                                        return $ mkApp (Var i':$3)
+                                        return $ mkApp (Var i':$3) 
                                     _ -> return $ mkApp (e:$3) }
      | name {% varOrData $1 }
      | string { Lit (LString $1) }

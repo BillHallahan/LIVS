@@ -41,7 +41,7 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
     let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
                           , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
                           , (Name SMT "=" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType boolType))
-                          , (Name SMT "not" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
+                          , (Name SMT "not" Nothing, H.Primitive $ TyFun boolType boolType)
                           , (Name SMT "and" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
                           , (Name SMT "or" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
                           , (Name SMT ">" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
@@ -54,13 +54,14 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
                           , (Name SMT "ite" (Just 3), H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
                           , (Name SMT "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
                           , (Name SMT "str.replace" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
+                          , (Name SMT "str.replaceall" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
                           , (Name SMT "str.len" Nothing, H.Primitive $ TyFun stringType intType)
                           , (Name SMT "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
                           , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
                           -- , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
                           -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
-                          , (Name SMT "\"NaN\"" Nothing, H.Primitive $ stringType) ]
+                          ]
 
     let config' = toLIVSConfigNames heap config
 
@@ -84,9 +85,14 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
 
     let cs = concatMap (consts . snd) ids
         cs' = genConsts cs
-        fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
-        fuzz_with' = expandVals fuzz_with tenv
+        -- fuzz_with = genFuzzConsts $ cs ++ concatMap exampleVals synth_ex
+        fuzz_with = cs ++ concatMap exampleVals synth_ex
+        fuzz_with' = fuzz_with ++ genConsts fuzz_with
+        fuzz_with'' = expandVals fuzz_with' tenv
+        -- fuzz_with' = expandVals fuzz_with tenv
         ics = genIntsConsts cs
+
+        cnst = fromListConstants $ map (\(i, fi) -> (idName i, genConsts $ consts fi)) ids
 
     let r = toRational (1 :: Double)
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r), (jsFloatDC, r)]
@@ -94,11 +100,11 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
     let ng = mkNameGen []
 
     let lenv' = liftLanguageEnv nameGenT lenv
-        fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with')
-
+        fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with'')
+        
     (final_heap, is) <- case mode of
-                            "synth" -> evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv synth_ex) ng
-                            fname -> evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cs' heap'' tenv fname synth_ex) ng
+                            "synth" -> evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv synth_ex) ng
+                            fname -> evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv fname synth_ex) ng
     -- mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
 
     -- Print function in JS as well

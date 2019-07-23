@@ -49,7 +49,7 @@ livsConfig =
         , seed = Nothing &= help "A seed for the random number generator." &= explicit &= name "seed"
         , fuzz_num = 20 &= help "The number of examples to fuzz, per iteration." &= explicit &= name "fuzz-num"
         , core_funcs = coreFuncs &= help "A set of core functions, always available for use in synthesis." &= explicit &= name "core-funcs"
-        , smt_timeout = 20 &= help "A timeout for the SMT solver, in seconds" &= explicit &= name "smt-timeout"
+        , smt_timeout = 5 &= help "A timeout for the SMT solver, in seconds" &= explicit &= name "smt-timeout"
         } &= verbosity
 
 toLIVSConfigNames :: H.Heap -> LIVSConfigCL -> LIVSConfigNames
@@ -60,7 +60,7 @@ toLIVSConfigNames h con@(LIVSConfig { core_funcs = cf }) =
         filterNames s = filter (\(Name _ n _) -> n == s) ns
 
 coreFuncs :: [String]
-coreFuncs = ["=", ">", "and", "or", "not", "+", "-", "*", "ite", "int.to.str", "str.len", "str.++", "str.substr", "str.replace", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
+coreFuncs = ["=", ">", "and", "or", "not", "+", "-", "*", "ite", "int.to.str", "str.len", "str.++", "str.substr", "str.replace", "str.replaceall", "str.indexof", "\"true\"", "\"false\"", "\"NaN\""]
 
 addCoreFuncs :: LIVSConfig cf -> [cf] -> LIVSConfig cf
 addCoreFuncs config@(LIVSConfig { core_funcs = cf }) xs = config { core_funcs = cf ++ xs}

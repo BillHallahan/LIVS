@@ -47,7 +47,7 @@ jsBoolSelectorName :: Name
 jsBoolSelectorName = Name Ident "jsBool" Nothing
 
 jsNaNDCName :: Name
-jsNaNDCName = Name Ident "NaN2" Nothing
+jsNaNDCName = Name Ident "JS_NaN" Nothing
 
 jsNaNDC :: DC
 jsNaNDC = DC jsNaNDCName jsIdentType

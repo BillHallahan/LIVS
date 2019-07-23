@@ -1,16 +1,11 @@
 -- should we call this ExampleGrouping or something instead?
-module LIVS.Sygus.TypeValueRules ( typeValueRules
-                                 , filterNotTypeValueRuleCovered
+module LIVS.Sygus.TypeValueRules ( simplifyRules
 
+                                 , typeValueRules
                                  , typeTypeRules
                                  , inputTypeRules
-                                 , simplifyExamples
-                                 , reassignFuncNames
-                                 , reassignConstraintNames
-
-                                 , generateTypeValueRulesFuncs
-                                 , generateTypeValueRulesFunc
-                                 , generateInputTypeRulesFunc ) where
+                                 , filterNotTypeValueRuleCovered
+                                 , simplifyExamples ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
@@ -26,6 +21,74 @@ import Data.List
 
 import Control.Applicative
 import Control.Monad.State.Lazy
+
+-- runSygusWithGrammar con cg const_vals h sub tenv hsr es
+--     | es == [] = return $ (Sat M.empty, sub)
+--     | otherwise = do
+--         let n = (funcName (head es))
+--         n' <- freshNameM n
+--
+--         let rules = typeValueRules es
+--
+--         -- Type value rules are ignored when synthesizing from complex constraints, because input type to output
+--         -- correspondence no longer holds when examples are entire expressions (and not just inputs and outputs)
+--         let es_filtered = filterNotTypeValueRuleCovered rules es
+--         let tvr_funcs = generateTypeValueRulesFuncs rules
+        -- let (es', ty_val_rules_funcs) = case (head es) of
+        --                                     Constraint _ _ _ _ -> if (simpleConstraint (head es)) then (es_filtered, tvr_funcs) else (es, [])
+        --                                     Example _ _ _ -> (es_filtered, tvr_funcs)
+        --                                 where
+        --                                     simpleConstraint e = isCallExpr (idName $ func e) $ stripLeadingLams (expr e)
+--
+--         let es'' = map (\e -> e { func = Id n' (idType $ func (head es))}) es'
+--         ty_val_rules_funcs' <- mapM (\e -> do
+--                                         ty_val_n <- freshNameM n
+--                                         return (n, ty_val_n, e)) ty_val_rules_funcs
+--
+--         let sub' = foldr (\(n_orig, n_new, e) -> Sub.insert n_orig (typeOf e) n_new) sub ty_val_rules_funcs'
+--             ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
+--
+--         let es''' = simplifyExamples es''
+--         (es4, sub'') <- reassignFuncNames sub' n es'''
+
+-- let es5 = map (\(dcmdc, ess) -> (dcmdc, map (\e -> case e of
+--                                                     Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub'') }
+--                                                     Example _ _ _ -> e) ess)) es4
+
+simplifyRules :: NameGenMonad m => Sub.SubFunctions -> [Example] -> m ([[Example]], [(Name, Expr)], Sub.SubFunctions)
+simplifyRules sub [] = return ([], [], sub)
+simplifyRules sub es = do
+    let n = (funcName (head es))
+    n' <- freshNameM n
+
+    let rules = typeValueRules es
+
+    -- Type value rules are ignored when synthesizing from complex constraints, because input type to output
+    -- correspondence no longer holds when examples are entire expressions (and not just inputs and outputs)
+    let es_filtered = filterNotTypeValueRuleCovered rules es
+        tvr_funcs = generateTypeValueRulesFuncs rules
+        (es1, ty_val_rules_funcs) = case (head es) of
+                                        Constraint _ _ _ _ -> if (simpleConstraint (head es)) then (es_filtered, tvr_funcs) else (es, [])
+                                        Example _ _ _ -> (es_filtered, tvr_funcs)
+                                    where
+                                        simpleConstraint e = isCallExpr (idName $ func e) $ stripLeadingLams (expr e)
+
+    let es2 = map (\e -> e { func = Id n' (idType $ func (head es))}) es1
+
+    ty_val_rules_funcs' <- mapM (\e -> do
+                                        ty_val_n <- freshNameM n
+                                        return (n, ty_val_n, e)) ty_val_rules_funcs
+
+    let sub' = foldr (\(n_orig, n_new, e) -> Sub.insert n_orig (typeOf e) n_new) sub ty_val_rules_funcs'
+        ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
+
+    let es3 = simplifyExamples es2
+    (es4, sub'') <- reassignFuncNames sub' n es3
+    let es5 = map (map (\e -> case e of
+                                  Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub'') }
+                                  Example _ _ _ -> e)) es4
+
+    return (es5, ty_val_rules_funcs'', sub'')
 
 -- | Establish rules about which input types that always lead to the same value
 --   Identifies which input types generate an error value (or any fixed value)
@@ -127,22 +190,22 @@ groupInputTypeRules dcvs es = map (\dcv -> (dcv, filterInputTypeRule dcv es)) dc
 filterInputTypeRule :: ([DC], a) -> [Example] -> [Example]
 filterInputTypeRule (dc, _) = filter ((==) dc . fst . buildInputTypeRule)
 
-reassignFuncNames :: NameGenMonad m => Sub.SubFunctions -> Name -> [(([DC], Maybe DC), [Example])] -> m ([(([DC], Maybe DC), [Example])], Sub.SubFunctions)
+reassignFuncNames :: NameGenMonad m => Sub.SubFunctions -> Name -> [(([DC], Maybe DC), [Example])] -> m ([[Example]], Sub.SubFunctions)
 reassignFuncNames sub orig_n es = do
   (es', sub') <- runStateT (mapM assignFuncName es) sub
   return (es', sub')
   where
-    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m (([DC], Maybe DC), [Example])
+    assignFuncName :: NameGenMonad m => (([DC], Maybe DC), [Example]) -> StateT Sub.SubFunctions m [Example]
     assignFuncName ((dcmdc, ess@(e:_))) = do
       let t = exampleFuncType e
       nsub <- get
       i <- case Sub.lookupName orig_n t nsub of
-                    Just n -> return (Id n t)
-                    Nothing -> do
-                        i@(Id new_n _) <- freshIdM (idName $ func e) t
-                        put $ Sub.insert orig_n t new_n nsub
-                        return i
-      return (dcmdc, map (\e' -> e' { func = i }) ess)
+              Just n -> return (Id n t)
+              Nothing -> do
+                i@(Id new_n _) <- freshIdM (idName $ func e) t
+                put $ Sub.insert orig_n t new_n nsub
+                return i
+      return $ map (\e' -> e' { func = i }) ess
     assignFuncName _ = error "assignFuncNames: empty example list."
 
 reassignConstraintNames :: Expr -> Sub.SubFunctions -> Expr

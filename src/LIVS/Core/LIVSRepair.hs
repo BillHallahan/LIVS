@@ -32,12 +32,13 @@ import Data.Maybe
 -- CORE
 
 livsRepairCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m) => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b
-               -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> String -> [Example] -> m (H.Heap, [Id])
-livsRepairCVC4 con le b fuzz fp cg const_val = livsRepair con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
+               -> FilePath -> CallGraph -> Constants -> H.Heap -> T.TypeEnv -> String -> [Example] -> m (H.Heap, [Id])
+livsRepairCVC4 con le b fuzz fp cg consts =
+    livsRepair con le b (runSygusWithGrammarWithIteFallBack con cg) (runSygusWithGrammar con cg) fuzz fp cg consts
 
-livsRepair :: MonadIO m => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Fuzz m b -> FilePath
-           -> CallGraph -> H.Heap -> T.TypeEnv -> String -> [Example] -> m (H.Heap, [Id])
-livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
+livsRepair :: MonadIO m => LIVSConfigNames -> LanguageEnv m b -> b -> Gen m -> Gen m -> Fuzz m b -> FilePath
+           -> CallGraph -> Constants -> H.Heap -> T.TypeEnv -> String -> [Example] -> m (H.Heap, [Id])
+livsRepair con le b gen gen_out fuzz fp cg consts h tenv fstring exs = do
 
     -- Get the function to repair
     let v = verts cg
@@ -99,19 +100,20 @@ livsRepair con le b gen fuzz fp cg h tenv fstring exs = do
 
     -- Get definitions for usable component functions
     let cg' = (\g@(CallGraph _ _ _ ve) i -> createCallGraph [x | x <- ve, (fst x /= i) && (not $ path g (fst x) i)]) cg fid
-    (h', sub, exs'') <- livs con le b gen fuzz fp cg' h tenv
+    (h', sub, exs'') <- livs con le b gen fuzz fp cg' consts h tenv
     let exs''' = examplesForFunc fname (exs ++ exs'')
 
     -- Repair!
-    (h'', success, _) <- livsRepair' le b gen cg sub h' tenv exs exs''' ext_constraints fname target_def partial_defs
+    -- let gen_new = genNewR fname gen gen_out
+    (h'', success, _) <- livsRepair' le b gen_out cg consts sub h' tenv exs exs''' ext_constraints fname target_def partial_defs
     let fid' = case success of
                    Nothing -> error "livsRepair: Repair failed"
                    Just i -> i
     return (h'', [fid'])
 
-livsRepair' :: MonadIO m => LanguageEnv m b -> b -> Gen m -> CallGraph -> Sub.SubFunctions -> H.Heap -> T.TypeEnv
-            -> [Example] -> [Example] -> [Example] -> Name -> Expr -> DefT -> m (H.Heap, Maybe Id, Int)
-livsRepair' le b gen cg sub h tenv exs exs' ext_cons fname target_def (DefT partial_def children) = do
+livsRepair' :: MonadIO m => LanguageEnv m b -> b -> Gen m -> CallGraph -> Constants -> Sub.SubFunctions -> H.Heap
+            -> T.TypeEnv -> [Example] -> [Example] -> [Example] -> Name -> Expr -> DefT -> m (H.Heap, Maybe Id, Int)
+livsRepair' le b gen cg consts sub h tenv exs exs' ext_cons fname target_def (DefT partial_def children) = do
 
     -- Give the partial definition the input types of the target definition
     let e = mkLams (leadingLams target_def) (fst partial_def)
@@ -121,14 +123,14 @@ livsRepair' le b gen cg sub h tenv exs exs' ext_cons fname target_def (DefT part
     --liftIO $ (putStrLn $ "Partial Def: " ++ show partial_def')
 
     -- Attempt repair at current location
-    (h', fid, score) <- livsRepairStep le b gen cg sub h tenv exs exs' ext_cons fname target_def partial_def'
+    (h', fid, score) <- livsRepairStep le b gen cg consts sub h tenv exs exs' ext_cons fname target_def partial_def'
     case fid of
         Nothing -> do
             return (h', Nothing, score)
         Just _ -> do
 
             -- If the repair succeeded, try repair on child partial definitions too
-            all_scores <- mapM (livsRepair' le b gen cg sub h' tenv exs exs' ext_cons fname target_def) children
+            all_scores <- mapM (livsRepair' le b gen cg consts sub h' tenv exs exs' ext_cons fname target_def) children
             let all_scores' = [(h', fid, score)] ++ filter (\(_, f, _) -> isJust f) all_scores
 
             -- Get the lowest scoring (best) repair and return it
@@ -136,9 +138,9 @@ livsRepair' le b gen cg sub h tenv exs exs' ext_cons fname target_def (DefT part
                 (best_h, best_fid, _) = (head $ filter (\(_, _, s) -> s == best_score) all_scores')
             return (best_h, best_fid, best_score)
 
-livsRepairStep :: MonadIO m => LanguageEnv m b -> b -> Gen m -> CallGraph -> Sub.SubFunctions -> H.Heap -> T.TypeEnv
-               -> [Example] -> [Example] -> [Example] -> Name -> Expr -> PartialDef -> m (H.Heap, Maybe Id, Int)
-livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_def (partial_def, t) = do
+livsRepairStep :: MonadIO m => LanguageEnv m b -> b -> Gen m -> CallGraph -> Constants -> Sub.SubFunctions -> H.Heap
+               -> T.TypeEnv -> [Example] -> [Example] -> [Example] -> Name -> Expr -> PartialDef -> m (H.Heap, Maybe Id, Int)
+livsRepairStep le b gen cg consts sub h tenv exs exs' ext_constraints fname original_def (partial_def, t) = do
 
     -- Get I/O constraints and an id for the subexpression to synthesize
     let fid = Id fname t
@@ -150,7 +152,7 @@ livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_de
     liftIO $ whenLoud (putStr $ "Repair area: " ++ toJavaScriptDef S.empty fname partial_def)
 
     -- Synthesize sub expression
-    (h', success) <- callSynthesizer gen cg sub h tenv constraints fid
+    (h', success) <- callSynthesizer gen cg consts sub h tenv constraints fid
     case success of
         Nothing -> do
             liftIO $ whenLoud (putStrLn "Synthesis failed for this repair area\n")
@@ -187,9 +189,9 @@ livsRepairStep le b gen cg sub h tenv exs exs' ext_constraints fname original_de
             -- Return the heap with it's score
             return (h'', Just fid'', score)
 
-callSynthesizer :: MonadIO m => Gen m -> CallGraph -> Sub.SubFunctions -> H.Heap
+callSynthesizer :: MonadIO m => Gen m -> CallGraph -> Constants -> Sub.SubFunctions -> H.Heap
                 -> T.TypeEnv -> [Example] -> Id -> m (H.Heap, Maybe Id)
-callSynthesizer gen cg sub h tenv exs fid = do
+callSynthesizer gen cg consts sub h tenv exs fid = do
 
     -- The grammar available to the function we're synthesizing
     let def_ids = nub $ filterNonPrimitives h $ verts cg
@@ -197,7 +199,7 @@ callSynthesizer gen cg sub h tenv exs fid = do
     liftIO $ whenLoud (putStrLn $ "Grammar: " ++ (show gram))
 
     -- Take a guess at the definition of the function
-    (m, sub') <- gen h sub tenv gram exs
+    (m, sub') <- gen (lookupConstantsDefEmpty (idName fid) consts) h sub tenv gram exs
     case m of
         Sat m' -> do
             let h' = H.union (H.fromExprHashMap m') h
@@ -258,6 +260,16 @@ mapVars (Lam i e) hm = case (HM.lookup i hm) of
 mapVars (App e1 e2) hm = App (mapVars e1 hm) (mapVars e2 hm)
 mapVars (Let (b, e1) e2) hm = Let (b, mapVars e1 hm) (mapVars e2 hm)
 mapVars e _ = e
+
+-- genNewR :: Monad m
+--         => Name
+--         -> Gen m -- ^ Synthesize component functions
+--         -> Gen m -- ^ Synthesize the output function
+--         -> Gen m
+-- genNewR n gen gen_out cnsts h sub tenv hs es
+--   | (idName $ func es == n) = gen_out cnsts h sub tenv hs es
+--   | otherwise = gen cnsts h sub tenv hs es
+-- genNewR _ _ _ _ _ _ _ _ _ = error "genNew: No examples"
 
 -- PARTIAL DEFINITIONS
 

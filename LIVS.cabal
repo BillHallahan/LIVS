@@ -38,6 +38,7 @@ library
                        , LIVS.Core.LIVSSynth
                        , LIVS.Core.LIVSRepair
                        , LIVS.Sygus.CVC4Interface
+                       , LIVS.Sygus.ExamplesToIte
                        , LIVS.Sygus.Result
                        , LIVS.Sygus.SMTLexer
                        , LIVS.Sygus.SMTParser

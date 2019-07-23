@@ -20,7 +20,9 @@ jsJSONToVal s =
     case parse json $ B.pack $ map repSnglWithDbl s of
       Fail _ _ _
         | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
+        | "Error" <- P.take 5 s -> DataVal jsErrorDC
         | "TypeError" <- P.take 9 s -> DataVal jsErrorDC
+        | "AssertionError" <- P.take 14 s -> DataVal jsErrorDC
         | "undefined" <- P.take 9 s -> DataVal jsUndefinedDC
       Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
       Partial _ -> error "Why does this happen?"
@@ -40,5 +42,5 @@ toValue = \case
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
   Object _ -> undefined
   Array _  -> AppVal (DataVal jsIntDC) $ LitVal (LInt (-123456789))
-  Bool b -> if b then DataVal trueDC else DataVal falseDC
+  Bool b -> AppVal (DataVal jsBoolDC) $ if b then DataVal trueDC else DataVal falseDC
   Null     -> undefined

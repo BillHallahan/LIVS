@@ -28,7 +28,9 @@ module LIVS.Language.Heap ( Heap
                           , isDef
                           , isPrimitive
                           , isDefObj
-                          , isPrimitiveObj ) where
+                          , isPrimitiveObj
+
+                          , nameToId ) where
 
 import LIVS.Language.Syntax
 import LIVS.Language.Typing
@@ -144,3 +146,6 @@ isDefObj _ = False
 isPrimitiveObj :: HeapObj -> Bool
 isPrimitiveObj (Primitive _) = True
 isPrimitiveObj _ = False
+
+nameToId :: Name -> Heap -> Maybe Id
+nameToId n = fmap (Id n . typeOf) . lookup n

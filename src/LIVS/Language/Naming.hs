@@ -41,6 +41,8 @@ stringToName ll s =
         _:_ -> Name ll s'' (Just . read $ reverse i)
         [] -> Name ll s'' Nothing
 
+-- nameMapping
+
 newtype NameGen = NameGen (HM.HashMap String Integer)
 
 mkNameGen :: [Name] -> NameGen

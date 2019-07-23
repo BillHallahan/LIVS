@@ -20,38 +20,41 @@ import LIVS.Target.General.LanguageEnv
 
 import Control.Monad.Random
 import Data.List
+import Data.Maybe
 
 livsSynthCVC4 :: (NameGenMonad m, MonadIO m, MonadRandom m)
-         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> [Val] -> H.Heap -> T.TypeEnv -> [Example] -> m (H.Heap, [Id])
-livsSynthCVC4 con le b fuzz fp cg const_val = livsSynth con le b (runSygusWithGrammar con cg const_val) fuzz fp cg
+         => LIVSConfigNames -> LanguageEnv m b -> b -> Fuzz m b -> FilePath -> CallGraph -> Constants -> H.Heap -> T.TypeEnv -> [Example] -> m (H.Heap, [Id])
+livsSynthCVC4 con le b fuzz fp cg consts =
+  livsSynth con le b (runSygusWithGrammarWithIteFallBack con cg) (runSygusWithGrammar con cg) fuzz fp cg consts
 
 livsSynth :: MonadIO m
           => LIVSConfigNames
           -> LanguageEnv m b
           -> b
-          -> Gen m
+          -> Gen m -- ^ Synthesize component functions
+          -> Gen m -- ^ Synthesize the output function
           -> Fuzz m b
           -> FilePath
           -> CallGraph
+          -> Constants
           -> H.Heap
           -> T.TypeEnv
           -> [Example] -- ^ The examples to synthesize a new function from
           -> m (H.Heap, [Id])
-livsSynth con le b gen fuzz fp cg h tenv exs = do
+livsSynth con le b gen gen_out fuzz fp cg consts h tenv exs = do
     -- Get the component functions
-    (h', sub, exs') <- livs con le b gen fuzz fp cg h tenv
+    (h', sub, exs') <- livs con le b gen fuzz fp cg consts h tenv
 
     -- Get the Id's of the new functions we have to synthesize
     let is = nub $ map func exs
 
     -- Expand the call graph with the new id's
     let def_ids = filterNonPrimitives h' $ verts cg-- map (flip Id (TyCon (Name Ident "Unknown" Nothing) TYPE)) $ Sub.keys sub
-        cg' = addVertsToCallGraph (zip is $ repeat def_ids) cg
+        def_ids' = def_ids ++ mapMaybe (flip H.nameToId h') (T.constructorNames tenv ++ T.selectorNames tenv)
+        cg' = addVertsToCallGraph (zip is $ repeat def_ids') cg
 
     -- Synthesize based on the user provided examples
-    let con' = con -- con { core_funcs = filterNonPrimitives h' (core_funcs con)}
-
-    (h'', sub', _) <- livs' con' le b gen (fuzzFake is fuzz) cg' (exs ++ exs') tenv h' sub is
+    (h'', sub', _) <- livs' con le b (genNew is gen gen_out) (fuzzFake is fuzz) cg' consts (exs ++ exs') tenv h' sub is
 
     let is' = map (toId h'') . flip Sub.lookupAllNames sub' $ map idName is
 
@@ -77,6 +80,16 @@ fuzzFake :: Monad m => [Id] -> (Fuzz m b) -> Fuzz m b
 fuzzFake is fuzz le b es tenv n i
     | i `elem` is = return []
     | otherwise = fuzz le b es tenv n i
+
+genNew :: Monad m
+       => [Id]
+       -> Gen m -- ^ Synthesize component functions
+       -> Gen m -- ^ Synthesize the output function
+       -> Gen m
+genNew is gen gen_out cnsts h sub tenv hs es@(Example { func = i }:_)
+  | i `elem` is = gen_out cnsts h sub tenv hs es
+  | otherwise = gen cnsts h sub tenv hs es
+genNew _ _ _ _ _ _ _ _ _ = error "genNew: No examples"
 
 -- | In general, we cannot convert SMT primitives back into the real language,
 -- so we filter them out here.

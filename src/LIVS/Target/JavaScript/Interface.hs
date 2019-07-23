@@ -2,6 +2,7 @@ module LIVS.Target.JavaScript.Interface (
           JavaScriptREPL
         , DotNoteNames
         , jsLanguageEnv
+        , extractDefinedFileJavaScript
         , extractFileJavaScript
         , extractJavaScriptDefinitions
         , extractJavaScriptDefinition
@@ -27,6 +28,7 @@ import LIVS.Target.JavaScript.Extract (DotNoteNames)
 import LIVS.Target.JavaScript.JSIdentifier
 
 import Data.List
+import Data.Maybe
 
 import qualified Data.HashSet as S
 import qualified Data.HashMap.Lazy as HM
@@ -36,11 +38,28 @@ newtype JavaScriptREPL = JavaScriptREPL Process
 jsLanguageEnv :: IO (LanguageEnv IO (S.HashSet Name))
 jsLanguageEnv = do
     js <- initJavaScriptREPL
-    return $ LanguageEnv { extractCalls = extractFileJavaScript
+    return $ LanguageEnv { extractCalls = extractDefinedFileJavaScript
                          , extractDefs = extractJavaScriptDefinitions
                          , load = loadFileJavaScript js
                          , def = defJavaScript js
                          , call = callJavaScript js }
+
+extractDefinedFileJavaScript :: FilePath -> IO ([(Id, FuncInfo)], S.HashSet Name)
+extractDefinedFileJavaScript fp = do
+    jsast <- Ext.parseJS fp
+    case jsast of
+        Left e -> error $ show e
+        Right jsast' -> do
+            let def = Ext.extractDefinedFunctions jsast'
+                (allF, hsn) = Ext.extractFunctions jsast'
+
+            return (mapMaybe (rel def) allF, hsn)
+
+    where
+        rel :: [Id] -> (Id, FuncInfo) -> Maybe (Id, FuncInfo)
+        rel is (i, fi@(FuncInfo {calls = ci }))
+            | i `elem` is = Just (i, fi { calls = filter (`elem` is) ci })
+            | otherwise = Nothing
 
 extractFileJavaScript :: FilePath -> IO ([(Id, FuncInfo)], S.HashSet Name)
 extractFileJavaScript fp = do
@@ -117,6 +136,7 @@ toJavaScriptDef dnn n e =
             if (Name ll n' Nothing) `S.member` dnn then Name ll n' Nothing else name
 
 toJavaScriptCall :: DotNoteNames -> Expr -> String
+toJavaScriptCall dnn (Var i) = toJavaScriptId i ++ "();\n"
 toJavaScriptCall dnn e = toJavaScriptExpr dnn e ++ ";\n"
 
 toJavaScriptExpr :: DotNoteNames -> Expr -> String
@@ -135,6 +155,10 @@ toJavaScriptExpr dnn e@(App _ _)
         -- "(if (" ++ toJavaScriptExpr e1 ++ ") {" ++ toJavaScriptExpr e2 ++ "} else {" ++ toJavaScriptExpr e3 ++ "})"
     | App (App (Var (Id n _)) e1) e2 <- e
     , nameToString n `elem` operators = "(" ++ toJavaScriptExpr dnn e1 ++ " " ++ nameToString n ++ " " ++ toJavaScriptExpr dnn e2 ++ ") "
+    | App (Var (Id n _)) e2 <- e
+    , n == jsIntSelectorName
+        || n == jsStringSelectorName
+        || n == jsBoolSelectorName = toJavaScriptExpr dnn e2
     | v@(Var (Id n _)):ex:es <- unApp e
     , n `S.member` dnn =
         "(" ++ toJavaScriptExpr dnn ex ++ "." ++ toJavaScriptExpr dnn v ++ "("

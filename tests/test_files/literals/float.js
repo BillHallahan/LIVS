@@ -2,12 +2,12 @@ function add(m, n) {
   return m + n;
 }
 
-function round2(n) {
-    return Math.round(n);
+function round(n) {
+    return 2;
 }
 
 function f(n) {
-    return add(round2(2.345), n);
+    return add(round(2.345), n);
 }
 
 //@pbe (constraint (= (f 3) 8))
