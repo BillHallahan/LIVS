@@ -26,6 +26,8 @@ import Language.JavaScript.Parser.AST
 import qualified Data.HashSet as S
 import Data.Semigroup
 
+import Debug.Trace
+
 -- | A set of names that use dot notation.
 type DotNoteNames = S.HashSet Name
 
@@ -96,11 +98,12 @@ extractCalledFunctionsExpr' (JSCallExpression (JSCallExpressionDot _ _ (JSIdenti
         nm = Name Ident n Nothing
     in
     (FuncInfo { calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
-extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ (JSIdentifier _ n)) _ args _) =
+extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot (JSIdentifier _ first) _ (JSIdentifier _ second)) _ args _) =
     let
-        nm = Name Ident n Nothing
+        nm = Name Ident (first ++ "." ++ second) Nothing
     in
-    (FuncInfo {calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.singleton nm)
+    (FuncInfo {calls = [nameCLToIdWithExtraArgs nm args 1], consts = mempty }, S.empty)
+extractCalledFunctionsExpr' (JSMemberExpression (JSMemberDot _ _ _) _ _ _) = error $ "extractCalledFunctionsExpr': complex JSMemberExpression"
 extractCalledFunctionsExpr' _ = (mempty, S.empty)
 
 extractDefinition :: JSAST -> Name -> Expr
