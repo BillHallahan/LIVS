@@ -7,7 +7,7 @@ function round(n) {
 }
 
 function f(n) {
-    return add(round(2.345), n);
+    return add(round(2.4), n);
 }
 
 //@pbe (constraint (= (f 3) 8))

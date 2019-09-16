@@ -7,6 +7,7 @@ module LIVS.Sygus.TypeValueRules ( simplifyRules
                                  , filterNotTypeValueRuleCovered
                                  , simplifyExamples ) where
 
+import LIVS.Config.Config
 import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
 import LIVS.Language.Syntax
@@ -22,40 +23,7 @@ import Data.List
 import Control.Applicative
 import Control.Monad.State.Lazy
 
--- runSygusWithGrammar con cg const_vals h sub tenv hsr es
---     | es == [] = return $ (Sat M.empty, sub)
---     | otherwise = do
---         let n = (funcName (head es))
---         n' <- freshNameM n
---
---         let rules = typeValueRules es
---
---         -- Type value rules are ignored when synthesizing from complex constraints, because input type to output
---         -- correspondence no longer holds when examples are entire expressions (and not just inputs and outputs)
---         let es_filtered = filterNotTypeValueRuleCovered rules es
---         let tvr_funcs = generateTypeValueRulesFuncs rules
-        -- let (es', ty_val_rules_funcs) = case (head es) of
-        --                                     Constraint _ _ _ _ -> if (simpleConstraint (head es)) then (es_filtered, tvr_funcs) else (es, [])
-        --                                     Example _ _ _ -> (es_filtered, tvr_funcs)
-        --                                 where
-        --                                     simpleConstraint e = isCallExpr (idName $ func e) $ stripLeadingLams (expr e)
---
---         let es'' = map (\e -> e { func = Id n' (idType $ func (head es))}) es'
---         ty_val_rules_funcs' <- mapM (\e -> do
---                                         ty_val_n <- freshNameM n
---                                         return (n, ty_val_n, e)) ty_val_rules_funcs
---
---         let sub' = foldr (\(n_orig, n_new, e) -> Sub.insert n_orig (typeOf e) n_new) sub ty_val_rules_funcs'
---             ty_val_rules_funcs'' = map (\(_, x, y) -> (x, y)) ty_val_rules_funcs'
---
---         let es''' = simplifyExamples es''
---         (es4, sub'') <- reassignFuncNames sub' n es'''
-
--- let es5 = map (\(dcmdc, ess) -> (dcmdc, map (\e -> case e of
---                                                     Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub'') }
---                                                     Example _ _ _ -> e) ess)) es4
-
-simplifyRules :: NameGenMonad m => Sub.SubFunctions -> [Example] -> m ([[Example]], [(Name, Expr)], Sub.SubFunctions)
+simplifyRules :: (NameGenMonad m, MonadIO m) => Sub.SubFunctions -> [Example] -> m ([[Example]], [(Name, Expr)], Sub.SubFunctions)
 simplifyRules sub [] = return ([], [], sub)
 simplifyRules sub es = do
     let n = (funcName (head es))
@@ -87,6 +55,12 @@ simplifyRules sub es = do
     let es5 = map (map (\e -> case e of
                                   Constraint _ _ _ _ -> e { expr = (reassignConstraintNames (expr e) sub'') }
                                   Example _ _ _ -> e)) es4
+
+    -- liftIO $ whenLoud $ putStrLn $ "es: " ++ (show es) ++ "\n\n"
+    -- liftIO $ whenLoud $ putStrLn $ "es1: " ++ (show es1) ++ "\n\n"
+    -- liftIO $ whenLoud $ putStrLn $ "es2: " ++ (show es1) ++ "\n\n"
+    -- liftIO $ whenLoud $ putStrLn $ "es3: " ++ (show es1) ++ "\n\n"
+    -- liftIO $ whenLoud $ putStrLn $ "es4: " ++ (show es1) ++ "\n\n"
 
     return (es5, ty_val_rules_funcs'', sub'')
 

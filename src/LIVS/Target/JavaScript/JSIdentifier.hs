@@ -75,8 +75,8 @@ jsTypeEnv = T.fromList
                 [ T.NamedType jsStringSelectorName stringType ]
             , T.SelectorDC jsBoolDCName
                 [ T.NamedType jsBoolSelectorName boolType ]
-            -- , T.SelectorDC jsFloatDCName
-            --     [ T.NamedType jsFloatSelectorName floatType ]
+            , T.SelectorDC jsFloatDCName
+                [ T.NamedType jsFloatSelectorName floatType ]
             , T.SelectorDC jsNaNDCName []
             , T.SelectorDC jsErrorDCName []
             , T.SelectorDC jsUndefinedDCName []

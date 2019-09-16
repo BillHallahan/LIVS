@@ -38,27 +38,41 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
 
     (ids, b) <- extractCalls lenv fp
 
-    let heap = H.fromList [ (Name SMT "=" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
-                          , (Name SMT "=" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType boolType))
-                          , (Name SMT "=" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType boolType))
-                          , (Name SMT "not" Nothing, H.Primitive $ TyFun boolType boolType)
-                          , (Name SMT "and" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
-                          , (Name SMT "or" Nothing, H.Primitive $ TyFun boolType (TyFun boolType boolType))
-                          , (Name SMT ">" Nothing, H.Primitive $ TyFun intType (TyFun intType boolType))
-                          , (Name SMT "+" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name SMT "-" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name SMT "*" Nothing, H.Primitive $ TyFun intType (TyFun intType intType))
-                          , (Name SMT "ite" Nothing, H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))
-                          , (Name SMT "ite" (Just 1), H.Primitive $ TyFun boolType (TyFun stringType (TyFun stringType stringType)))
-                          , (Name SMT "ite" (Just 2), H.Primitive $ TyFun boolType (TyFun boolType (TyFun boolType boolType)))
-                          , (Name SMT "ite" (Just 3), H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
-                          , (Name SMT "str.substr" Nothing, H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
-                          , (Name SMT "str.replace" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
-                          , (Name SMT "str.replaceall" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
-                          , (Name SMT "str.len" Nothing, H.Primitive $ TyFun stringType intType)
-                          , (Name SMT "str.indexof" Nothing, H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
-                          , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
-                          , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
+    let heap = H.fromList [ (Name SMT "=" (Just 1), H.Primitive $ TyFun intType (TyFun intType boolType))
+                          , (Name SMT "=" (Just 2), H.Primitive $ TyFun stringType (TyFun stringType boolType))
+                          , (Name SMT "=" (Just 3), H.Primitive $ TyFun boolType (TyFun boolType boolType))
+                          , (Name SMT "=" (Just 4), H.Primitive $ TyFun floatType (TyFun floatType boolType))
+
+                          , (Name SMT "not" (Just 1), H.Primitive $ TyFun boolType boolType)
+                          , (Name SMT "and" (Just 1), H.Primitive $ TyFun boolType (TyFun boolType boolType))
+                          , (Name SMT "or" (Just 1), H.Primitive $ TyFun boolType (TyFun boolType boolType))
+
+                          , (Name SMT "to_real" (Just 1), H.Primitive $ TyFun intType floatType)
+                          , (Name SMT "to_int" (Just 1), H.Primitive $ TyFun floatType intType)
+                          , (Name SMT "is_int" (Just 1), H.Primitive $ TyFun floatType boolType)
+
+                          , (Name SMT ">" (Just 1), H.Primitive $ TyFun intType (TyFun intType boolType))
+                          , (Name SMT ">" (Just 2), H.Primitive $ TyFun floatType (TyFun floatType boolType))
+                          , (Name SMT "+" (Just 1), H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "+" (Just 2), H.Primitive $ TyFun floatType (TyFun floatType floatType))
+                          , (Name SMT "-" (Just 1), H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "-" (Just 2), H.Primitive $ TyFun floatType (TyFun floatType floatType))
+                          , (Name SMT "*" (Just 1), H.Primitive $ TyFun intType (TyFun intType intType))
+                          , (Name SMT "*" (Just 2), H.Primitive $ TyFun floatType (TyFun floatType floatType))
+
+                          , (Name SMT "ite" (Just 1), H.Primitive $ TyFun boolType (TyFun intType (TyFun intType intType)))
+                          , (Name SMT "ite" (Just 2), H.Primitive $ TyFun boolType (TyFun stringType (TyFun stringType stringType)))
+                          , (Name SMT "ite" (Just 3), H.Primitive $ TyFun boolType (TyFun boolType (TyFun boolType boolType)))
+                          , (Name SMT "ite" (Just 4), H.Primitive $ TyFun boolType (TyFun floatType (TyFun floatType floatType)))
+                          , (Name SMT "ite" (Just 5), H.Primitive $ TyFun boolType (TyFun jsIdentType (TyFun jsIdentType jsIdentType)))
+
+                          , (Name SMT "str.substr" (Just 1), H.Primitive $ TyFun stringType (TyFun intType (TyFun intType stringType)))
+                          , (Name SMT "str.replace" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
+                          , (Name SMT "str.replaceall" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType (TyFun stringType stringType)))
+                          , (Name SMT "str.len" (Just 1), H.Primitive $ TyFun stringType intType)
+                          , (Name SMT "str.indexof" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType (TyFun intType intType)))
+                          , (Name SMT "str.++" (Just 1), H.Primitive $ TyFun stringType (TyFun stringType stringType))
+                          , (Name SMT "int.to.str" (Just 1), H.Primitive $ TyFun intType stringType)
                           -- , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
                           -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
                           ]
@@ -101,7 +115,7 @@ synth config@(LIVSConfig { code_file = fp, program_mode = mode }) lenv = do
 
     let lenv' = liftLanguageEnv nameGenT lenv
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with'')
-        
+
     (final_heap, is) <- case mode of
                             "synth" -> evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv synth_ex) ng
                             fname -> evalNameGenT (livsRepairCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv fname synth_ex) ng

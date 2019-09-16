@@ -19,6 +19,8 @@ import qualified Data.HashSet as HS
 import Data.List
 import Data.Maybe
 
+import Debug.Trace
+
 -- | Translates examples into a SyGuS problem.
 -- Functions from the heap are translated into SMT formulas, so they can be
 -- used during synthesis.
@@ -58,13 +60,13 @@ toSygusWithGrammar cg cons_val h sub tenv hsr es@(e:_) =
         -- sorts of data constructors
         fs = collectFuncs es
         hr = H.filterWithKey (\n _ -> n `HS.member` hsr) tyFilH
+        -- TODO make the logic a function of what's in the grammar
         fspec = concatMap (\(n, it, ot) -> genSynthFun hr n cons_val it ot) fs
 
         constraints = concat . intersperse "\n" $ map toSygusExample es
     in
-    -- trace ("ex func = " ++ show (func e) ++ "\nhsr = " ++ show hsr ++ "\n")
-    "(set-logic SLIA)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n"
-        ++ constraints ++ "\n(check-synth)"
+    trace ("es: " ++ show es) $ -- ++ "\nhr: " ++  show hr ++ "\ncons: " ++ show cons_val) $
+        "(set-logic ALL)\n" ++ tspec ++ "\n" ++  hf ++ "\n" ++ fspec ++ "\n" ++ constraints ++ "\n(check-synth)"
 toSygusWithGrammar _ _ _ _ _ _ [] = error "toSygusWithGrammar: No examples"
 
 toSygusExample :: Example -> String
@@ -259,4 +261,4 @@ filterHeapToValidTypes :: T.TypeEnv -> H.Heap -> H.Heap
 filterHeapToValidTypes tenv =
     H.filter (\e -> all (`HS.member` tycons) $ tyConNames (typeOf e))
     where
-        tycons = HS.unions $ HS.fromList (T.keys tenv):map tyConNames [intType, stringType, boolType]
+        tycons = HS.unions $ HS.fromList (T.keys tenv):map tyConNames [intType, stringType, boolType, floatType]

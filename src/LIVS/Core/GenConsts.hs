@@ -12,7 +12,7 @@ import Data.List
 -- | Given a list of constants, generates a list of constants to be used in
 -- the grammar and in example generation.
 genConsts :: [Val] -> [Val]
-genConsts vs = nub $ genIntsConsts vs ++ genStrings vs
+genConsts vs = nub $ genIntsConsts vs ++ genStrings vs ++ genReals vs
 
 genIntsConsts :: [Val] -> [Val]
 genIntsConsts vs = concatMap ints vs ++ concatMap strLens vs
@@ -31,6 +31,13 @@ genStrings = map (LitVal . LString) . concatMap strs
         strs (LitVal (LString s)) = [s]
         strs (AppVal v1 v2) = strs v1 ++ strs v2
         strs _ = []
+
+genReals :: [Val] -> [Val]
+genReals vs = concatMap reals vs
+    where
+        reals l@(LitVal (LFloat _)) = [l]
+        reals (AppVal v1 v2) = reals v1 ++ reals v2
+        reals _ = []
 
 -- genStrings :: [Val] -> [Val]
 -- genStrings vs =
@@ -67,7 +74,7 @@ expandVals' vs n sdc@(T.SelectorDC _ ts) =
     let
         ts' = map T.namedTypeType ts
         vs' = map (\t -> [v | v <- vs, typeOf v == t]) ts'
-    
+
         dc = T.selectorDCToDC n sdc
     in
     map (\vss -> mkAppVal $ DataVal dc:vss) $ sequence vs'

@@ -7,7 +7,7 @@ module LIVS.Sygus.SMTLexer ( Token (..)
 
 $digit = 0-9
 $alpha = [a-zA-Z]
-$symbs = [\+ \- \* \> \< \= \& \. \_ \']
+$symbs = [\+ \- \* \/ \> \< \= \& \. \_ \']
 
 tokens:-
     $white+                                             ;

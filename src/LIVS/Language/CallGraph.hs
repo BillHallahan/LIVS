@@ -118,6 +118,7 @@ findVertTree i ct
 
 -- | Maps a function to the constant values used in that function
 newtype Constants = Constants { unConstants :: HM.HashMap Name [Val] }
+    deriving (Eq, Show)
 
 emptyConstants :: Constants
 emptyConstants = Constants HM.empty
