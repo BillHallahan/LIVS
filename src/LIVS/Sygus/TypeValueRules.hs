@@ -1,5 +1,10 @@
 -- should we call this ExampleGrouping or something instead?
-module LIVS.Sygus.TypeValueRules ( simplifyRules ) where
+module LIVS.Sygus.TypeValueRules ( simplifyRules
+                                 , simplifyExamples
+                                 , typeValueRules
+                                 , filterNotTypeValueRuleCovered
+                                 , inputTypeRules
+                                 , typeTypeRules ) where
 
 import LIVS.Language.Expr
 import LIVS.Language.Monad.Naming
