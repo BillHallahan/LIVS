@@ -35,6 +35,7 @@ import qualified Data.HashMap.Lazy as M
 import qualified Data.HashSet as HS
 import System.IO
 import System.IO.Temp
+import System.Directory
 
 runSygusWithIteFallback :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
 runSygusWithIteFallback con cg const_vals h sub tenv es =
@@ -129,6 +130,8 @@ tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
     liftIO $ whenLoud $ putStrLn $ "Trying CVC4 with " ++ show opt
 
     m <- runCVC4WithFile form ext opt timeout
+    
+    writeFile "temp.sl" form 
     let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
     case r of
@@ -162,7 +165,12 @@ runCVC4WithFile sygus ext ars timeout = do
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            runProcessOnce "gtimeout" (show timeout:"cvc4":fp:ars))
+            toCommandOSX <- findExecutable "gtimeout" 
+            let toCommand = case toCommandOSX of
+                    Just c -> c          -- Mac
+                    Nothing -> "timeout" -- Linux
+
+            runProcessOnce toCommand (show timeout:"cvc4":fp:ars))
         ) :: IO (Either SomeException String)
 
     case out of
