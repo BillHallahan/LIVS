@@ -131,7 +131,6 @@ tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
 
     m <- runCVC4WithFile form ext opt timeout
     
-    writeFile "temp.sl" form 
     let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
     case r of
