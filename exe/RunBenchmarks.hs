@@ -38,13 +38,13 @@ main = do
        (\fp -> do
           putStrLn $ "File = " ++ show fp
           let synthCall = (synth (config {code_file = fp}) jsEnv)
- 
+
           result <- newEmptyMVar :: IO (MVar (Either SomeException String))
 
           -- run synthesis in a new thread (timeout doesn't work with our timeouts of cvc4)
           startTime <- getCurrentTime
-          tId <- forkFinally (synthCall) (\r -> putMVar result r) 
-          whileM_ 
+          tId <- forkFinally (synthCall) (\r -> putMVar result r)
+          whileM_
             (do
                currTime <- getCurrentTime
                -- print benchmarkTimeout
@@ -52,12 +52,12 @@ main = do
                emp <- isEmptyMVar result
                return ((realToFrac $ diffUTCTime currTime startTime) < benchmarkTimeout && emp)
             )
-            (do 
+            (do
                return ()
             )
           killThread tId
           --get result out of MVar
-          r <- readMVar result 
+          r <- readMVar result
           stopTime <- getCurrentTime
 
           --calc time

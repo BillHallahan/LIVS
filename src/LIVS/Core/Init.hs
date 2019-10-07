@@ -24,6 +24,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Random.Class
 
 import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as S
 import Data.List
 import Data.Maybe
 
@@ -34,7 +35,7 @@ synth :: (MonadRandom m, MonadIO m) => LIVSConfigCL -> LanguageEnv m b -> m Stri
 synth config@(LIVSConfig { code_file = fp }) lenv = do
     synth_ex <- examplesFromFile jsJSONToVal fp
 
-    liftIO $ print synth_ex
+    -- liftIO $ print synth_ex
 
     (ids, b) <- extract lenv fp
 
@@ -60,7 +61,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
                           , (Name SMT "str.++" Nothing, H.Primitive $ TyFun stringType (TyFun stringType stringType))
                           , (Name SMT "int.to.str" Nothing, H.Primitive $ TyFun intType stringType)
                           -- , (Name SMT "\"true\"" Nothing, H.Primitive $ stringType)
-                          -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType) 
+                          -- , (Name SMT "\"false\"" Nothing, H.Primitive $ stringType)
                           ]
 
     let config' = toLIVSConfigNames heap config
@@ -94,7 +95,7 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
 
         cnst = fromListConstants $ map (\(i, fi) -> (idName i, genConsts $ consts fi)) ids
 
-    let r = toRational (1 :: Double) 
+    let r = toRational (1 :: Double)
         w = HM.fromList [(jsIntDC, r), (jsStringDC, r), (jsBoolDC, r)]
 
     let ng = mkNameGen []
@@ -103,8 +104,13 @@ synth config@(LIVSConfig { code_file = fp }) lenv = do
         fuzz = liftFuzz nameGenT lenv (fuzzFromValsAndOutputsM w fuzz_with'')
     (final_heap, is) <- evalNameGenT (livsSynthCVC4 config'' lenv' b fuzz fp cg cnst heap'' tenv synth_ex) ng
 
-    mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
-    
+    -- mapM_ (liftIO . print . flip H.lookup final_heap . idName) is
+
     let finalFunc = concatMap (show . flip H.lookup final_heap . idName) is
 
-    return finalFunc
+    -- Provide function in JS
+    let finalFuncJS = concatMap (\i -> case H.lookup (idName i) final_heap of
+                                           Just (H.Def e) -> toJavaScriptDef S.empty (idName i) e
+                                           _ -> error "livsSynth: No definition found") is
+
+    return finalFuncJS

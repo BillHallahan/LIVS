@@ -13,6 +13,8 @@ import Data.Aeson
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 
+import Debug.Trace
+
 import Prelude as P
 
 jsJSONToVal :: String -> Val
@@ -35,10 +37,12 @@ jsJSONToVal s =
 
 -- | convert the JSON object to the homemade data type
 toValue :: Value -> Val
-toValue = \case
+toValue v = case v of
   Number n
       | Just n' <- toBoundedInteger n -> AppVal (DataVal jsIntDC) $ LitVal (LInt n')
-      | otherwise -> AppVal (DataVal undefined) $ LitVal (LFloat $ toRealFloat n)
+      | otherwise -> case floatingOrInteger n of
+          Right n' -> AppVal (DataVal jsIntDC) $ LitVal (LInt n')
+          Left _ -> AppVal (DataVal undefined) $ LitVal (LFloat $ toRealFloat n)
   String t -> AppVal (DataVal jsStringDC) $ LitVal (LString $ T.unpack t)
   Object _ -> undefined
   Array _  -> AppVal (DataVal jsIntDC) $ LitVal (LInt (-123456789))
