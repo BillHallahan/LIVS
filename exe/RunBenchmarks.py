@@ -41,9 +41,9 @@ def main():
             try:
 
                 # Collect output from command
-                cmd = ["runhaskell", "exe/Main.hs", "--code-file={}/fullGrammar.js".format(f)]
-                res = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=timeout)
-                output = res.decode("utf-8").split("\n")[:-2]
+                cmd = "cabal run livs -- --code-file={}/fullGrammar.js".format(f)
+                res = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=timeout, shell=True)
+                output = res.decode("utf-8").split("\n")
                 end = time.time()
 
             # LIVS throws an exception
