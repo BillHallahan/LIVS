@@ -57,27 +57,27 @@ library
                        , LIVS.UI.Parse
   -- other-modules:
   -- other-extensions:
-  build-depends:         array
-                       , base >=4.10
-                       , cmdargs
-                       , containers
-                       , hashable
-                       , MonadRandom
-                       , mtl
-                       , process >= 1.6
-                       , random
-                       , temporary >= 1.3
-                       , unordered-containers
-                       , aeson
-                       , attoparsec
-                       , bytestring
-                       , scientific
-                       , text
-                       , template-haskell
-                       , language-javascript >= 0.6.0.10
-                       , regex-compat
-                       , unix
-                       , directory
+  build-depends:         array >= 0.5 && < 0.6
+                       , base >= 4.10 && < 5
+                       , cmdargs >= 0.10 && < 0.11
+                       , containers >= 0.5 && < 0.7
+                       , hashable >= 1.3 && < 1.4
+                       , MonadRandom >= 0.5 && < 0.6
+                       , mtl >= 2.2 && < 2.3
+                       , process >= 1.6 && < 1.7
+                       , random >= 1.1 && < 1.2
+                       , temporary >= 1.3 && < 1.4
+                       , unordered-containers  >= 0.2 && < 0.3
+                       , aeson >= 1.4 && < 1.5
+                       , attoparsec >= 0.13 && < 0.14
+                       , bytestring >= 0.10 && < 0.11
+                       , scientific >= 0.3 && < 0.4 
+                       , text >= 1.2 && < 1.3
+                       , template-haskell >= 2.12.0.0 && <= 2.14.0.0
+                       , language-javascript >= 0.6.0.10 && < 0.7
+                       , regex-compat >= 0.95 && < 0.96
+                       , unix >= 2.7 && < 2.8
+                       , directory >= 1.3 && < 1.4
   ghc-options:         -O2 -Wall
                        -- -ddump-splices
                        -- -fprof-auto
@@ -87,7 +87,7 @@ library
 executable livs
   -- other-modules:
   -- other-extensions:
-  build-depends:         base >= 4.10
+  build-depends:         base
                        , cmdargs
                        , livs
                        , containers
