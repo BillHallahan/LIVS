@@ -13,10 +13,10 @@ addons:
   apt:
     sources:
     - hvr-ghc
-    packages:
-    - alex-3.1.7
-    - happy-1.19.5
+    # packages:
+    # - alex-3.1.7
+    # - happy-1.19.5
 
-before_install:
-  - export PATH=/opt/alex/3.1.7/bin:/opt/happy/1.19.5/bin:$PATH
+# before_install:
+  # - export PATH=/opt/alex/3.1.7/bin:/opt/happy/1.19.5/bin:$PATH
 
