@@ -13,8 +13,6 @@ import Data.Aeson
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 
-import Debug.Trace
-
 import Prelude as P
 
 jsJSONToVal :: String -> Val
@@ -22,9 +20,9 @@ jsJSONToVal s =
     case parse json $ B.pack $ map repSnglWithDbl s of
       Fail _ _ _
         | 'N':'a':'N':_ <- s -> DataVal jsNaNDC
-        | "Error" <- P.take 5 s -> DataVal jsErrorDC
-        | "TypeError" <- P.take 9 s -> DataVal jsErrorDC
-        | "AssertionError" <- P.take 14 s -> DataVal jsErrorDC
+        | "Thrown:\nError" <- P.take 13 s -> DataVal jsErrorDC
+        | "Thrown:\nTypeError" <- P.take 17 s -> DataVal jsErrorDC
+        | "Thrown:\nAssertionError" <- P.take 22 s -> DataVal jsErrorDC
         | "undefined" <- P.take 9 s -> DataVal jsUndefinedDC
       Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
       Partial _ -> error "Why does this happen?"
