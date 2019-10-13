@@ -9,7 +9,7 @@ module LIVS.Core.Fuzz ( Fuzz
                       , fuzzValM
 
                       , fuzzFromValsAndOutputsM
-                      , fuzzFromOutputsM 
+                      , fuzzFromOutputsM
                       ) where
 
 import LIVS.Language.Expr
@@ -41,7 +41,7 @@ fuzzExamplesM :: MonadRandom m => Fuzz m b
 fuzzExamplesM le b _ tenv n i = do
     mapM (\_ -> fuzzExampleM (call le b) tenv i) [1..n]
 
-fuzzExampleM :: MonadRandom m => 
+fuzzExampleM :: MonadRandom m =>
                 (Expr -> m Val) -- ^ Executes and returns the value of the given expression
              -> T.TypeEnv
              -> Id -- ^ A function call
@@ -51,7 +51,7 @@ fuzzExampleM ca tenv i = do
     ls <- mapM (fuzzValM tenv) ts
 
     let outE = mkApp (Var i:map valToExpr ls)
-    r <- ca outE 
+    r <- ca outE
 
     return Example { func = i
                    , input = ls
@@ -104,6 +104,7 @@ fromListWeighted m d = fromList . map (\v -> (v, HM.lookupDefault d v m))
 fuzzFromValsAndOutputsM :: MonadRandom m => Weights DC -> [Val] -> Fuzz m b
 fuzzFromValsAndOutputsM w vs le b es tenv n i = do
     let vs' = L.nub (vs ++ concatMap exampleVals es ++ concatMap subVals (concatMap exampleVals es))
+    -- let vs' = L.nub (vs ++ concatMap subVals (concatMap exampleVals es))
     mapM (\_ -> fuzzFromOutputsM' (call le b) w vs' tenv i) [1..n]
 
 -- | Fuzzes, drawing random values from the existing examples when possible.
@@ -111,7 +112,7 @@ fuzzFromValsAndOutputsM w vs le b es tenv n i = do
 fuzzFromOutputsM :: MonadRandom m => Weights DC -> Fuzz m b
 fuzzFromOutputsM w = fuzzFromValsAndOutputsM w []
 
-fuzzFromOutputsM' :: MonadRandom m => 
+fuzzFromOutputsM' :: MonadRandom m =>
                      (Expr -> m Val)
                   -> Weights DC
                   -> [Val]
@@ -121,9 +122,9 @@ fuzzFromOutputsM' :: MonadRandom m =>
 fuzzFromOutputsM' ca w vs tenv i = do
     let ts = argTypes i
     ls <- mapM (fuzzFromOutputVal w vs tenv) ts
-    
+
     let outE = mkApp (Var i:map valToExpr ls)
-    r <- ca outE 
+    r <- ca outE
 
     return Example { func = i
                    , input = ls

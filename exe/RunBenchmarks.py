@@ -16,15 +16,19 @@ def runWithTimeout(cmd, timeout):
         # Run command with timeout
         try:
             out, err = process.communicate(timeout=timeout)
-            output = "ERROR {}".format(err) if err else out.decode("utf-8").split("\n")[-2]
+            if err:
+                cvc4_error = "CVC4 interrupted by SIGTERM."
+                err = [e for e in err.decode("utf-8").split('\n') if (e != cvc4_error and e != '')]
+
+            output = "ERROR\n{}".format("\n".join(err)) if err else out.decode("utf-8").split("\n")[-2]
+            elapsed = timer() - start
 
         # Command times out
         except TimeoutExpired:
+            elapsed = timer() - start
             os.killpg(process.pid, signal.SIGINT)
             output = "timeout"
 
-    # Stop timer and return output
-    elapsed = timer() - start
     return elapsed, output
 
 def main():
