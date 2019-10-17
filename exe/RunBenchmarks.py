@@ -49,7 +49,7 @@ def main():
         return list(zip([s]*n, itertools.count(1)))
 
     # Collect filenames
-    filenames = zipInts("lia", 19) + zipInts("slia", 8) + zipInts("strings", 10)
+    filenames = zipInts("strings", 10) + zipInts("lia", 19) + zipInts("slia", 8)
     benchmarks = ["benchmarks/synthesis/{}_{}".format(logic, n) for logic, n in filenames]
 
     # Run each benchmark, storing the output in a file

@@ -5,6 +5,11 @@ const rep = repl.start({ prompt: '', eval: myEval });
 
 function makeEvalContext (declarations)
 {
+    /*declarations = declarations.replace(/indexOf\((.*),[0-9]*\)/g, 'indexOf($1)');
+    time = Date.now()
+    fs.writeFileSync('tmp/'+time+'.js', declarations, (err) => {
+        if (err) throw err;
+    });*/
     eval(declarations);
     return function (str) { return eval(str); }
 }
