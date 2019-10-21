@@ -24,6 +24,7 @@ jsJSONToVal s =
         | "Thrown:\nError" <- P.take 13 s -> DataVal jsErrorDC
         | "Thrown:\nTypeError" <- P.take 17 s -> DataVal jsErrorDC
         | True <- isInfixOf "TypeError" s -> DataVal jsErrorDC -- catch all type errors, @bill is there a reason you were more specific with the case above?
+        | "Thrown:\nRangeError" <- P.take 18 s -> DataVal jsErrorDC
         | "Thrown:\nAssertionError" <- P.take 22 s -> DataVal jsErrorDC
         | "undefined" <- P.take 9 s -> DataVal jsUndefinedDC
       Fail i _ err -> error $ "Bad parse\ni = " ++ show i ++ "\nerr = " ++ err
