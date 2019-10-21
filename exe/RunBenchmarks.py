@@ -33,15 +33,20 @@ def runWithTimeout(cmd, timeout):
 
 def main():
 
+    def die(s):
+        print(s)
+        exit(1)
+
     # Arg validation
     if len(sys.argv) != 3:
-        print("usage: ./RunBenchmarks.py outfile timeout")
-        return 1
+        die("usage: ./RunBenchmarks.py outfile timeout")
     try:
         timeout = int(sys.argv[2])
     except:
-        print("error: timeout must be an integer number of seconds")
-        return 1
+        die("error: timeout must be an integer number of seconds")
+
+    if os.path.exists(sys.argv[1]):
+        die("error: specified output file already exists")
 
     # Helper
     def zipInts(s, n):
