@@ -12,10 +12,12 @@ import qualified LIVS.Language.Heap as H
 import qualified LIVS.Language.SubFunctions as Sub
 import LIVS.Language.Syntax
 import qualified LIVS.Language.TypeEnv as T
+import qualified Data.HashSet as S
 import LIVS.Language.Typing
 import LIVS.Language.Monad.Naming
 import LIVS.Sygus.CVC4Interface
 import LIVS.Target.General.LanguageEnv
+import LIVS.Target.JavaScript.Interface
 
 import Control.Monad.Random
 import Data.List
@@ -66,7 +68,9 @@ livsSynth con le b gen gen_out fuzz fp cg consts h tenv exs = do
 
     case incor of
         [] -> return (h'', is')
-        _ -> error $ "livsSynth: Incorrect translation back to real language" 
+        _ -> error $ "livsSynth: Incorrect translation back to real language: " ++ concatMap (\i -> case H.lookup (idName i) h'' of
+                                               Just (H.Def e) -> toJavaScriptDef S.empty (idName i) e
+                                               _ -> error "livsSynth: No definition found") is'
   where
 
     toId heap n
