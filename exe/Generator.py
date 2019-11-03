@@ -2,25 +2,22 @@
 
 import os
 import sys
-import signal
-from time import monotonic as timer
-from subprocess import Popen, PIPE, TimeoutExpired
+import subprocess
 from random import randint, choice
+from math import floor, ceil
 
 # List of currently used function ids (cannot repeat ids, to avoid namespace conflicts)
-ids = []
+idnums = []
 
 # Class for a callable JavaScript function
 class JSFunction:
 
     # Initialize new JS function
-    # name: string
     # id: string
     # in: [int] -> list of input types
     # out: int -> output type (0 for integer type, 1 for string type)
     # body: string -> JS function body
-    def __init__(self, id, in_type, out_type, body, name="f"):
-        self.name = name
+    def __init__(self, id, in_type, out_type, body):
         self.id = id
         self.in = in_type
         self.out = out_type
@@ -28,70 +25,119 @@ class JSFunction:
 
     # String representation of this function
     def __repr__(self):
-        return "function f{}({})\n{{\n\t{}\n}}".format(self.id, makeArgs(len(self.in)), self.body)
+        return "function f{}({})\n{{\n\t{}\n}}".format(self.id, [a.id for a in makeArgs(self.arity())], self.body)
 
-    # Type-checks if this function can take the given list of functions as arguments
-    # fs: [JSFunction] -> list of functions to be used as input arguments
-    def composable(self, fs):
-        return all([self_in == f.out for self_in, f in list(zip(self.in, fs))])
+    # asdf
+    def arity(self):
+        return len(self.in_type)
 
-    # Return a new function which is the composition of this function with the given functions as args
-    # fs: [JSFunction] -> list of functions to be used as input arguments
-    def composeWith(self, fs):
+    # asdf
+    def call(arg_strings):
 
-        # Check if this is a valid composition
-        if not self.composable(fs):
-            return None
+        # Validate number of arguments
+        if len(args) != self.arity():
+            exit("error: wrong number of arguments to generate call expression")
 
-        # Random id for the new function
-        new_id = 0
-        while new_id not in ids:
-            new_id = str(randint(0, 1000))
-        ids.append(new_id)
-
-        # Input and output types for the new function
-        new_in = flatten([f.in for f in fs])
-        new_out = self.out
-
-        # Function body
-        args = makeArgs(len(new_in))
-        sub_function_calls = ["{}{}({})".format(f.name, f.id, ", ".join([args.pop(0) for args in f.in])) for f in fs]
-        new_body = "return {}{}({});".format(self.name, self.id, ", ".join(sub_function_calls))
-
-        # Return new function
-        return JSFunction(new_id, new_in, new_out, new_body)
+        # 0-arity functions just return their names
+        if args:
+            return "{}({})".format(self.id, ", ".join(args))
+        else:
+            return self.id
 
     # call function and get results
     # fs: [JSFunction] -> all functions that need to be defined in the file in order to call the target
-    # target: JSFunction -> the function to call
     # args: [int OR string] -> arguments to call the function with
-    def call(self, fs, target, args):
-        # write string rep of all functions to tmpfile.js
-        # write call to target funtion to tmpfile.js
-        # execute 'node tmpfile.js'
-        # collect output
-        # remove tmpfile.js
-        pass
+    def invoke(self, fs, args):
 
-# Give a list of arguments in the form x_i
-# n: int -> number of args
-def makeArgs(n):
-    return ["x_" + str(i) for i in range(n)]
+        # Write definitions and invocation to file
+        defs = "\n".join([str(f) for f in fs + [self]])
+        invocation = self.call(args)
+        with open('TEMPFILE.js', 'w') as file:
+            file.write(defs + '\n' + invocation)
 
-# flatten a list of lists (concatmap)
-# list_of_lists: [[a]] -> list to flatten
-def flatten(list_of_lists):
-    return [item for sublist in list_of_lists for item in sublist]
+        # Run the file, collect the output and remove it
+        output = subprocess.check_output(["node", "TEMPFILE.js"])
+        os.remove('TEMPFILE.js')
+        return output
+
+    # asdf
+    def generate(self, grammar, depth):
+
+        # If depth is zero, reduce the grammar to only atoms
+        if not depth:
+            grammar = [g for g in grammar if g.arity() == 0]
+
+        # asdf
+        arg_strings = []
+        for t in self.in:
+
+            # filter to type
+            filtered = [f for f in grammar if f.out = t]
+            if not filtered:
+                return None
+
+            # asdf
+            root = choice(filtered)
+            result = root.generate(grammar, depth - 1)
+            if result:
+                arg_strings.append(result)
+            else:
+                return None
+
+        # asdf
+        return self.call(arg_strings)
+
+# asdf
+def fuzzPBE(f, fs):
+
+    # random num pb e exs
+    num_pbe_exs = randint(2, 5)
+    pbe_exs = []
+
+    # Fuzzing methods
+    fuzzInt = lambda: randint(-2, 10)
+    fuzzStr = lambda: choice('""', '"asdf"', '"hello, world!"', '"hello"', '"hi"')
+
+    # fuzz each example
+    for _ in range(num_pbe_exs):
+
+        # randomize inputs, invoke for output
+        inputs = [fuzzInt() if t == 0 else fuzzStr() for t in f.in]
+        output = f.invoke(fs, inputs)
+
+        # format as example and add to list
+        ex = "//@pbe (constraint (= ({} {}) {}))".format(f.id, ' '.join(inputs), output)
+        pbe_exs.append(ex)
+
+    # return list
+    return pbe_exs
 
 # generate a new function which is a composition of some members of all_funcs
 # all_funcs: [JSFunction] -> list of options to compose from
-def generateFunction(all_funcs):
-    # randomly choose some function
-    # randomly choose some other functions which need not be unique but must not be the first chosen function
-    # attemt to compose them together
-    # if successful, and the new function isn't one we've generated before, return it
-    # if unsuccessful, repeat
-    pass
+def topLevelGenerate(funcs, depth):
+    global idnums
+
+    # Random arity
+    arit = randint(1, 5)
+    atoms = [JSFunction("x_" + str(i), [], choice([0,1]), "") for i in range(arit)]
+    grammar = atoms + funcs
+
+    # Random id for the new function
+    idn = 0
+    while idn not in idnums:
+        idn = str(randint(0, 100))
+    idnums.append(idn)
+
+    # Recursively generate the new function
+    root = choice(funcs)
+    result = root.generate(grammar, depth)
+
+    # asdf
+    if not result:
+        return None
+    else:
+        body = 'return {};'.format(result)
+        return JSFunction('f' + idn, [a.out for a in atoms], root.out, body)
 
 # load a collection of primitive JS functions from a .js file
 # file: string -> .js file to load from
@@ -111,12 +157,12 @@ def loadPrimitives(filename):
 
             # get info about the function
             type = [int(t) for t in line[10:]]
-            fname = contents[i+1].split(' ')[1]
-            fname = fname[:fname.index('(')]
+            fid = contents[i+1].split(' ')[1]
+            fid = fid[:fid.index('(')]
             body = contents[i+2].strip()
 
             # create and append new function
-            new_func = JSFunction('', type[:-1], type[-1], body, name=fname)
+            new_func = JSFunction(fid, type[:-1], type[-1], body)
             primitives.append(new_func)
 
     # return full list when finished
@@ -130,30 +176,45 @@ def main():
     # Arg validation
     if len(sys.argv) != 3:
         exit("usage: ./Generator.py primtives.js n")
-
     filename = sys.argv[1]
     if not os.path.exists(filename):
         exit("error: specified primitives file does not exist")
-
     try:
         n = int(sys.argv[2])
     except:
-        exit("error: argument must be an integer")
+        exit("error: number of functions to generate must be an integer")
 
     # Generate a list of n functions composed from the provided primitives
+    i = 0
     primitives = loadPrimitives(filename)
-    all_funcs = list(primitives)
-    for _ in range(n - len(primitives)):
-        new_func = generateFunction(all_funcs)
-        all_funcs.append(new_func)
+    funcs = list(primitives
+    while i < n:
 
-    # Split over call tree and make synthesis problems
-    # For each function above a certain depth
-    # Get all of its dependencies
-    # Write dependency definitions to a file
-    # Fuzz the function with call()
-    # Write pbe examples to file
-    pass
+        # generation may fail
+        new_func = topLevelGenerate(funcs)
+        if new_func:
+            funcs.append(new_func)
+            i += 1
+
+    # benchmark storage location (should be a cmd-line arg, TODO)
+    dir = 'benchmarks/generated/'
+    filenum = 0
+
+    # Create synthesis problems
+    for j in range(len(primitives), len(funcs)):
+
+        # Get function definitions for dependencies
+        fs = funcs[:j]
+        defs = "\n\n".join([str(def) for def in fs])
+
+        # Get pbe examples by invoking the function repeatedly
+        f = funcs[j]
+        pbe_exs = fuzzPBE(f)
+
+        # Write definitions and pbe examples to benchmark file
+        with open(dir+str(filenum), 'w') as file:
+            file.write(defs + '\n\n' + '\n'.join(pbe_exs))
+        filenum += 1
 
 # Entry point
 if __name__ == "__main__":
