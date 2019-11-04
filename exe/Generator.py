@@ -19,46 +19,31 @@ class JSFunction:
     # body: string -> JS function body
     def __init__(self, id, in_type, out_type, body):
         self.id = id
-        self.in = in_type
-        self.out = out_type
+        self.t_in = in_type
+        self.t_out = out_type
         self.body = body
 
     # String representation of this function
     def __repr__(self):
-        return "function f{}({})\n{{\n\t{}\n}}".format(self.id, [a.id for a in makeArgs(self.arity())], self.body)
+        args = ", ".join(["x_{}".format(i) for i in range(self.arity())])
+        return "function {}({})\n{{\n\t{}\n}}".format(self.id, args, self.body)
 
     # asdf
     def arity(self):
-        return len(self.in_type)
+        return len(self.t_in)
 
     # asdf
-    def call(arg_strings):
+    def call(self, arg_strings):
 
         # Validate number of arguments
-        if len(args) != self.arity():
+        if len(arg_strings) != self.arity():
             exit("error: wrong number of arguments to generate call expression")
 
         # 0-arity functions just return their names
-        if args:
-            return "{}({})".format(self.id, ", ".join(args))
+        if arg_strings:
+            return "{}({})".format(self.id, ", ".join(arg_strings))
         else:
             return self.id
-
-    # call function and get results
-    # fs: [JSFunction] -> all functions that need to be defined in the file in order to call the target
-    # args: [int OR string] -> arguments to call the function with
-    def invoke(self, fs, args):
-
-        # Write definitions and invocation to file
-        defs = "\n".join([str(f) for f in fs + [self]])
-        invocation = self.call(args)
-        with open('TEMPFILE.js', 'w') as file:
-            file.write(defs + '\n' + invocation)
-
-        # Run the file, collect the output and remove it
-        output = subprocess.check_output(["node", "TEMPFILE.js"])
-        os.remove('TEMPFILE.js')
-        return output
 
     # asdf
     def generate(self, grammar, depth):
@@ -69,10 +54,10 @@ class JSFunction:
 
         # asdf
         arg_strings = []
-        for t in self.in:
+        for t in self.t_in:
 
             # filter to type
-            filtered = [f for f in grammar if f.out = t]
+            filtered = [f for f in grammar if f.t_out == t]
             if not filtered:
                 return None
 
@@ -87,30 +72,52 @@ class JSFunction:
         # asdf
         return self.call(arg_strings)
 
-# asdf
-def fuzzPBE(f, fs):
+    # call function and get results
+    # fs: [JSFunction] -> all functions that need to be defined in the file in order to call the target
+    # args: [int OR string] -> arguments to call the function with
+    def invoke(self, fs, args):
 
-    # random num pb e exs
-    num_pbe_exs = randint(2, 5)
-    pbe_exs = []
+        # Write definitions and invocation to file
+        defs = "\n".join([str(f) for f in fs + [self]])
+        invocation = self.call(args)
+        with open('TEMPFILE.js', 'w') as file:
+            file.write('{}\nconsole.log({});'.format(defs, invocation))
 
-    # Fuzzing methods
-    fuzzInt = lambda: randint(-2, 10)
-    fuzzStr = lambda: choice('""', '"asdf"', '"hello, world!"', '"hello"', '"hi"')
+        # Run the file, parse the output
+        output = subprocess.check_output(["node", "TEMPFILE.js"]).decode().rstrip('\n')
+        os.remove('TEMPFILE.js')
 
-    # fuzz each example
-    for _ in range(num_pbe_exs):
+        # Read json from output TODO what if the strings are numbers?
+        try:
+            int(output)
+        except:
+            output = '"{}"'.format(output)
+        return output
 
-        # randomize inputs, invoke for output
-        inputs = [fuzzInt() if t == 0 else fuzzStr() for t in f.in]
-        output = f.invoke(fs, inputs)
+    # asdf
+    def fuzzPBE(self, fs):
 
-        # format as example and add to list
-        ex = "//@pbe (constraint (= ({} {}) {}))".format(f.id, ' '.join(inputs), output)
-        pbe_exs.append(ex)
+        # random num pbe exs
+        num_pbe_exs = randint(2, 5)
+        pbe_exs = []
 
-    # return list
-    return pbe_exs
+        # Fuzzing methods
+        fuzzInt = lambda: str(randint(-2, 10))
+        fuzzStr = lambda: choice(['""', '"asdf"', '"hello, world!"', '"hello"', '"hi"'])
+
+        # fuzz each example
+        for _ in range(num_pbe_exs):
+
+            # randomize inputs, invoke for output
+            inputs = [fuzzInt() if t == 0 else fuzzStr() for t in self.t_in]
+            output = self.invoke(fs, inputs)
+
+            # format as example and add to list
+            ex = "//@pbe (constraint (= ({} {}) {}))".format(self.id, ' '.join(inputs), output)
+            pbe_exs.append(ex)
+
+        # return list
+        return pbe_exs
 
 # generate a new function which is a composition of some members of all_funcs
 # all_funcs: [JSFunction] -> list of options to compose from
@@ -118,13 +125,13 @@ def topLevelGenerate(funcs, depth):
     global idnums
 
     # Random arity
-    arit = randint(1, 5)
+    arit = randint(1, 3)
     atoms = [JSFunction("x_" + str(i), [], choice([0,1]), "") for i in range(arit)]
     grammar = atoms + funcs
 
     # Random id for the new function
     idn = 0
-    while idn not in idnums:
+    while idn in idnums:
         idn = str(randint(0, 100))
     idnums.append(idn)
 
@@ -137,7 +144,7 @@ def topLevelGenerate(funcs, depth):
         return None
     else:
         body = 'return {};'.format(result)
-        return JSFunction('f' + idn, [a.out for a in atoms], root.out, body)
+        return JSFunction('f' + str(idn), [a.t_out for a in atoms], root.t_out, body)
 
 # load a collection of primitive JS functions from a .js file
 # file: string -> .js file to load from
@@ -156,7 +163,7 @@ def loadPrimitives(filename):
         if line.startswith("// @type: "):
 
             # get info about the function
-            type = [int(t) for t in line[10:]]
+            type = [int(t) for t in line[10:-1]]
             fid = contents[i+1].split(' ')[1]
             fid = fid[:fid.index('(')]
             body = contents[i+2].strip()
@@ -187,11 +194,11 @@ def main():
     # Generate a list of n functions composed from the provided primitives
     i = 0
     primitives = loadPrimitives(filename)
-    funcs = list(primitives
+    funcs = list(primitives)
     while i < n:
 
         # generation may fail
-        new_func = topLevelGenerate(funcs)
+        new_func = topLevelGenerate(funcs, 1)
         if new_func:
             funcs.append(new_func)
             i += 1
@@ -205,14 +212,14 @@ def main():
 
         # Get function definitions for dependencies
         fs = funcs[:j]
-        defs = "\n\n".join([str(def) for def in fs])
+        defs = "\n\n".join([str(fdef) for fdef in fs])
 
         # Get pbe examples by invoking the function repeatedly
         f = funcs[j]
-        pbe_exs = fuzzPBE(f)
+        pbe_exs = f.fuzzPBE(fs)
 
         # Write definitions and pbe examples to benchmark file
-        with open(dir+str(filenum), 'w') as file:
+        with open(dir+str(filenum)+'.js', 'w') as file:
             file.write(defs + '\n\n' + '\n'.join(pbe_exs))
         filenum += 1
 

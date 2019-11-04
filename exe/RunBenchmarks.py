@@ -49,8 +49,9 @@ def main():
         return list(zip([s]*n, itertools.count(1)))
 
     # Collect filenames
-    filenames = zipInts("strings", 10) + zipInts("lia", 19) + zipInts("slia", 9)
-    benchmarks = ["benchmarks/synthesis/{}_{}".format(logic, n) for logic, n in filenames]
+    synthstrs = zipInts("strings", 10) + zipInts("lia", 19) + zipInts("slia", 9)
+    benchmarks = ["benchmarks/generated/{}.js".format(str(i)) for i in range(10)]
+    benchmarks += ["benchmarks/synthesis/{}_{}/fullGrammar.js".format(logic, n) for logic, n in synthstrs]
 
     # Run each benchmark, storing the output in a file
     print("\ncheck file '{}' to see test results\n".format(sys.argv[1]))
@@ -61,7 +62,7 @@ def main():
 
             # Run LIVS, catching exceptions and timing the execution
             print("{}...".format(f))
-            cmd = "cabal new-run livs -- --code-file={}/fullGrammar.js".format(f)
+            cmd = "cabal new-run livs -- --code-file={}".format(f)
             elapsed, output = runWithTimeout(cmd, timeout)
 
             # Write time and output to file
