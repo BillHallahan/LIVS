@@ -144,7 +144,7 @@ def topLevelGenerate(funcs, depth):
         return None
     else:
         body = 'return {};'.format(result)
-        return JSFunction('f' + str(idn), [a.t_out for a in atoms], root.t_out, body)
+        return JSFunction('f_' + str(idn), [a.t_out for a in atoms], root.t_out, body)
 
 # load a collection of primitive JS functions from a .js file
 # file: string -> .js file to load from
@@ -181,15 +181,16 @@ def loadPrimitives(filename):
 def main():
 
     # Arg validation
-    if len(sys.argv) != 3:
-        exit("usage: ./Generator.py primtives.js n")
+    if len(sys.argv) != 4:
+        exit("usage: ./Generator.py primtives.js bench-dir n")
     filename = sys.argv[1]
+    dir = sys.argv[2]
     if not os.path.exists(filename):
         exit("error: specified primitives file does not exist")
     try:
-        n = int(sys.argv[2])
+        n = int(sys.argv[3])
     except:
-        exit("error: number of functions to generate must be an integer")
+        exit("error: number of benchmarks to generate must be an integer")
 
     # Generate a list of n functions composed from the provided primitives
     i = 0
@@ -203,11 +204,8 @@ def main():
             funcs.append(new_func)
             i += 1
 
-    # benchmark storage location (should be a cmd-line arg, TODO)
-    dir = 'benchmarks/generated/'
-    filenum = 0
-
     # Create synthesis problems
+    filenum = 0
     for j in range(len(primitives), len(funcs)):
 
         # Get function definitions for dependencies
@@ -219,7 +217,7 @@ def main():
         pbe_exs = f.fuzzPBE(fs)
 
         # Write definitions and pbe examples to benchmark file
-        with open(dir+str(filenum)+'.js', 'w') as file:
+        with open('{}/{}.js'.format(dir, str(filenum)), 'w') as file:
             file.write(defs + '\n\n' + '\n'.join(pbe_exs))
         filenum += 1
 
