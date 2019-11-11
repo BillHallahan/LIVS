@@ -87,10 +87,8 @@ class JSFunction:
         output = subprocess.check_output(["node", "TEMPFILE.js"]).decode().rstrip('\n')
         os.remove('TEMPFILE.js')
 
-        # Read json from output TODO what if the strings are numbers?
-        try:
-            int(output)
-        except:
+        # Format as string if output type is string
+        if self.t_out == 1:
             output = '"{}"'.format(output)
         return output
 
@@ -102,8 +100,8 @@ class JSFunction:
         pbe_exs = []
 
         # Fuzzing methods
-        fuzzInt = lambda: str(randint(-2, 10))
-        fuzzStr = lambda: choice(['""', '"asdf"', '"hello, world!"', '"hello"', '"hi"'])
+        fuzzInt = lambda: str(randint(-5, 10))
+        fuzzStr = lambda: choice(['""', '"asdf"', '"hello world"', '"404"', '"ab cd"', '"xyz"', '"vvvvv"', '"mno pqr st"'])
 
         # fuzz each example
         for _ in range(num_pbe_exs):
@@ -144,7 +142,7 @@ def topLevelGenerate(funcs, depth):
         return None
     else:
         body = 'return {};'.format(result)
-        return JSFunction('f_' + str(idn), [a.t_out for a in atoms], root.t_out, body)
+        return JSFunction('f' + str(idn) + 'f', [a.t_out for a in atoms], root.t_out, body)
 
 # load a collection of primitive JS functions from a .js file
 # file: string -> .js file to load from

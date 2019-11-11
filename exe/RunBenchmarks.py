@@ -50,8 +50,8 @@ def main():
 
     # Collect filenames
     synthstrs = zipInts("strings", 10) + zipInts("lia", 19) + zipInts("slia", 9)
-    benchmarks = ["benchmarks/generated/{}.js".format(str(i)) for i in range(10)]
-    benchmarks += ["benchmarks/synthesis/{}_{}/fullGrammar.js".format(logic, n) for logic, n in synthstrs]
+    benchmarks = ["benchmarks/generated/strings1/{}.js".format(str(i)) for i in range(10)]
+    # benchmarks += ["benchmarks/synthesis/{}_{}/fullGrammar.js".format(logic, n) for logic, n in synthstrs]
 
     # Run each benchmark, storing the output in a file
     print("\ncheck file '{}' to see test results\n".format(sys.argv[1]))

@@ -1,0 +1,10 @@
+benchmarks/generated/0.js       : 4.542s  : "f69f = function (x1_, x2_) { return (mult(x1_, x2_))}\n"
+benchmarks/generated/1.js       : 40.859s : "f41f = function (x1_, x2_) { return (mult(x1_, (mult(x1_, (add(x1_, x1_))))))}\n"
+benchmarks/generated/2.js       : 60.007s : timeout
+benchmarks/generated/3.js       : 38.617s : ERROR (CVC4 segfault)
+benchmarks/generated/4.js       : 60.006s : timeout
+benchmarks/generated/5.js       : 60.003s : timeout
+benchmarks/generated/6.js       : 60.008s : timeout
+benchmarks/generated/7.js       : 60.006s : timeout
+benchmarks/generated/8.js       : 60.004s : timeout
+benchmarks/generated/9.js       : 60.004s : timeout

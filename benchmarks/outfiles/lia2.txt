@@ -1,0 +1,10 @@
+benchmarks/lia2/0.js            : 2.770s  : "f0f = function (x1_, x2_, x3_) { return (mult(x2_, (add(x1_, x2_))))}\n"
+benchmarks/lia2/1.js            : 3.424s  : "f46f = function (x1_, x2_, x3_) { return (increment((add(x2_, x3_))))}\n"
+benchmarks/lia2/2.js            : 5.375s  : "f98f = function (x1_, x2_) { return (f0f((add(x2_, x2_)), (f0f(x1_, x1_, x1_)), x1_))}\n"
+benchmarks/lia2/3.js            : 8.872s  : "f83f = function (x1_, x2_) { return (increment((f46f(x1_, x1_, (f98f(x2_, x2_))))))}\n"
+benchmarks/lia2/4.js            : 9.580s  : "f43f = function (x1_, x2_) { return (increment(x2_))}\n"
+benchmarks/lia2/5.js            : 10.391s : "f69f = function (x1_) { return (increment((increment(x1_))))}\n"
+benchmarks/lia2/6.js            : 60.004s : timeout
+benchmarks/lia2/7.js            : 60.007s : timeout
+benchmarks/lia2/8.js            : 19.197s : "f37f = function (x1_, x2_) { return (f69f((f83f(x2_, x1_))))}\n"
+benchmarks/lia2/9.js            : 14.704s : "f92f = function (x, x) { return (0)}\n"
