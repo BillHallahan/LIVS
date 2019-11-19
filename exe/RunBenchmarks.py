@@ -95,7 +95,7 @@ def main():
 
     # Run each benchmark, storing the output in a file
     results = []
-    with open("dump_results.txt", 'w') as txtfile:
+    with open("dump_results_{}.txt".format(mode), 'w') as txtfile:
 
         # Iterate over directories and filenames of benchmarks
         for f in benchmarks:
