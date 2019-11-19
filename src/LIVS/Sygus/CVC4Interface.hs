@@ -37,6 +37,9 @@ import System.IO
 import System.IO.Temp
 import System.Directory
 
+import Data.Time
+import Data.Time.Clock
+
 runSygusWithIteFallback :: (NameGenMonad m, MonadIO m) => LIVSConfigNames -> CallGraph -> [Val] -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> [Example] -> m (Result, Sub.SubFunctions)
 runSygusWithIteFallback con cg const_vals h sub tenv es =
     runSygusWithFallback con cg const_vals h sub tenv es examplesToIteResult
@@ -84,7 +87,7 @@ runSygusWithGrammarWithFallBack :: (NameGenMonad m, MonadIO m) =>
 runSygusWithGrammarWithFallBack con cg const_vals h sub tenv hsr es fallback
     | (Example { func = Id n t }:_) <- es = do
         (es4, ty_val_rules_funcs'', sub'') <- simplifyRules sub es
-        
+
         res <- mapM (runSygusWithGrammarWithFallBack' con cg const_vals h sub tenv hsr fallback) es4
 
         let res' = flip (foldr (uncurry insertSat)) ty_val_rules_funcs'' $ foldr mergeRes (Sat M.empty) res
@@ -130,7 +133,7 @@ tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
     liftIO $ whenLoud $ putStrLn $ "Trying CVC4 with " ++ show opt
 
     m <- runCVC4WithFile form ext opt timeout
-    
+
     let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
     case r of
@@ -164,13 +167,15 @@ runCVC4WithFile sygus ext ars timeout = do
             -- We call hFlush to prevent hPutStr from buffering
             hFlush h
 
-            toCommandOSX <- findExecutable "gtimeout" 
+            toCommandOSX <- findExecutable "gtimeout"
             let toCommand = case toCommandOSX of
                     Just c -> c          -- Mac
                     Nothing -> "timeout" -- Linux
-
-            runProcessOnce toCommand (show timeout:"cvc4":fp:ars))
-        ) :: IO (Either SomeException String)
+            start <- getCurrentTime
+            output <- runProcessOnce toCommand (show timeout:"cvc4":fp:ars)
+            stop <- getCurrentTime
+            print $ diffUTCTime stop start
+            return output)) :: IO (Either SomeException String)
 
     case out of
         Right out' -> return out'

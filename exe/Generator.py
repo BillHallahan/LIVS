@@ -93,49 +93,48 @@ class JSFunction:
         return output
 
     # asdf
-    def fuzzPBE(self, fs):
-
-        # random num pbe exs
-        num_pbe_exs = randint(2, 5)
-        pbe_exs = []
+    def fuzzPBE(self, fs, n):
 
         # Fuzzing methods
         fuzzInt = lambda: str(randint(-5, 10))
         fuzzStr = lambda: choice(['""', '"asdf"', '"hello world"', '"404"', '"ab cd"', '"xyz"', '"vvvvv"', '"mno pqr st"'])
 
         # fuzz each example
-        for _ in range(num_pbe_exs):
+        pbe_exs = []
+        out_vals = []
+        for _ in range(n):
 
             # randomize inputs, invoke for output
             inputs = [fuzzInt() if t == 0 else fuzzStr() for t in self.t_in]
             output = self.invoke(fs, inputs)
+            out_vals.append(output)
 
             # format as example and add to list
             ex = "//@pbe (constraint (= ({} {}) {}))".format(self.id, ' '.join(inputs), output)
             pbe_exs.append(ex)
 
         # return list
-        return pbe_exs
+        return pbe_exs, out_vals
 
 # generate a new function which is a composition of some members of all_funcs
 # all_funcs: [JSFunction] -> list of options to compose from
-def topLevelGenerate(funcs, depth):
+def topLevelGenerate(funcs, depth, types):
     global idnums
 
     # Random arity
     arit = randint(1, 3)
-    atoms = [JSFunction("x_" + str(i), [], choice([0,1]), "") for i in range(arit)]
+    atoms = [JSFunction("x_" + str(i), [], choice(types), "") for i in range(arit)]
     grammar = atoms + funcs
 
     # Random id for the new function
     idn = 0
     while idn in idnums:
-        idn = str(randint(0, 100))
+        idn = str(randint(0, 1000))
     idnums.append(idn)
 
     # Recursively generate the new function
     root = choice(funcs)
-    result = root.generate(grammar, depth)
+    result = root.generate(grammar, depth - 1)
 
     # asdf
     if not result:
@@ -179,45 +178,59 @@ def loadPrimitives(filename):
 def main():
 
     # Arg validation
-    if len(sys.argv) != 4:
-        exit("usage: ./Generator.py primtives.js bench-dir n")
-    filename = sys.argv[1]
-    dir = sys.argv[2]
-    if not os.path.exists(filename):
-        exit("error: specified primitives file does not exist")
+    if len(sys.argv) != 3:
+        exit("usage: ./Generator.py generations files_per_gen")
     try:
-        n = int(sys.argv[3])
+        generations = int(sys.argv[1])
+        files_per_gen = int(sys.argv[2])
     except:
-        exit("error: number of benchmarks to generate must be an integer")
+        exit("error: arguments must be an integers")
 
-    # Generate a list of n functions composed from the provided primitives
-    i = 0
-    primitives = loadPrimitives(filename)
-    funcs = list(primitives)
-    while i < n:
+    # Constants
+    depth = 2
+    path = "benchmarks/generated"
+    logics = ["lia", "strings", "slia"]
 
-        # generation may fail
-        new_func = topLevelGenerate(funcs, 1)
-        if new_func:
-            funcs.append(new_func)
-            i += 1
+    # Generate a list of functions composed from the provided primitives
+    for logic in logics:
+        primitives_file = "{}/JSprimitives/{}.js".format(path, logic)
+        primitives = loadPrimitives(primitives_file)
+        for g in range(generations):
 
-    # Create synthesis problems
-    filenum = 0
-    for j in range(len(primitives), len(funcs)):
+            i = 0
+            funcs = list(primitives)
+            while i < files_per_gen:
 
-        # Get function definitions for dependencies
-        fs = funcs[:j]
-        defs = "\n\n".join([str(fdef) for fdef in fs])
+                # Generation may fail
+                types = [0] if logic == "lia" else [1] if logic == "strings" else [0, 1]
+                new_func = topLevelGenerate(funcs, depth, types)
+                if not new_func:
+                    continue
 
-        # Get pbe examples by invoking the function repeatedly
-        f = funcs[j]
-        pbe_exs = f.fuzzPBE(fs)
+                # Make sure we didnt generate a trivial function
+                _, outputs = new_func.fuzzPBE(funcs, 10)
+                if outputs.count(outputs[0]) == len(outputs):
+                    continue
 
-        # Write definitions and pbe examples to benchmark file
-        with open('{}/{}.js'.format(dir, str(filenum)), 'w') as file:
-            file.write(defs + '\n\n' + '\n'.join(pbe_exs))
-        filenum += 1
+                # Add function to list
+                funcs.append(new_func)
+                i += 1
+
+            # Create synthesis problems
+            filenum = 0
+            dest_dir = "{}/{}/{}".format(path, logic, str(g))
+            for j in range(len(primitives), len(funcs)):
+
+                # Get pbe examples by invoking the function repeatedly
+                fs = funcs[:j]
+                f = funcs[j]
+                pbe_exs, _ = f.fuzzPBE(fs, randint(2, 5))
+
+                # Write definitions and pbe examples to benchmark file
+                defs = "\n\n".join([str(fdef) for fdef in fs])
+                with open('{}/{}.js'.format(dest_dir, str(filenum)), 'w') as file:
+                    file.write(defs + '\n\n' + '\n'.join(pbe_exs))
+                filenum += 1
 
 # Entry point
 if __name__ == "__main__":
