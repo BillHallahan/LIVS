@@ -1,7 +1,7 @@
 // function roundFloatAndString(num1, num2) {
 //   num1 = floatToFloat(parseFloat(num1));
 //   num2 = stringToFloat(num2.toString());
-//   return Math.round(num1 + num2); } 
+//   return Math.round(num1 + num2); }
 function floatToFloat(_float) {
   _float = parseFloat(_float);
   return _float; }

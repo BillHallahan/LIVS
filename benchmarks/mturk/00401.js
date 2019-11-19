@@ -3,7 +3,7 @@
 //    { return ""}
 //   first = getFirst(s)
 //   last = getLast(s)
-//   return first + last } 
+//   return first + last }
 function getFirst(s) {
   c = s[0]
   return c }
