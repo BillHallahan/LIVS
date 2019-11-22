@@ -28,5 +28,5 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-//@pbe (constraint (= (f214f "mno pqr st") "Bmno pqr stA"))
-//@pbe (constraint (= (f214f "404") "B404A"))
+//@pbe (constraint (= (f443f "mno pqr st" "mno pqr st" "mno pqr st") "Bmno"))
+//@pbe (constraint (= (f443f "hello world" "hello world" "404") "Bhello"))

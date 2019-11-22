@@ -28,12 +28,12 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f430f(x_0, x_1)
+function f116f(x_0, x_1)
 {
-	return beforeAfter(len(x_1));
+	return lastLetter(concat(x_1, x_0));
 }
 
-//@pbe (constraint (= (f680f "ab cd") "3"))
-//@pbe (constraint (= (f680f "") "3"))
-//@pbe (constraint (= (f680f "asdf") "3"))
-//@pbe (constraint (= (f680f "ab cd") "3"))
+//@pbe (constraint (= (f473f "vvvvv" "ab cd" "hello world") "Bhello worldA"))
+//@pbe (constraint (= (f473f "ab cd" "404" "vvvvv") "BvvvvvA"))
+//@pbe (constraint (= (f473f "mno pqr st" "asdf" "vvvvv") "BvvvvvA"))
+//@pbe (constraint (= (f473f "mno pqr st" "ab cd" "404") "B404A"))

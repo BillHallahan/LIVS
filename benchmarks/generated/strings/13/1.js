@@ -28,13 +28,10 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f393f(x_0)
+function f741f(x_0, x_1, x_2)
 {
-	return rep(x_0, x_0, rep(x_0, x_0, x_0));
+	return lastLetter(len(x_1));
 }
 
-//@pbe (constraint (= (f653f "") ""))
-//@pbe (constraint (= (f653f "mno pqr st") "mno pqr stmno pqr st"))
-//@pbe (constraint (= (f653f "xyz") "xyzxyz"))
-//@pbe (constraint (= (f653f "mno pqr st") "mno pqr stmno pqr st"))
-//@pbe (constraint (= (f653f "ab cd") "ab cdab cd"))
+//@pbe (constraint (= (f933f "asdf" "xyz" "mno pqr st") "4"))
+//@pbe (constraint (= (f933f "xyz" "mno pqr st" "asdf") "3"))

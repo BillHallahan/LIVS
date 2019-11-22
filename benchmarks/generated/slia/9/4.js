@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,28 +28,25 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f381f(x_0, x_1)
+function f728f(x_0, x_1, x_2)
 {
-	return toStr(len(x_0));
+	return add(len(x_0), add(x_2, x_2));
 }
 
-function f779f(x_0, x_1)
+function f803f(x_0, x_1)
+{
+	return f728f(beforeAfter(x_0), concat(x_0, x_0), x_1);
+}
+
+function f270f(x_0, x_1)
+{
+	return mult(add(x_0, x_0), x_0);
+}
+
+function f248f(x_0, x_1)
 {
 	return len(toStr(x_0));
 }
 
-function f838f(x_0, x_1)
-{
-	return mult(f779f(x_0, x_1), x_1);
-}
-
-function f790f(x_0, x_1, x_2)
-{
-	return beforeAfter(concat(x_2, x_2));
-}
-
-//@pbe (constraint (= (f686f 9 "xyz") 36))
-//@pbe (constraint (= (f686f -1 "vvvvv") -2))
-//@pbe (constraint (= (f686f 5 "xyz") 20))
-//@pbe (constraint (= (f686f -4 "ab cd") -8))
-//@pbe (constraint (= (f686f 1 "vvvvv") 4))
+//@pbe (constraint (= (f41f 0 "hello world" "mno pqr st") "B0A"))
+//@pbe (constraint (= (f41f 0 "vvvvv" "asdf") "B0A"))

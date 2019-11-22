@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,6 +28,8 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-//@pbe (constraint (= (f783f "xyz" "vvvvv" 2) "14"))
-//@pbe (constraint (= (f783f "mno pqr st" "ab cd" 3) "16"))
-//@pbe (constraint (= (f783f "vvvvv" "404" 8) "26"))
+//@pbe (constraint (= (f36f 9) "9"))
+//@pbe (constraint (= (f36f 3) "3"))
+//@pbe (constraint (= (f36f 4) "4"))
+//@pbe (constraint (= (f36f 2) "2"))
+//@pbe (constraint (= (f36f 0) "0"))

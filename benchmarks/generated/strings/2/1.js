@@ -28,10 +28,11 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f490f(x_0, x_1)
+function f64f(x_0, x_1, x_2)
 {
-	return concat(x_1, x_1);
+	return beforeAfter(x_2);
 }
 
-//@pbe (constraint (= (f876f "ab cd") "Bab"))
-//@pbe (constraint (= (f876f "xyz") ""))
+//@pbe (constraint (= (f785f "xyz" "ab cd" "asdf") "Bab cdA"))
+//@pbe (constraint (= (f785f "mno pqr st" "xyz" "404") "BxyzA"))
+//@pbe (constraint (= (f785f "hello world" "hello world" "404") "Bhello worldA"))

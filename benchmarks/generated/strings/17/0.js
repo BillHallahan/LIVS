@@ -28,8 +28,8 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-//@pbe (constraint (= (f719f "hello world" "ab cd" "404") "d"))
-//@pbe (constraint (= (f719f "404" "404" "hello world") "4"))
-//@pbe (constraint (= (f719f "404" "asdf" "") "4"))
-//@pbe (constraint (= (f719f "asdf" "mno pqr st" "404") "f"))
-//@pbe (constraint (= (f719f "404" "vvvvv" "xyz") "4"))
+//@pbe (constraint (= (f750f "asdf" "asdf") ""))
+//@pbe (constraint (= (f750f "mno pqr st" "asdf") ""))
+//@pbe (constraint (= (f750f "404" "mno pqr st") "mno"))
+//@pbe (constraint (= (f750f "mno pqr st" "asdf") ""))
+//@pbe (constraint (= (f750f "ab cd" "xyz") ""))

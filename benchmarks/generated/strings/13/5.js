@@ -28,33 +28,30 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f393f(x_0)
+function f741f(x_0, x_1, x_2)
 {
-	return rep(x_0, x_0, rep(x_0, x_0, x_0));
+	return lastLetter(len(x_1));
 }
 
-function f653f(x_0)
+function f933f(x_0, x_1, x_2)
 {
-	return f393f(concat(x_0, x_0));
+	return f741f(len(x_1), x_0, firstWord(x_2));
 }
 
-function f364f(x_0, x_1, x_2)
+function f449f(x_0, x_1)
 {
-	return firstWord(x_1);
+	return concat(f741f(x_1, x_1, x_1), f741f(x_1, x_1, x_1));
 }
 
-function f65f(x_0, x_1, x_2)
+function f930f(x_0)
 {
-	return len(x_1);
+	return f741f(f449f(x_0, x_0), concat(x_0, x_0), beforeAfter(x_0));
 }
 
-function f613f(x_0)
+function f793f(x_0)
 {
-	return f393f(f364f(x_0, x_0, x_0));
+	return beforeAfter(lastLetter(x_0));
 }
 
-//@pbe (constraint (= (f358f "hello world" "vvvvv") "7"))
-//@pbe (constraint (= (f358f "" "ab cd") "7"))
-//@pbe (constraint (= (f358f "mno pqr st" "asdf") "6"))
-//@pbe (constraint (= (f358f "hello world" "asdf") "6"))
-//@pbe (constraint (= (f358f "vvvvv" "asdf") "6"))
+//@pbe (constraint (= (f959f "hello world" "ab cd") "0"))
+//@pbe (constraint (= (f959f "mno pqr st" "404") "6"))

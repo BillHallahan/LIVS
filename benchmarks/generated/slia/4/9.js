@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,51 +28,52 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f365f(x_0, x_1, x_2)
+function f135f(x_0, x_1, x_2)
 {
-	return beforeAfter(concat(x_0, x_0));
+	return len(x_0);
 }
 
-function f337f(x_0, x_1)
+function f569f(x_0)
 {
-	return beforeAfter(f365f(x_1, x_0, x_0));
+	return toStr(f135f(x_0, x_0, x_0));
 }
 
-function f450f(x_0)
+function f455f(x_0, x_1, x_2)
 {
-	return len(toStr(x_0));
+	return f569f(x_0);
 }
 
-function f969f(x_0, x_1)
+function f560f(x_0, x_1, x_2)
 {
-	return f450f(x_0);
+	return add(x_2, x_2);
 }
 
-function f766f(x_0, x_1, x_2)
+function f66f(x_0, x_1, x_2)
 {
-	return f337f(x_0, f337f(x_0, x_2));
+	return f569f(concat(x_2, x_2));
 }
 
-function f309f(x_0, x_1, x_2)
+function f970f(x_0, x_1, x_2)
 {
-	return toStr(add(x_0, x_0));
+	return f560f(mult(x_2, x_2), f135f(x_0, x_1, x_1), x_2);
 }
 
-function f296f(x_0)
+function f511f(x_0, x_1)
 {
-	return f337f(len(x_0), x_0);
+	return concat(f569f(x_0), x_1);
 }
 
-function f142f(x_0, x_1)
+function f563f(x_0, x_1, x_2)
 {
-	return beforeAfter(f365f(x_1, x_0, x_0));
+	return concat(concat(x_0, x_0), f569f(x_0));
 }
 
-function f269f(x_0, x_1, x_2)
+function f460f(x_0, x_1, x_2)
 {
-	return f766f(f969f(x_2, x_0), f766f(x_1, x_0, x_0), f142f(x_1, x_0));
+	return add(len(x_0), add(x_1, x_2));
 }
 
-//@pbe (constraint (= (f812f 6 "vvvvv" "asdf") "BasdfasdfA"))
-//@pbe (constraint (= (f812f 7 "ab cd" "asdf") "BasdfasdfA"))
-//@pbe (constraint (= (f812f 7 "404" "ab cd") "Bab cdab cdA"))
+//@pbe (constraint (= (f236f 7 "mno pqr st") "24"))
+//@pbe (constraint (= (f236f 7 "asdf") "12"))
+//@pbe (constraint (= (f236f 3 "asdf") "12"))
+//@pbe (constraint (= (f236f 7 "ab cd") "14"))

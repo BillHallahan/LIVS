@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,26 +28,25 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f824f(x_0, x_1, x_2)
+function f895f(x_0, x_1, x_2)
 {
-	return mult(x_2, x_2);
+	return beforeAfter(concat(x_2, x_2));
 }
 
-function f573f(x_0, x_1)
+function f352f(x_0)
 {
-	return add(f824f(x_0, x_0, x_1), len(x_0));
+	return toStr(mult(x_0, x_0));
 }
 
-function f191f(x_0, x_1, x_2)
+function f266f(x_0, x_1, x_2)
 {
-	return f824f(concat(x_2, x_2), x_1, len(x_1));
+	return beforeAfter(toStr(x_1));
 }
 
-function f628f(x_0, x_1, x_2)
+function f586f(x_0, x_1, x_2)
 {
-	return toStr(add(x_1, x_0));
+	return add(x_2, len(x_1));
 }
 
-//@pbe (constraint (= (f49f 3 2) 18))
-//@pbe (constraint (= (f49f 2 -4) -16))
-//@pbe (constraint (= (f49f 5 8) 200))
+//@pbe (constraint (= (f177f 8 "asdf") "12"))
+//@pbe (constraint (= (f177f 5 "vvvvv") "10"))

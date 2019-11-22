@@ -28,6 +28,5 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-//@pbe (constraint (= (f190f "" "xyz") "0"))
-//@pbe (constraint (= (f190f "hello world" "") "11"))
-//@pbe (constraint (= (f190f "xyz" "xyz") "3"))
+//@pbe (constraint (= (f163f "asdf" "ab cd") ""))
+//@pbe (constraint (= (f163f "ab cd" "ab cd") "ab"))

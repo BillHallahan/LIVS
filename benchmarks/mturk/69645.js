@@ -1,7 +1,7 @@
-function sumTwoNumbers(a,b){
+function sumTwoNumbers(a,b) {
   const c = a + b ;
   return c ; }
-function multiplyByTwo(x){
+function multiplyByTwo(x) {
   const y = x*2 ;
   return y ; }
 // function performCalculations(x,y,z ){
@@ -9,5 +9,5 @@ function multiplyByTwo(x){
 //   const k = multiplyByTwo(z);
 //   return (k+j); }
 
-// @pbe (constraint (= (performCalculations 1 2 3) 9 )
-// @pbe (constraint (= (performCalculations 2 4 6) 18 )
+// @pbe (constraint (= (performCalculations 1 2 3) 9 ))
+// @pbe (constraint (= (performCalculations 2 4 6) 18 ))

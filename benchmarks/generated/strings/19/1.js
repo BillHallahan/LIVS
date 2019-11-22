@@ -28,10 +28,11 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f585f(x_0)
+function f923f(x_0, x_1, x_2)
 {
-	return firstWord(rep(x_0, x_0, x_0));
+	return firstWord(x_0);
 }
 
-//@pbe (constraint (= (f931f "asdf" "vvvvv" "hello world") "BA"))
-//@pbe (constraint (= (f931f "xyz" "vvvvv" "hello world") "BA"))
+//@pbe (constraint (= (f826f "ab cd") "BBab cdAA"))
+//@pbe (constraint (= (f826f "vvvvv") "BBvvvvvAA"))
+//@pbe (constraint (= (f826f "asdf") "BBasdfAA"))

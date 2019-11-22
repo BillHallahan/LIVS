@@ -28,22 +28,20 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f430f(x_0, x_1)
+function f116f(x_0, x_1)
 {
-	return beforeAfter(len(x_1));
+	return lastLetter(concat(x_1, x_0));
 }
 
-function f680f(x_0)
+function f473f(x_0, x_1, x_2)
 {
-	return len(f430f(x_0, x_0));
+	return beforeAfter(x_2);
 }
 
-function f143f(x_0)
+function f820f(x_0, x_1)
 {
-	return lastLetter(x_0);
+	return len(firstWord(x_1));
 }
 
-//@pbe (constraint (= (f71f "404" "404") "BA"))
-//@pbe (constraint (= (f71f "asdf" "404") "BA"))
-//@pbe (constraint (= (f71f "" "") "BA"))
-//@pbe (constraint (= (f71f "404" "") "BA"))
+//@pbe (constraint (= (f745f "asdf") "f"))
+//@pbe (constraint (= (f745f "xyz") "z"))

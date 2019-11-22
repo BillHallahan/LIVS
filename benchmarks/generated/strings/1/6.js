@@ -28,37 +28,38 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f190f(x_0, x_1)
+function f163f(x_0, x_1)
 {
-	return len(rep(x_1, x_1, x_0));
+	return firstWord(rep(x_0, x_1, x_0));
 }
 
-function f871f(x_0, x_1, x_2)
+function f60f(x_0)
 {
-	return len(len(x_1));
+	return rep(x_0, beforeAfter(x_0), concat(x_0, x_0));
 }
 
-function f832f(x_0, x_1)
+function f412f(x_0, x_1)
 {
-	return f190f(firstWord(x_1), beforeAfter(x_0));
+	return firstWord(f60f(x_1));
 }
 
-function f943f(x_0)
+function f621f(x_0, x_1, x_2)
 {
-	return f190f(firstWord(x_0), f190f(x_0, x_0));
+	return firstWord(concat(x_0, x_1));
 }
 
-function f30f(x_0)
+function f746f(x_0, x_1, x_2)
 {
-	return firstWord(x_0);
+	return rep(f60f(x_2), rep(x_0, x_1, x_1), firstWord(x_1));
 }
 
-function f372f(x_0, x_1, x_2)
+function f620f(x_0)
 {
-	return lastLetter(f30f(x_0));
+	return f621f(f621f(x_0, x_0, x_0), f60f(x_0), x_0);
 }
 
-//@pbe (constraint (= (f272f "ab cd" "vvvvv") "0"))
-//@pbe (constraint (= (f272f "hello world" "mno pqr st") "3"))
-//@pbe (constraint (= (f272f "ab cd" "vvvvv") "0"))
-//@pbe (constraint (= (f272f "xyz" "ab cd") "2"))
+//@pbe (constraint (= (f80f "asdf" "vvvvv") "f"))
+//@pbe (constraint (= (f80f "asdf" "vvvvv") "f"))
+//@pbe (constraint (= (f80f "asdf" "xyz") "f"))
+//@pbe (constraint (= (f80f "hello world" "mno pqr st") "d"))
+//@pbe (constraint (= (f80f "xyz" "ab cd") "z"))

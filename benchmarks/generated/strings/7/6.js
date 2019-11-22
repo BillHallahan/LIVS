@@ -28,35 +28,37 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f350f(x_0)
+function f993f(x_0, x_1, x_2)
 {
-	return concat(x_0, concat(x_0, x_0));
+	return rep(beforeAfter(x_1), firstWord(x_1), x_2);
 }
 
-function f967f(x_0, x_1)
+function f138f(x_0, x_1)
 {
-	return concat(f350f(x_1), len(x_1));
+	return f993f(f993f(x_1, x_0, x_1), rep(x_1, x_1, x_1), f993f(x_1, x_0, x_0));
 }
 
-function f611f(x_0, x_1, x_2)
+function f494f(x_0, x_1, x_2)
 {
-	return len(f350f(x_2));
+	return concat(x_1, x_2);
 }
 
-function f966f(x_0)
+function f290f(x_0)
 {
-	return len(lastLetter(x_0));
+	return len(f138f(x_0, x_0));
 }
 
-function f808f(x_0)
+function f254f(x_0, x_1, x_2)
 {
-	return beforeAfter(firstWord(x_0));
+	return lastLetter(concat(x_2, x_1));
 }
 
-function f584f(x_0)
+function f181f(x_0)
 {
-	return beforeAfter(f808f(x_0));
+	return f494f(f138f(x_0, x_0), f138f(x_0, x_0), firstWord(x_0));
 }
 
-//@pbe (constraint (= (f547f "vvvvv") "B15A"))
-//@pbe (constraint (= (f547f "hello world") "B33A"))
+//@pbe (constraint (= (f6f "mno pqr st" "vvvvv" "404") "vvvvvB404ABvvvvvB404AABvvvvvB404AA"))
+//@pbe (constraint (= (f6f "mno pqr st" "mno pqr st" "404") "BBmno pqr stB404A pqr stB404AA pqr stB404AAmno"))
+//@pbe (constraint (= (f6f "hello world" "ab cd" "hello world") "BBBab cd worldA cd worldAA cd worldAABab"))
+//@pbe (constraint (= (f6f "asdf" "vvvvv" "ab cd") "BBBvvvvv cdA cdAA cdAABvvvvv"))

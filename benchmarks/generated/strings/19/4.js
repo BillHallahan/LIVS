@@ -28,26 +28,25 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f585f(x_0)
+function f923f(x_0, x_1, x_2)
 {
-	return firstWord(rep(x_0, x_0, x_0));
+	return firstWord(x_0);
 }
 
-function f931f(x_0, x_1, x_2)
+function f826f(x_0)
 {
-	return beforeAfter(firstWord(x_1));
+	return beforeAfter(beforeAfter(x_0));
 }
 
-function f11f(x_0, x_1, x_2)
+function f951f(x_0, x_1, x_2)
 {
-	return beforeAfter(f931f(x_2, x_2, x_0));
+	return concat(x_0, firstWord(x_2));
 }
 
-function f954f(x_0, x_1, x_2)
+function f454f(x_0, x_1, x_2)
 {
-	return concat(len(x_2), x_1);
+	return firstWord(rep(x_2, x_2, x_0));
 }
 
-//@pbe (constraint (= (f154f "xyz" "" "ab cd") "3ab cd"))
-//@pbe (constraint (= (f154f "ab cd" "xyz" "mno pqr st") "5mno pqr st"))
-//@pbe (constraint (= (f154f "hello world" "hello world" "ab cd") "11ab cd"))
+//@pbe (constraint (= (f227f "xyz") "xyz"))
+//@pbe (constraint (= (f227f "hello world") "hello worldhello"))

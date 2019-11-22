@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,32 +28,30 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f15f(x_0, x_1, x_2)
+function f753f(x_0, x_1, x_2)
 {
-	return beforeAfter(x_2);
+	return len(x_1);
 }
 
-function f101f(x_0)
+function f566f(x_0)
 {
-	return mult(mult(x_0, x_0), mult(x_0, x_0));
+	return beforeAfter(concat(x_0, x_0));
 }
 
-function f507f(x_0, x_1, x_2)
+function f624f(x_0, x_1, x_2)
 {
-	return toStr(f101f(x_1));
+	return beforeAfter(x_0);
 }
 
-function f939f(x_0, x_1)
+function f581f(x_0, x_1, x_2)
 {
-	return f15f(f101f(x_1), f15f(x_1, x_0, x_0), x_0);
+	return f624f(beforeAfter(x_1), x_0, mult(x_2, x_2));
 }
 
-function f248f(x_0, x_1)
+function f415f(x_0, x_1, x_2)
 {
-	return add(add(x_0, x_1), x_1);
+	return add(add(x_1, x_1), add(x_1, x_1));
 }
 
-//@pbe (constraint (= (f873f 8 6 "asdf") 6))
-//@pbe (constraint (= (f873f 6 -2 "") 2))
-//@pbe (constraint (= (f873f 6 -5 "asdf") 6))
-//@pbe (constraint (= (f873f -5 7 "asdf") 6))
+//@pbe (constraint (= (f765f "mno pqr st" "asdf" 3) 10))
+//@pbe (constraint (= (f765f "vvvvv" "ab cd" 2) 9))

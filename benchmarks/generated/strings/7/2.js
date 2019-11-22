@@ -28,17 +28,17 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f350f(x_0)
+function f993f(x_0, x_1, x_2)
 {
-	return concat(x_0, concat(x_0, x_0));
+	return rep(beforeAfter(x_1), firstWord(x_1), x_2);
 }
 
-function f967f(x_0, x_1)
+function f138f(x_0, x_1)
 {
-	return concat(f350f(x_1), len(x_1));
+	return f993f(f993f(x_1, x_0, x_1), rep(x_1, x_1, x_1), f993f(x_1, x_0, x_0));
 }
 
-//@pbe (constraint (= (f611f "404" "404" "ab cd") "15"))
-//@pbe (constraint (= (f611f "mno pqr st" "" "") "0"))
-//@pbe (constraint (= (f611f "asdf" "mno pqr st" "asdf") "12"))
-//@pbe (constraint (= (f611f "asdf" "asdf" "xyz") "9"))
+//@pbe (constraint (= (f494f "404" "ab cd" "hello world") "ab cdhello world"))
+//@pbe (constraint (= (f494f "mno pqr st" "asdf" "xyz") "asdfxyz"))
+//@pbe (constraint (= (f494f "404" "ab cd" "xyz") "ab cdxyz"))
+//@pbe (constraint (= (f494f "hello world" "ab cd" "hello world") "ab cdhello world"))

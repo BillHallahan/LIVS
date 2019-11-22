@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,31 +28,31 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f365f(x_0, x_1, x_2)
+function f135f(x_0, x_1, x_2)
 {
-	return beforeAfter(concat(x_0, x_0));
+	return len(x_0);
 }
 
-function f337f(x_0, x_1)
+function f569f(x_0)
 {
-	return beforeAfter(f365f(x_1, x_0, x_0));
+	return toStr(f135f(x_0, x_0, x_0));
 }
 
-function f450f(x_0)
+function f455f(x_0, x_1, x_2)
 {
-	return len(toStr(x_0));
+	return f569f(x_0);
 }
 
-function f969f(x_0, x_1)
+function f560f(x_0, x_1, x_2)
 {
-	return f450f(x_0);
+	return add(x_2, x_2);
 }
 
-function f766f(x_0, x_1, x_2)
+function f66f(x_0, x_1, x_2)
 {
-	return f337f(x_0, f337f(x_0, x_2));
+	return f569f(concat(x_2, x_2));
 }
 
-//@pbe (constraint (= (f309f 7 "" 9) "24"))
-//@pbe (constraint (= (f309f 3 "404" 9) "16"))
-//@pbe (constraint (= (f309f 2 "mno pqr st" -2) "14"))
+//@pbe (constraint (= (f970f "asdf" "mno pqr st" 7) 14))
+//@pbe (constraint (= (f970f "404" "asdf" 6) 12))
+//@pbe (constraint (= (f970f "xyz" "hello world" 5) 10))

@@ -28,10 +28,10 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f397f(x_0, x_1, x_2)
+function f342f(x_0, x_1, x_2)
 {
-	return concat(x_2, lastLetter(x_1));
+	return len(x_1);
 }
 
-//@pbe (constraint (= (f665f "ab cd" "xyz") "5"))
-//@pbe (constraint (= (f665f "" "mno pqr st") "0"))
+//@pbe (constraint (= (f304f "vvvvv") "7"))
+//@pbe (constraint (= (f304f "vvvvv") "7"))

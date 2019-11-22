@@ -28,12 +28,10 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f209f(x_0)
+function f394f(x_0)
 {
-	return firstWord(beforeAfter(x_0));
+	return concat(firstWord(x_0), x_0);
 }
 
-//@pbe (constraint (= (f416f "" "mno pqr st" "mno pqr st") "BBmno pqr stAA"))
-//@pbe (constraint (= (f416f "hello world" "mno pqr st" "asdf") "BBasdfAA"))
-//@pbe (constraint (= (f416f "hello world" "hello world" "vvvvv") "BBvvvvvAA"))
-//@pbe (constraint (= (f416f "404" "hello world" "404") "BB404AA"))
+//@pbe (constraint (= (f48f "ab cd" "hello world" "xyz") "xyz"))
+//@pbe (constraint (= (f48f "asdf" "mno pqr st" "hello world") "hellohello world"))
