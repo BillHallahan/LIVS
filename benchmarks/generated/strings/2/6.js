@@ -28,35 +28,37 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f490f(x_0, x_1)
+function f64f(x_0, x_1, x_2)
 {
-	return concat(x_1, x_1);
+	return beforeAfter(x_2);
 }
 
-function f876f(x_0)
+function f785f(x_0, x_1, x_2)
 {
-	return firstWord(beforeAfter(x_0));
+	return rep(beforeAfter(x_1), len(x_1), firstWord(x_1));
 }
 
-function f371f(x_0)
+function f855f(x_0, x_1, x_2)
 {
-	return rep(firstWord(x_0), concat(x_0, x_0), f876f(x_0));
+	return beforeAfter(x_0);
 }
 
-function f619f(x_0)
+function f778f(x_0)
 {
-	return len(f490f(x_0, x_0));
+	return firstWord(x_0);
 }
 
-function f132f(x_0, x_1, x_2)
+function f455f(x_0, x_1)
 {
-	return f490f(beforeAfter(x_1), f619f(x_2));
+	return f785f(x_0, lastLetter(x_0), concat(x_1, x_1));
 }
 
-function f87f(x_0, x_1)
+function f922f(x_0)
 {
-	return f619f(rep(x_1, x_1, x_0));
+	return f455f(len(x_0), beforeAfter(x_0));
 }
 
-//@pbe (constraint (= (f830f "asdf" "404" "mno pqr st") "ff"))
-//@pbe (constraint (= (f830f "ab cd" "vvvvv" "vvvvv") "dd"))
+//@pbe (constraint (= (f280f "404" "asdf") "BB404AA"))
+//@pbe (constraint (= (f280f "asdf" "xyz") "BBasdfAA"))
+//@pbe (constraint (= (f280f "404" "vvvvv") "BB404AA"))
+//@pbe (constraint (= (f280f "xyz" "404") "BBxyzAA"))

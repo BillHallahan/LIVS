@@ -28,53 +28,53 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f585f(x_0)
+function f923f(x_0, x_1, x_2)
 {
-	return firstWord(rep(x_0, x_0, x_0));
+	return firstWord(x_0);
 }
 
-function f931f(x_0, x_1, x_2)
+function f826f(x_0)
 {
-	return beforeAfter(firstWord(x_1));
+	return beforeAfter(beforeAfter(x_0));
 }
 
-function f11f(x_0, x_1, x_2)
+function f951f(x_0, x_1, x_2)
 {
-	return beforeAfter(f931f(x_2, x_2, x_0));
+	return concat(x_0, firstWord(x_2));
 }
 
-function f954f(x_0, x_1, x_2)
+function f454f(x_0, x_1, x_2)
 {
-	return concat(len(x_2), x_1);
+	return firstWord(rep(x_2, x_2, x_0));
 }
 
-function f154f(x_0, x_1, x_2)
+function f227f(x_0)
 {
-	return concat(len(x_0), rep(x_2, x_2, x_2));
+	return concat(rep(x_0, x_0, x_0), firstWord(x_0));
 }
 
-function f926f(x_0, x_1, x_2)
+function f493f(x_0, x_1, x_2)
 {
-	return len(lastLetter(x_2));
+	return concat(x_0, concat(x_0, x_1));
 }
 
-function f845f(x_0, x_1, x_2)
+function f719f(x_0, x_1, x_2)
 {
-	return f585f(concat(x_0, x_1));
+	return firstWord(f227f(x_1));
 }
 
-function f405f(x_0, x_1)
+function f252f(x_0, x_1, x_2)
 {
-	return lastLetter(f845f(x_1, x_1, x_0));
+	return concat(lastLetter(x_0), len(x_1));
 }
 
-function f754f(x_0, x_1, x_2)
+function f555f(x_0, x_1, x_2)
 {
-	return rep(f405f(x_2, x_0), f954f(x_0, x_1, x_2), x_2);
+	return f719f(concat(x_1, x_2), f951f(x_0, x_2, x_1), rep(x_2, x_1, x_0));
 }
 
-//@pbe (constraint (= (f253f "asdf" "asdf") "BA"))
-//@pbe (constraint (= (f253f "404" "404") "BA"))
-//@pbe (constraint (= (f253f "asdf" "xyz") "BA"))
-//@pbe (constraint (= (f253f "mno pqr st" "") "BmnoA"))
-//@pbe (constraint (= (f253f "vvvvv" "hello world") "BA"))
+//@pbe (constraint (= (f20f "hello world") "BBhello worldAABBhello worldAAhello worldhello world"))
+//@pbe (constraint (= (f20f "hello world") "BBhello worldAABBhello worldAAhello worldhello world"))
+//@pbe (constraint (= (f20f "vvvvv") "BBvvvvvAABBvvvvvAAvvvvvvvvvv"))
+//@pbe (constraint (= (f20f "ab cd") "BBab cdAABBab cdAAab cdab cd"))
+//@pbe (constraint (= (f20f "mno pqr st") "BBmno pqr stAABBmno pqr stAAmno pqr stmno pqr st"))

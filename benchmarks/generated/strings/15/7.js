@@ -28,43 +28,41 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f753f(x_0)
+function f383f(x_0, x_1)
 {
-	return firstWord(beforeAfter(x_0));
+	return beforeAfter(lastLetter(x_1));
 }
 
-function f227f(x_0, x_1, x_2)
+function f1000f(x_0, x_1, x_2)
 {
-	return beforeAfter(firstWord(x_0));
+	return concat(x_2, lastLetter(x_1));
 }
 
-function f280f(x_0)
+function f984f(x_0)
 {
-	return rep(f753f(x_0), beforeAfter(x_0), len(x_0));
+	return f1000f(concat(x_0, x_0), rep(x_0, x_0, x_0), f1000f(x_0, x_0, x_0));
 }
 
-function f328f(x_0, x_1)
+function f237f(x_0, x_1)
 {
-	return f753f(concat(x_0, x_0));
+	return beforeAfter(f1000f(x_1, x_0, x_0));
 }
 
-function f362f(x_0, x_1)
+function f354f(x_0)
 {
-	return beforeAfter(f227f(x_1, x_1, x_1));
+	return f237f(concat(x_0, x_0), f984f(x_0));
 }
 
-function f814f(x_0, x_1, x_2)
+function f531f(x_0)
 {
-	return len(f362f(x_0, x_2));
+	return f354f(concat(x_0, x_0));
 }
 
-function f108f(x_0, x_1)
+function f150f(x_0, x_1)
 {
-	return f753f(beforeAfter(x_0));
+	return firstWord(f531f(x_0));
 }
 
-//@pbe (constraint (= (f661f "asdf") "2"))
-//@pbe (constraint (= (f661f "404") "2"))
-//@pbe (constraint (= (f661f "asdf") "2"))
-//@pbe (constraint (= (f661f "mno pqr st") "5"))
-//@pbe (constraint (= (f661f "asdf") "2"))
+//@pbe (constraint (= (f979f "ab cd" "hello world" "xyz") "xyzzz"))
+//@pbe (constraint (= (f979f "mno pqr st" "hello world" "404") "40444"))
+//@pbe (constraint (= (f979f "ab cd" "ab cd" "asdf") "asdfff"))

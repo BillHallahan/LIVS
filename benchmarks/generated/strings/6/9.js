@@ -28,51 +28,51 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f391f(x_0, x_1, x_2)
+function f713f(x_0)
 {
-	return rep(rep(x_2, x_0, x_2), x_0, beforeAfter(x_0));
+	return len(len(x_0));
 }
 
-function f0f(x_0, x_1, x_2)
+function f779f(x_0, x_1)
+{
+	return beforeAfter(concat(x_0, x_0));
+}
+
+function f917f(x_0, x_1, x_2)
+{
+	return beforeAfter(f713f(x_0));
+}
+
+function f130f(x_0)
+{
+	return beforeAfter(x_0);
+}
+
+function f857f(x_0, x_1, x_2)
+{
+	return beforeAfter(x_0);
+}
+
+function f718f(x_0)
+{
+	return beforeAfter(firstWord(x_0));
+}
+
+function f173f(x_0, x_1, x_2)
 {
 	return beforeAfter(beforeAfter(x_2));
 }
 
-function f94f(x_0, x_1, x_2)
+function f70f(x_0, x_1, x_2)
 {
-	return beforeAfter(f391f(x_1, x_0, x_0));
+	return f917f(x_1, x_2, beforeAfter(x_0));
 }
 
-function f992f(x_0, x_1)
+function f375f(x_0, x_1, x_2)
 {
-	return len(firstWord(x_1));
+	return f779f(f857f(x_1, x_1, x_1), f173f(x_0, x_0, x_1));
 }
 
-function f264f(x_0, x_1)
-{
-	return f94f(x_0, lastLetter(x_1), f94f(x_1, x_0, x_1));
-}
-
-function f986f(x_0)
-{
-	return len(f264f(x_0, x_0));
-}
-
-function f196f(x_0, x_1)
-{
-	return f94f(firstWord(x_0), x_0, x_1);
-}
-
-function f929f(x_0)
-{
-	return f986f(firstWord(x_0));
-}
-
-function f410f(x_0, x_1)
-{
-	return concat(len(x_0), len(x_0));
-}
-
-//@pbe (constraint (= (f329f "" "hello world") ""))
-//@pbe (constraint (= (f329f "ab cd" "xyz") "ab cdab cd"))
-//@pbe (constraint (= (f329f "ab cd" "404") "ab cdab cd"))
+//@pbe (constraint (= (f568f "hello world") "BhelloA11"))
+//@pbe (constraint (= (f568f "mno pqr st") "BmnoA10"))
+//@pbe (constraint (= (f568f "xyz") "BA3"))

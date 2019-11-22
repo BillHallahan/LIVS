@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,15 +28,18 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f482f(x_0)
+function f751f(x_0, x_1)
 {
-	return beforeAfter(beforeAfter(x_0));
+	return concat(x_1, beforeAfter(x_1));
 }
 
-function f238f(x_0, x_1, x_2)
+function f606f(x_0, x_1, x_2)
 {
-	return beforeAfter(x_1);
+	return concat(beforeAfter(x_1), x_2);
 }
 
-//@pbe (constraint (= (f866f -3 -4 "hello world") "Bhello worldhello worldA"))
-//@pbe (constraint (= (f866f 6 4 "hello world") "Bhello worldhello worldA"))
+//@pbe (constraint (= (f737f 6) 72))
+//@pbe (constraint (= (f737f 10) 200))
+//@pbe (constraint (= (f737f 6) 72))
+//@pbe (constraint (= (f737f 0) 0))
+//@pbe (constraint (= (f737f 2) 8))

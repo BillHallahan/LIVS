@@ -28,15 +28,17 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f617f(x_0)
+function f102f(x_0, x_1, x_2)
 {
-	return beforeAfter(len(x_0));
+	return len(x_0);
 }
 
-function f455f(x_0, x_1, x_2)
+function f605f(x_0, x_1, x_2)
 {
-	return rep(f617f(x_0), concat(x_0, x_0), len(x_0));
+	return beforeAfter(rep(x_2, x_2, x_2));
 }
 
-//@pbe (constraint (= (f527f "xyz" "hello world") "o"))
-//@pbe (constraint (= (f527f "ab cd" "vvvvv") ""))
+//@pbe (constraint (= (f244f "mno pqr st" "404" "xyz") "BA"))
+//@pbe (constraint (= (f244f "hello world" "vvvvv" "vvvvv") "BA"))
+//@pbe (constraint (= (f244f "vvvvv" "xyz" "xyz") "BA"))
+//@pbe (constraint (= (f244f "vvvvv" "xyz" "mno pqr st") "BmnoA"))

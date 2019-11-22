@@ -28,12 +28,12 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f411f(x_0, x_1, x_2)
+function f345f(x_0)
 {
-	return firstWord(rep(x_1, x_2, x_0));
+	return lastLetter(len(x_0));
 }
 
-//@pbe (constraint (= (f718f "xyz" "xyz" "asdf") ""))
-//@pbe (constraint (= (f718f "xyz" "xyz" "asdf") ""))
-//@pbe (constraint (= (f718f "404" "mno pqr st" "") "Bmno"))
-//@pbe (constraint (= (f718f "vvvvv" "asdf" "vvvvv") ""))
+//@pbe (constraint (= (f72f "asdf" "hello world") "f"))
+//@pbe (constraint (= (f72f "vvvvv" "hello world") "v"))
+//@pbe (constraint (= (f72f "asdf" "mno pqr st") "f"))
+//@pbe (constraint (= (f72f "hello world" "mno pqr st") "d"))

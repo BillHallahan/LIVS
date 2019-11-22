@@ -20,7 +20,7 @@ function len(x_0) {
 
 // @type: 01
 function toStr(x_0) {
-    return (x_0 + 10) + "";
+    return x_0 + "";
 }
 
 // @type: 11

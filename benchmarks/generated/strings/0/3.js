@@ -28,23 +28,23 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f281f(x_0, x_1, x_2)
+function f0f(x_0)
 {
-	return rep(beforeAfter(x_1), x_2, rep(x_1, x_0, x_0));
+	return concat(len(x_0), firstWord(x_0));
 }
 
-function f979f(x_0, x_1, x_2)
+function f352f(x_0, x_1)
 {
-	return lastLetter(firstWord(x_2));
+	return rep(f0f(x_0), x_1, concat(x_0, x_0));
 }
 
-function f256f(x_0, x_1, x_2)
+function f247f(x_0)
 {
-	return concat(concat(x_0, x_2), len(x_1));
+	return f0f(x_0);
 }
 
-//@pbe (constraint (= (f418f "xyz" "asdf") "asdf"))
-//@pbe (constraint (= (f418f "asdf" "404") "404"))
-//@pbe (constraint (= (f418f "ab cd" "xyz") "xyz"))
-//@pbe (constraint (= (f418f "hello world" "") ""))
-//@pbe (constraint (= (f418f "mno pqr st" "asdf") "asdf"))
+//@pbe (constraint (= (f55f "vvvvv" "mno pqr st" "vvvvv") ""))
+//@pbe (constraint (= (f55f "404" "xyz" "mno pqr st") ""))
+//@pbe (constraint (= (f55f "asdf" "404" "ab cd") ""))
+//@pbe (constraint (= (f55f "asdf" "ab cd" "hello world") ""))
+//@pbe (constraint (= (f55f "asdf" "asdf" "404") ""))

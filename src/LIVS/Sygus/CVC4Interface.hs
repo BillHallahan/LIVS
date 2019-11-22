@@ -132,7 +132,7 @@ tryVariousCVC4Options _ _ _ _ _ _ [] = return Unknown
 tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
     liftIO $ whenLoud $ putStrLn $ "Trying CVC4 with " ++ show opt
 
-    m <- runCVC4WithFile form ext opt timeout
+    m <- runCVC4WithFile form ext opt 40
 
     let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
@@ -143,7 +143,7 @@ tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
 runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
 runCVC4OnString sub tenv s = do
     liftIO $ putStrLn s
-    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus"] 10
+    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus"] 40
     return . parseSMT (M.empty) tenv sub . lexSMT $ m
 
 runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> m Result
@@ -151,7 +151,7 @@ runSMT2WithGrammar con h sub tenv s = do
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
-    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--produce-model"] (smt_timeout con)
+    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--produce-model"] 40
     return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
@@ -160,6 +160,7 @@ runCVC4WithFile :: String -- SyGuS
                 -> Int
                 -> IO String
 runCVC4WithFile sygus ext ars timeout = do
+    start <- getCurrentTime
     out <- try (
         withSystemTempFile ("cvc4_input" ++ ext)
         (\fp h -> do
@@ -171,12 +172,11 @@ runCVC4WithFile sygus ext ars timeout = do
             let toCommand = case toCommandOSX of
                     Just c -> c          -- Mac
                     Nothing -> "timeout" -- Linux
-            start <- getCurrentTime
-            output <- runProcessOnce toCommand (show timeout:"cvc4":fp:ars)
-            stop <- getCurrentTime
-            print $ diffUTCTime stop start
-            return output)) :: IO (Either SomeException String)
 
+            output <- runProcessOnce toCommand (show timeout:"cvc4":fp:ars)
+            return output)) :: IO (Either SomeException String)
+    stop <- getCurrentTime
+    print $ diffUTCTime stop start
     case out of
         Right out' -> return out'
         Left _ -> return "unknown"

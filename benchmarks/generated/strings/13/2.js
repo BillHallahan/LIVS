@@ -28,15 +28,18 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f393f(x_0)
+function f741f(x_0, x_1, x_2)
 {
-	return rep(x_0, x_0, rep(x_0, x_0, x_0));
+	return lastLetter(len(x_1));
 }
 
-function f653f(x_0)
+function f933f(x_0, x_1, x_2)
 {
-	return f393f(concat(x_0, x_0));
+	return f741f(len(x_1), x_0, firstWord(x_2));
 }
 
-//@pbe (constraint (= (f364f "mno pqr st" "404" "mno pqr st") ""))
-//@pbe (constraint (= (f364f "xyz" "404" "vvvvv") ""))
+//@pbe (constraint (= (f449f "hello world" "404") "33"))
+//@pbe (constraint (= (f449f "vvvvv" "404") "33"))
+//@pbe (constraint (= (f449f "xyz" "hello world") "11"))
+//@pbe (constraint (= (f449f "hello world" "mno pqr st") "00"))
+//@pbe (constraint (= (f449f "hello world" "vvvvv") "55"))

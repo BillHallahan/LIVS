@@ -28,6 +28,5 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-//@pbe (constraint (= (f397f "mno pqr st" "xyz" "vvvvv") "vvvvvz"))
-//@pbe (constraint (= (f397f "vvvvv" "asdf" "vvvvv") "vvvvvf"))
-//@pbe (constraint (= (f397f "" "" "asdf") "asdf"))
+//@pbe (constraint (= (f342f "asdf" "ab cd" "vvvvv") "5"))
+//@pbe (constraint (= (f342f "vvvvv" "asdf" "404") "4"))

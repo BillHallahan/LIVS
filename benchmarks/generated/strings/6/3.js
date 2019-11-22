@@ -28,23 +28,23 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f391f(x_0, x_1, x_2)
+function f713f(x_0)
 {
-	return rep(rep(x_2, x_0, x_2), x_0, beforeAfter(x_0));
+	return len(len(x_0));
 }
 
-function f0f(x_0, x_1, x_2)
+function f779f(x_0, x_1)
 {
-	return beforeAfter(beforeAfter(x_2));
+	return beforeAfter(concat(x_0, x_0));
 }
 
-function f94f(x_0, x_1, x_2)
+function f917f(x_0, x_1, x_2)
 {
-	return beforeAfter(f391f(x_1, x_0, x_0));
+	return beforeAfter(f713f(x_0));
 }
 
-//@pbe (constraint (= (f992f "hello world" "404") "0"))
-//@pbe (constraint (= (f992f "" "mno pqr st") "3"))
-//@pbe (constraint (= (f992f "xyz" "mno pqr st") "3"))
-//@pbe (constraint (= (f992f "ab cd" "404") "0"))
-//@pbe (constraint (= (f992f "hello world" "xyz") "0"))
+//@pbe (constraint (= (f130f "vvvvv") "BvvvvvA"))
+//@pbe (constraint (= (f130f "ab cd") "Bab cdA"))
+//@pbe (constraint (= (f130f "asdf") "BasdfA"))
+//@pbe (constraint (= (f130f "xyz") "BxyzA"))
+//@pbe (constraint (= (f130f "hello world") "Bhello worldA"))

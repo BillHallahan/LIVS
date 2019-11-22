@@ -28,15 +28,15 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f281f(x_0, x_1, x_2)
+function f0f(x_0)
 {
-	return rep(beforeAfter(x_1), x_2, rep(x_1, x_0, x_0));
+	return concat(len(x_0), firstWord(x_0));
 }
 
-function f979f(x_0, x_1, x_2)
+function f352f(x_0, x_1)
 {
-	return lastLetter(firstWord(x_2));
+	return rep(f0f(x_0), x_1, concat(x_0, x_0));
 }
 
-//@pbe (constraint (= (f256f "404" "" "mno pqr st") "404mno pqr st0"))
-//@pbe (constraint (= (f256f "404" "" "vvvvv") "404vvvvv0"))
+//@pbe (constraint (= (f247f "ab cd") "5ab"))
+//@pbe (constraint (= (f247f "xyz") "3"))

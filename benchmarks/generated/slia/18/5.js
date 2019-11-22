@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,31 +28,32 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f478f(x_0, x_1, x_2)
+function f319f(x_0, x_1, x_2)
 {
-	return beforeAfter(concat(x_1, x_1));
+	return add(mult(x_0, x_0), x_0);
 }
 
-function f559f(x_0, x_1, x_2)
-{
-	return toStr(add(x_1, x_1));
-}
-
-function f424f(x_0)
-{
-	return add(add(x_0, x_0), x_0);
-}
-
-function f605f(x_0, x_1)
+function f293f(x_0, x_1, x_2)
 {
 	return len(x_0);
 }
 
-function f62f(x_0, x_1, x_2)
+function f918f(x_0, x_1)
 {
-	return f424f(f424f(x_2));
+	return mult(x_1, f319f(x_1, x_0, x_0));
 }
 
-//@pbe (constraint (= (f465f "ab cd" 0) 0))
-//@pbe (constraint (= (f465f "404" 4) 12))
-//@pbe (constraint (= (f465f "hello world" -2) -6))
+function f90f(x_0, x_1, x_2)
+{
+	return f918f(beforeAfter(x_0), mult(x_1, x_1));
+}
+
+function f846f(x_0, x_1)
+{
+	return f293f(beforeAfter(x_0), f90f(x_0, x_1, x_0), x_1);
+}
+
+//@pbe (constraint (= (f500f 9 "vvvvv") "BvvvvvvvvvvA"))
+//@pbe (constraint (= (f500f 9 "ab cd") "Bab cdab cdA"))
+//@pbe (constraint (= (f500f 0 "vvvvv") "BvvvvvvvvvvA"))
+//@pbe (constraint (= (f500f 9 "hello world") "Bhello worldhello worldA"))

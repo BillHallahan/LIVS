@@ -28,32 +28,30 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f391f(x_0, x_1, x_2)
+function f713f(x_0)
 {
-	return rep(rep(x_2, x_0, x_2), x_0, beforeAfter(x_0));
+	return len(len(x_0));
 }
 
-function f0f(x_0, x_1, x_2)
+function f779f(x_0, x_1)
 {
-	return beforeAfter(beforeAfter(x_2));
+	return beforeAfter(concat(x_0, x_0));
 }
 
-function f94f(x_0, x_1, x_2)
+function f917f(x_0, x_1, x_2)
 {
-	return beforeAfter(f391f(x_1, x_0, x_0));
+	return beforeAfter(f713f(x_0));
 }
 
-function f992f(x_0, x_1)
+function f130f(x_0)
 {
-	return len(firstWord(x_1));
+	return beforeAfter(x_0);
 }
 
-function f264f(x_0, x_1)
+function f857f(x_0, x_1, x_2)
 {
-	return f94f(x_0, lastLetter(x_1), f94f(x_1, x_0, x_1));
+	return beforeAfter(x_0);
 }
 
-//@pbe (constraint (= (f986f "") "4"))
-//@pbe (constraint (= (f986f "vvvvv") "13"))
-//@pbe (constraint (= (f986f "xyz") "9"))
-//@pbe (constraint (= (f986f "mno pqr st") "23"))
+//@pbe (constraint (= (f718f "404") "BA"))
+//@pbe (constraint (= (f718f "404") "BA"))

@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,27 +28,26 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f798f(x_0)
+function f810f(x_0)
 {
-	return add(add(x_0, x_0), add(x_0, x_0));
+	return concat(concat(x_0, x_0), x_0);
 }
 
-function f152f(x_0, x_1, x_2)
+function f257f(x_0, x_1)
 {
-	return beforeAfter(x_0);
+	return toStr(mult(x_0, x_0));
 }
 
-function f987f(x_0, x_1, x_2)
+function f833f(x_0, x_1, x_2)
 {
-	return len(x_2);
+	return len(toStr(x_2));
 }
 
-function f74f(x_0, x_1)
+function f307f(x_0)
 {
-	return concat(x_1, x_1);
+	return beforeAfter(toStr(x_0));
 }
 
-//@pbe (constraint (= (f383f "asdf" 1) "asdfasdf"))
-//@pbe (constraint (= (f383f "ab cd" 8) "ab cdab cd"))
-//@pbe (constraint (= (f383f "xyz" 1) "xyzxyz"))
-//@pbe (constraint (= (f383f "404" -1) "404404"))
+//@pbe (constraint (= (f587f "mno pqr st" 9 "mno pqr st") "81"))
+//@pbe (constraint (= (f587f "vvvvv" 6 "hello world") "36"))
+//@pbe (constraint (= (f587f "asdf" 8 "hello world") "64"))

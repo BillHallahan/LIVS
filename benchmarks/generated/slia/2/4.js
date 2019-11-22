@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,27 +28,27 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f482f(x_0)
+function f751f(x_0, x_1)
 {
-	return beforeAfter(beforeAfter(x_0));
+	return concat(x_1, beforeAfter(x_1));
 }
 
-function f238f(x_0, x_1, x_2)
+function f606f(x_0, x_1, x_2)
+{
+	return concat(beforeAfter(x_1), x_2);
+}
+
+function f737f(x_0)
+{
+	return add(mult(x_0, x_0), mult(x_0, x_0));
+}
+
+function f395f(x_0, x_1)
 {
 	return beforeAfter(x_1);
 }
 
-function f866f(x_0, x_1, x_2)
-{
-	return f238f(x_0, concat(x_2, x_2), concat(x_2, x_2));
-}
-
-function f693f(x_0, x_1)
-{
-	return len(concat(x_1, x_1));
-}
-
-//@pbe (constraint (= (f294f "asdf" 2 -1) "B12A"))
-//@pbe (constraint (= (f294f "asdf" 8 -3) "B18A"))
-//@pbe (constraint (= (f294f "" 8 1) "B18A"))
-//@pbe (constraint (= (f294f "hello world" 10 -2) "B20A"))
+//@pbe (constraint (= (f189f "xyz") "3"))
+//@pbe (constraint (= (f189f "hello world") "11"))
+//@pbe (constraint (= (f189f "xyz") "3"))
+//@pbe (constraint (= (f189f "xyz") "3"))

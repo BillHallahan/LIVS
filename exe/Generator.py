@@ -96,8 +96,8 @@ class JSFunction:
     def fuzzPBE(self, fs, n):
 
         # Fuzzing methods
-        fuzzInt = lambda: str(randint(-5, 10))
-        fuzzStr = lambda: choice(['""', '"asdf"', '"hello world"', '"404"', '"ab cd"', '"xyz"', '"vvvvv"', '"mno pqr st"'])
+        fuzzInt = lambda: str(randint(0, 10))
+        fuzzStr = lambda: choice(['"asdf"', '"hello world"', '"404"', '"ab cd"', '"xyz"', '"vvvvv"', '"mno pqr st"'])
 
         # fuzz each example
         pbe_exs = []

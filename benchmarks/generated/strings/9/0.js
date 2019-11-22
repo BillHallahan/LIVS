@@ -28,6 +28,7 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-//@pbe (constraint (= (f209f "hello world") "Bhello"))
-//@pbe (constraint (= (f209f "xyz") ""))
-//@pbe (constraint (= (f209f "mno pqr st") "Bmno"))
+//@pbe (constraint (= (f394f "404") "404"))
+//@pbe (constraint (= (f394f "hello world") "hellohello world"))
+//@pbe (constraint (= (f394f "404") "404"))
+//@pbe (constraint (= (f394f "404") "404"))

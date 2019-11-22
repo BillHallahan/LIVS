@@ -1,11 +1,11 @@
 // function results(x) {
 //  if (x > 0)
-//    return x + " " + plusOne(x) + " " + plusTwo(x) 
+//    return x + " " + plusOne(x) + " " + plusTwo(x)
 //  else
 //    return 0 }
-function plusOne(x) { 
-  var y = x+1 
-  return y } 
+function plusOne(x) {
+  var y = x+1
+  return y }
 function plusTwo(x) {
   var y = x+2
   return (y) }

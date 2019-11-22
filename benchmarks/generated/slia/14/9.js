@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,53 +28,52 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f952f(x_0, x_1, x_2)
+function f755f(x_0, x_1)
 {
-	return beforeAfter(toStr(x_1));
+	return concat(concat(x_0, x_0), concat(x_0, x_0));
 }
 
-function f972f(x_0, x_1, x_2)
+function f593f(x_0, x_1, x_2)
 {
-	return beforeAfter(x_1);
+	return beforeAfter(concat(x_2, x_2));
 }
 
-function f305f(x_0, x_1)
+function f356f(x_0, x_1, x_2)
 {
-	return concat(beforeAfter(x_0), beforeAfter(x_0));
+	return add(x_2, mult(x_2, x_2));
 }
 
-function f639f(x_0, x_1, x_2)
+function f470f(x_0, x_1, x_2)
 {
-	return len(f305f(x_0, x_1));
+	return f356f(f755f(x_1, x_2), concat(x_1, x_1), mult(x_2, x_2));
 }
 
-function f927f(x_0, x_1)
+function f211f(x_0, x_1)
 {
-	return f639f(x_0, add(x_1, x_1), f305f(x_0, x_1));
+	return beforeAfter(x_0);
 }
 
-function f290f(x_0, x_1, x_2)
+function f80f(x_0, x_1)
 {
-	return f639f(x_2, f639f(x_0, x_1, x_2), f952f(x_1, x_1, x_1));
+	return f356f(f593f(x_1, x_1, x_0), toStr(x_1), f356f(x_0, x_0, x_1));
 }
 
-function f825f(x_0, x_1, x_2)
+function f358f(x_0, x_1, x_2)
 {
-	return toStr(f639f(x_0, x_1, x_0));
+	return add(f470f(x_0, x_2, x_0), len(x_2));
 }
 
-function f439f(x_0, x_1, x_2)
+function f860f(x_0, x_1)
 {
-	return beforeAfter(f825f(x_0, x_1, x_2));
+	return toStr(mult(x_1, x_1));
 }
 
-function f963f(x_0, x_1)
+function f102f(x_0, x_1, x_2)
 {
-	return f927f(x_0, x_1);
+	return mult(mult(x_2, x_2), add(x_2, x_2));
 }
 
-//@pbe (constraint (= (f299f "ab cd" 9) "B19AB24A"))
-//@pbe (constraint (= (f299f "hello world" 6) "B16AB36A"))
-//@pbe (constraint (= (f299f "asdf" -5) "B5AB22A"))
-//@pbe (constraint (= (f299f "vvvvv" -3) "B7AB24A"))
-//@pbe (constraint (= (f299f "asdf" -3) "B7AB22A"))
+//@pbe (constraint (= (f432f "mno pqr st" "ab cd") "Bmno pqr stA"))
+//@pbe (constraint (= (f432f "ab cd" "xyz") "Bab cdA"))
+//@pbe (constraint (= (f432f "asdf" "hello world") "BasdfA"))
+//@pbe (constraint (= (f432f "ab cd" "hello world") "Bab cdA"))

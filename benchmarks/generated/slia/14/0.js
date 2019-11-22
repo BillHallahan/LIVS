@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,5 +28,8 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-//@pbe (constraint (= (f952f 10 0 3) "B10A"))
-//@pbe (constraint (= (f952f -1 6 -3) "B16A"))
+//@pbe (constraint (= (f755f "vvvvv" 0) "vvvvvvvvvvvvvvvvvvvv"))
+//@pbe (constraint (= (f755f "404" 4) "404404404404"))
+//@pbe (constraint (= (f755f "404" 10) "404404404404"))
+//@pbe (constraint (= (f755f "xyz" 9) "xyzxyzxyzxyz"))
+//@pbe (constraint (= (f755f "hello world" 9) "hello worldhello worldhello worldhello world"))

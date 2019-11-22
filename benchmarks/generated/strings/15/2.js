@@ -28,15 +28,15 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f753f(x_0)
+function f383f(x_0, x_1)
 {
-	return firstWord(beforeAfter(x_0));
+	return beforeAfter(lastLetter(x_1));
 }
 
-function f227f(x_0, x_1, x_2)
+function f1000f(x_0, x_1, x_2)
 {
-	return beforeAfter(firstWord(x_0));
+	return concat(x_2, lastLetter(x_1));
 }
 
-//@pbe (constraint (= (f280f "ab cd") "Bab"))
-//@pbe (constraint (= (f280f "") ""))
+//@pbe (constraint (= (f984f "xyz") "xyzzz"))
+//@pbe (constraint (= (f984f "vvvvv") "vvvvvvv"))

@@ -28,23 +28,20 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f214f(x_0)
+function f443f(x_0, x_1, x_2)
 {
-	return beforeAfter(rep(x_0, x_0, x_0));
+	return firstWord(beforeAfter(x_1));
 }
 
-function f634f(x_0, x_1, x_2)
+function f626f(x_0)
 {
-	return concat(firstWord(x_0), lastLetter(x_1));
+	return len(firstWord(x_0));
 }
 
-function f502f(x_0, x_1, x_2)
+function f791f(x_0, x_1)
 {
-	return rep(firstWord(x_0), beforeAfter(x_2), firstWord(x_0));
+	return beforeAfter(firstWord(x_0));
 }
 
-//@pbe (constraint (= (f324f "ab cd" "ab cd") "dab"))
-//@pbe (constraint (= (f324f "vvvvv" "") ""))
-//@pbe (constraint (= (f324f "mno pqr st" "404") "4"))
-//@pbe (constraint (= (f324f "404" "vvvvv") "v"))
-//@pbe (constraint (= (f324f "xyz" "vvvvv") "v"))
+//@pbe (constraint (= (f277f "ab cd") "4"))
+//@pbe (constraint (= (f277f "xyz") "2"))

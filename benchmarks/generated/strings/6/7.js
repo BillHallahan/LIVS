@@ -28,40 +28,42 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f391f(x_0, x_1, x_2)
+function f713f(x_0)
 {
-	return rep(rep(x_2, x_0, x_2), x_0, beforeAfter(x_0));
+	return len(len(x_0));
 }
 
-function f0f(x_0, x_1, x_2)
+function f779f(x_0, x_1)
+{
+	return beforeAfter(concat(x_0, x_0));
+}
+
+function f917f(x_0, x_1, x_2)
+{
+	return beforeAfter(f713f(x_0));
+}
+
+function f130f(x_0)
+{
+	return beforeAfter(x_0);
+}
+
+function f857f(x_0, x_1, x_2)
+{
+	return beforeAfter(x_0);
+}
+
+function f718f(x_0)
+{
+	return beforeAfter(firstWord(x_0));
+}
+
+function f173f(x_0, x_1, x_2)
 {
 	return beforeAfter(beforeAfter(x_2));
 }
 
-function f94f(x_0, x_1, x_2)
-{
-	return beforeAfter(f391f(x_1, x_0, x_0));
-}
-
-function f992f(x_0, x_1)
-{
-	return len(firstWord(x_1));
-}
-
-function f264f(x_0, x_1)
-{
-	return f94f(x_0, lastLetter(x_1), f94f(x_1, x_0, x_1));
-}
-
-function f986f(x_0)
-{
-	return len(f264f(x_0, x_0));
-}
-
-function f196f(x_0, x_1)
-{
-	return f94f(firstWord(x_0), x_0, x_1);
-}
-
-//@pbe (constraint (= (f929f "asdf") "4"))
-//@pbe (constraint (= (f929f "ab cd") "7"))
+//@pbe (constraint (= (f70f "vvvvv" "ab cd" "hello world") "B1A"))
+//@pbe (constraint (= (f70f "mno pqr st" "ab cd" "mno pqr st") "B1A"))
+//@pbe (constraint (= (f70f "ab cd" "hello world" "xyz") "B2A"))
+//@pbe (constraint (= (f70f "ab cd" "ab cd" "ab cd") "B1A"))

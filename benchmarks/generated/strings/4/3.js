@@ -28,20 +28,20 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f308f(x_0, x_1, x_2)
+function f54f(x_0, x_1, x_2)
 {
-	return lastLetter(len(x_1));
+	return len(rep(x_2, x_2, x_0));
 }
 
-function f228f(x_0, x_1)
+function f833f(x_0)
 {
-	return lastLetter(firstWord(x_1));
+	return beforeAfter(rep(x_0, x_0, x_0));
 }
 
-function f240f(x_0)
+function f357f(x_0, x_1)
 {
-	return lastLetter(len(x_0));
+	return f54f(x_1, x_1, f54f(x_1, x_1, x_1));
 }
 
-//@pbe (constraint (= (f772f "hello world") "dhello worldhello world"))
-//@pbe (constraint (= (f772f "vvvvv") "vvvvvvvvvvv"))
+//@pbe (constraint (= (f210f "vvvvv") "vvvvv"))
+//@pbe (constraint (= (f210f "xyz") "xyz"))

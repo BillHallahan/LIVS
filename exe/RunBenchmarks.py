@@ -1,29 +1,5 @@
 #!/usr/bin/env python3
 
-# Monday
-
-# pull
-# get mturk results
-# email (ask aboot cvc4 time being low, send mturk results)
-# run benchmarks overnight
-
-# Tuesday
-
-# download paper repo
-# add cmd line args to livs
-# add tix graph from csv / csv-simple to eval section
-
-# Wednesday
-
-# add mturk results table to eval section (description column for failures)
-# add text to eval section
-
-# Thursday / Friday
-
-# final todos
-# proofreading and cleanup
-# submit!
-
 import os
 import sys
 import signal
@@ -89,8 +65,8 @@ def main():
 
     else:
 
-        mturk_names = ["00401.js", "26903.js", "4697.js", "85808.js", "00975.js", "34491.js", "69645.js", "87350.js",
-                       "17365.js", "36976.js", "80286.js", "92431.js", "25948.js", "41127.js", "84873.js"]
+        mturk_names = ["00401.js", "26903.js", "4697.js",  "85808.js", "00975.js", "34491.js", "69645.js",
+                       "87350.js", "36976.js", "80286.js", "92431.js", "25948.js", "41127.js", "84873.js"]
         benchmarks = ["benchmarks/mturk/{}".format(f) for f in mturk_names]
 
     # Run each benchmark, storing the output in a file
@@ -132,7 +108,7 @@ def main():
 
     if mode == 'mturk':
 
-        fieldnames = ['components', 'cvc4_time', 'total_time', 'solved']
+        fieldnames = ['logic', 'components', 'cvc4_time', 'total_time', 'solved']
         with open('mturk_results.csv', 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()

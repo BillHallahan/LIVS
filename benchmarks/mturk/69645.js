@@ -1,7 +1,7 @@
-function sumTwoNumbers(a,b){
+function sumTwoNumbers(a,b) {
   const c = a + b ;
   return c ; }
-function multiplyByTwo(x){
+function multiplyByTwo(x) {
   const y = x*2 ;
   return y ; }
 // function performCalculations(x,y,z ){

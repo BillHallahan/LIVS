@@ -20,7 +20,7 @@ function len(x_0)
 
 function toStr(x_0)
 {
-	return (x_0 + 10) + "";
+	return x_0 + "";
 }
 
 function beforeAfter(x_0)
@@ -28,37 +28,37 @@ function beforeAfter(x_0)
 	return 'B' + x_0 + 'A';
 }
 
-function f624f(x_0, x_1, x_2)
+function f476f(x_0, x_1, x_2)
 {
-	return mult(x_0, mult(x_0, x_0));
+	return toStr(x_0);
 }
 
-function f980f(x_0, x_1)
+function f283f(x_0, x_1, x_2)
 {
-	return toStr(len(x_1));
+	return concat(f476f(x_2, x_0, x_2), beforeAfter(x_0));
 }
 
-function f221f(x_0, x_1)
+function f868f(x_0, x_1)
 {
-	return len(toStr(x_1));
+	return len(toStr(x_0));
 }
 
-function f483f(x_0, x_1, x_2)
+function f615f(x_0, x_1, x_2)
 {
-	return f980f(add(x_1, x_1), x_0);
+	return f283f(f283f(x_1, x_0, x_0), f868f(x_0, x_0), x_0);
 }
 
-function f647f(x_0)
+function f655f(x_0)
 {
-	return toStr(mult(x_0, x_0));
+	return len(toStr(x_0));
 }
 
-function f762f(x_0, x_1, x_2)
+function f127f(x_0, x_1)
 {
-	return beforeAfter(f483f(x_2, x_1, x_0));
+	return toStr(f868f(x_0, x_0));
 }
 
-//@pbe (constraint (= (f743f 1 0 "404") "10"))
-//@pbe (constraint (= (f743f 4 2 "") "74"))
-//@pbe (constraint (= (f743f -5 3 "asdf") "739"))
-//@pbe (constraint (= (f743f 8 -2 "404") "74"))
+//@pbe (constraint (= (f173f 2 9 6) 1))
+//@pbe (constraint (= (f173f 0 6 9) 1))
+//@pbe (constraint (= (f173f 7 2 7) 1))
+//@pbe (constraint (= (f173f 4 9 6) 1))

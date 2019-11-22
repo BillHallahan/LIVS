@@ -28,28 +28,28 @@ function rep(x_0, x_1, x_2)
 	return x_0.replace(x_1, x_2);
 }
 
-function f604f(x_0, x_1)
+function f232f(x_0)
 {
-	return firstWord(x_1);
+	return beforeAfter(concat(x_0, x_0));
 }
 
-function f45f(x_0, x_1, x_2)
+function f481f(x_0, x_1, x_2)
 {
-	return rep(x_1, beforeAfter(x_2), firstWord(x_1));
+	return beforeAfter(firstWord(x_0));
 }
 
-function f432f(x_0, x_1, x_2)
+function f111f(x_0, x_1, x_2)
 {
-	return f45f(x_1, f604f(x_1, x_2), lastLetter(x_0));
+	return f481f(x_1, firstWord(x_2), firstWord(x_0));
 }
 
-function f651f(x_0)
+function f338f(x_0)
 {
-	return firstWord(f45f(x_0, x_0, x_0));
+	return len(beforeAfter(x_0));
 }
 
-//@pbe (constraint (= (f797f "hello world") "d"))
-//@pbe (constraint (= (f797f "ab cd") "d"))
-//@pbe (constraint (= (f797f "vvvvv") "v"))
-//@pbe (constraint (= (f797f "") ""))
-//@pbe (constraint (= (f797f "xyz") "z"))
+//@pbe (constraint (= (f920f "hello world") "hello worldd"))
+//@pbe (constraint (= (f920f "vvvvv") "vvvvvv"))
+//@pbe (constraint (= (f920f "asdf") "asdff"))
+//@pbe (constraint (= (f920f "hello world") "hello worldd"))
+//@pbe (constraint (= (f920f "vvvvv") "vvvvvv"))
