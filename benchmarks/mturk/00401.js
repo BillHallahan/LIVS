@@ -10,6 +10,7 @@ function getFirst(s) {
 function getLast(s) {
   c = s[s.length - 1]
   return c }
+function add(x,y) {return x+y}
 
 //@pbe (constraint (= (getFirstAppendLast "united states") "us"))
 //@pbe (constraint (= (getFirstAppendLast "china") "ca"))
