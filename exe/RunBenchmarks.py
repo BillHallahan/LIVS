@@ -15,7 +15,8 @@ logics = ["lia", "strings", "slia"]
 primitives = 6
 generations = 20
 files_per_gen = 10
-timeout = 60
+timeout = 240
+threads = 90
 mode = "gen"
 
 # Run command, catching exceptions, timing the execution, and recording output
@@ -34,9 +35,10 @@ def runWithTimeout(cmd, timeout):
                     "CVC4 interrupted by SIGTERM.",
                     "CVC4 suffered a segfault.",
                     "Looks like a NULL pointer was dereferenced.",
+                    "timeout: the monitored command dumped core",
                     ""
                 ]
-                segfaults = len([e for e in err.decode("utf-8").split('\n') if e == "CVC4 suffered a segfault."])
+                segfaults = len([e for e in err.decode("utf-8").split('\n') if e == "timeout: the monitored command dumped core"])
                 err = [e for e in err.decode("utf-8").split('\n') if not (e in ignore or e.startswith("Offending "))]
 
             output = out.decode("utf-8") if not err else "ERROR\n{}".format("\n".join(err))
@@ -68,6 +70,8 @@ def runSingleBenchmark(f):
 
     if segfaults > 0:
         print("CVC4 SEGFAULTED {} times on {}".format(segfaults, f))
+
+    print("{} output: {}".format(f, output_lines[-2]))
 
     # Write to results
     ignore = ["CVC4 interrupted by SIGTERM.", "Up to date"]
@@ -101,7 +105,7 @@ def main():
         benchmarks = ["benchmarks/mturk/{}".format(f) for f in mturk_names]
 
     # Run each benchmark, store output in list
-    with Pool(4) as p:
+    with Pool(threads) as p:
         results = p.map(runSingleBenchmark, benchmarks)
     print(pformat(results))
     results = [r for r in results if r['solved'] != -1]
