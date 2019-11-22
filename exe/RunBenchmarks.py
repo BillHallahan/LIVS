@@ -19,8 +19,13 @@ def runWithTimeout(cmd, timeout):
         try:
             out, err = process.communicate(timeout=timeout)
             if err:
-                cvc4_error = "CVC4 interrupted by SIGTERM."
-                err = [e for e in err.decode("utf-8").split('\n') if (e != cvc4_error and e != '')]
+                ignore = [
+                    "CVC4 interrupted by SIGTERM.",
+                    "CVC4 suffered a segfault.",
+                    "Looks like a NULL pointer was dereferenced.",
+                    ""
+                ]
+                err = [e for e in err.decode("utf-8").split('\n') if not (e in ignore or e.startswith("Offending "))]
 
             output = out.decode("utf-8") if not err else "ERROR\n{}".format("\n".join(err))
             elapsed = timer() - start
@@ -90,6 +95,7 @@ def main():
             # If CVC4 erred, throw out result
             if output_lines[0] == 'ERROR':
                 print("erred on {}".format(f))
+                print(output_lines)
                 continue
 
             # Write to results

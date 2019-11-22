@@ -132,7 +132,7 @@ tryVariousCVC4Options _ _ _ _ _ _ [] = return Unknown
 tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
     liftIO $ whenLoud $ putStrLn $ "Trying CVC4 with " ++ show opt
 
-    m <- runCVC4WithFile form ext opt 40
+    m <- runCVC4WithFile form ext opt timeout
 
     let r = parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
@@ -140,10 +140,10 @@ tryVariousCVC4Options h sub tenv form ext timeout (opt:opts) = do
         Unknown -> tryVariousCVC4Options h sub tenv form ext timeout opts
         _ -> return r
 
-runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> m Result
-runCVC4OnString sub tenv s = do
+runCVC4OnString :: MonadIO m =>  Sub.SubFunctions -> T.TypeEnv -> String -> Int -> m Result
+runCVC4OnString sub tenv s timeout = do
     liftIO $ putStrLn s
-    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus"] 40
+    m <- liftIO $ runCVC4WithFile s ".sl" ["--lang", "sygus"] timeout
     return . parseSMT (M.empty) tenv sub . lexSMT $ m
 
 runSMT2WithGrammar :: MonadIO m => LIVSConfigNames -> H.Heap -> Sub.SubFunctions -> T.TypeEnv -> String -> m Result
@@ -151,7 +151,7 @@ runSMT2WithGrammar con h sub tenv s = do
     -- withSystemTempFile (and hence runCVC4WithFile) does not work if the extension
     -- has a number in it, so we write the SMT to a text file, and use --lang to tell
     -- CVC4 that it is SMTLIB
-    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--produce-model"] 40
+    m <- liftIO $ runCVC4WithFile s ".txt" ["--lang", "smt2.6", "--produce-model"] (smt_timeout con)
     return . parseSMT (H.map' typeOf h) tenv sub . lexSMT $ m
 
 runCVC4WithFile :: String -- SyGuS
