@@ -9,5 +9,5 @@ function multiplyByTwo(x){
 //   const k = multiplyByTwo(z);
 //   return (k+j); }
 
-// @pbe (constraint (= (performCalculations 1 2 3) 9 )
-// @pbe (constraint (= (performCalculations 2 4 6) 18 )
+// @pbe (constraint (= (performCalculations 1 2 3) 9 ))
+// @pbe (constraint (= (performCalculations 2 4 6) 18 ))
