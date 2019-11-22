@@ -1,3 +1,4 @@
+function add(x,y) { return x+y}
 function findPeri(l,w){
   var p = 2 * (l + w)
   return p }

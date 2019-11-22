@@ -13,5 +13,5 @@ function numberMultiplier(Num3, Num4) {
   var jj = Num3*Num4;
 return jj; }
 
-//@pbe (constraint (= testFunc (1 2 3 4) 15))
-//@pbe (constraint (= testFunc (2 3 4 5) 25))
+//@pbe (constraint (= (testFunc 1 2 3 4) 15))
+//@pbe (constraint (= (testFunc 2 3 4 5) 25))
