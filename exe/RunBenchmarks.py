@@ -16,7 +16,7 @@ primitives = 6
 generations = 20
 files_per_gen = 10
 timeout = 240
-threads = 90
+threads = 4
 mode = "gen"
 
 # Run command, catching exceptions, timing the execution, and recording output
@@ -38,7 +38,8 @@ def runWithTimeout(cmd, timeout):
                     "timeout: the monitored command dumped core",
                     ""
                 ]
-                segfaults = len([e for e in err.decode("utf-8").split('\n') if e == "timeout: the monitored command dumped core"])
+                segfault_msgs = ["CVC4 suffered a segfault.", "timeout: the monitored command dumped core" ]
+                segfaults = len([e for e in err.decode("utf-8").split('\n') if e in segfault_msgs])
                 err = [e for e in err.decode("utf-8").split('\n') if not (e in ignore or e.startswith("Offending "))]
 
             output = out.decode("utf-8") if not err else "ERROR\n{}".format("\n".join(err))
