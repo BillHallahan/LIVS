@@ -133,6 +133,8 @@ binOpToId (JSBinOpLe _) = binOp "<="
 binOpToId (JSBinOpMinus _) = binOp "-"
 binOpToId (JSBinOpPlus _) = binOp "+"
 binOpToId (JSBinOpTimes _) = binOp "*"
+binOpToId (JSBinOpDivide _) = binOp "/"
+binOpToId (JSBinOpMod _) = binOp "%"
 binOpToId _ = error "Unhandled Binary Operator"
 
 binOp :: String -> Id

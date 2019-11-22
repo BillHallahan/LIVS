@@ -12,5 +12,5 @@ function bizz(base, x) {
  return s;
 }
 
-//@pbe (constraint (= (foo 0) 4 0))
-//@pbe (constraint (= (foo 10) 14 a))
+//@pbe (constraint (= (foo 0) "4 0"))
+//@pbe (constraint (= (foo 10) "14 a"))

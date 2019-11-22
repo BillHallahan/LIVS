@@ -171,7 +171,8 @@ sygusGrammar t@(TyCon n _) h ls vs =
        "(" ++ typeSymbol t ++ " " ++ nameToStringSMT n ++ "\n" 
     ++ "(" ++ concat (intersperse " " ls') ++ " "
     ++ concat (intersperse " " vs') ++ "\n"
-    ++ sc
+    ++ sc ++ "\n"
+    -- ++ "(Constant " ++ (nameToStringSMT n) ++ ") \n"
     ++ "))"
 sygusGrammar t _ _ _ = error $ "sygusGrammar: Bad type." ++ show t
 
