@@ -7,6 +7,16 @@ from time import monotonic as timer
 from subprocess import Popen, PIPE, TimeoutExpired
 import itertools
 import csv
+from pprint import pformat
+from multiprocessing import Pool
+
+# Constants
+logics = ["lia", "strings", "slia"]
+primitives = 6
+generations = 20
+files_per_gen = 10
+timeout = 60
+mode = "gen"
 
 # Run command, catching exceptions, timing the execution, and recording output
 def runWithTimeout(cmd, timeout):
@@ -16,6 +26,7 @@ def runWithTimeout(cmd, timeout):
     with Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, preexec_fn=os.setsid) as process:
 
         # Run command with timeout
+        segfaults = 0
         try:
             out, err = process.communicate(timeout=timeout)
             if err:
@@ -25,6 +36,7 @@ def runWithTimeout(cmd, timeout):
                     "Looks like a NULL pointer was dereferenced.",
                     ""
                 ]
+                segfaults = len([e for e in err.decode("utf-8").split('\n') if e == "CVC4 suffered a segfault."])
                 err = [e for e in err.decode("utf-8").split('\n') if not (e in ignore or e.startswith("Offending "))]
 
             output = out.decode("utf-8") if not err else "ERROR\n{}".format("\n".join(err))
@@ -36,26 +48,40 @@ def runWithTimeout(cmd, timeout):
             os.killpg(process.pid, signal.SIGINT)
             output = "timeout\n"
 
-    return elapsed, output
+    return elapsed, output, segfaults
+
+def runSingleBenchmark(f):
+
+    # Run LIVS, catching exceptions and timing the execution
+    print("{}...".format(f))
+    cmd = "cabal new-run livs -- --code-file={}".format(f)
+    elapsed, output, segfaults = runWithTimeout(cmd, timeout)
+    output_lines = output.split('\n')
+
+    # Write to dump file
+    elapsed_str = "{0:.3f}s".format(elapsed).ljust(7)
+
+    # If CVC4 erred, throw out result
+    if output_lines[0] == 'ERROR':
+        print("LIVS ERRED on {}:\n{}".format(f, pformat(output_lines)))
+        return {'solved': -1}
+
+    if segfaults > 0:
+        print("CVC4 SEGFAULTED {} times on {}".format(segfaults, f))
+
+    # Write to results
+    ignore = ["CVC4 interrupted by SIGTERM.", "Up to date"]
+    cvc4_time = sum([float(line[:-1]) for line in output_lines[:-2] if line not in ignore])
+    stats = {
+        'logic': "slia" if "slia" in f else "lia" if "lia" in f else "strings" if "strings" in f else "mturk",
+        'components': int(f[-4]) + primitives if mode == 'gen' else 2,
+        'solved': 0 if output_lines[0] == "timeout" else 1,
+        'cvc4_time': cvc4_time,
+        'total_time': elapsed
+    }
+    return stats
 
 def main():
-
-    # Arg validation
-    if len(sys.argv) != 3:
-        exit("usage: ./RunBenchmarks.py MODE timeout")
-    try:
-        timeout = int(sys.argv[2])
-    except:
-        exit("error: timeout must be an integer number of seconds")
-    mode = sys.argv[1]
-    if mode != "mturk" and mode != "gen":
-        exit("error: MODE must be one of 'mturk' or 'gen'")
-
-    # Constants
-    logics = ["lia", "strings", "slia"]
-    primitives = 6
-    generations = 20
-    files_per_gen = 10
 
     # Benchmark locations
     if mode == "gen":
@@ -74,44 +100,13 @@ def main():
                        "87350.js", "36976.js", "80286.js", "92431.js", "25948.js", "41127.js", "84873.js"]
         benchmarks = ["benchmarks/mturk/{}".format(f) for f in mturk_names]
 
-    # Run each benchmark, storing the output in a file
-    results = []
-    with open("dump_results_{}.txt".format(mode), 'w') as txtfile:
+    # Run each benchmark, store output in list
+    with Pool(4) as p:
+        results = p.map(runSingleBenchmark, benchmarks)
+    print(pformat(results))
+    results = [r for r in results if r['solved'] != -1]
 
-        # Iterate over directories and filenames of benchmarks
-        for f in benchmarks:
-
-            # Run LIVS, catching exceptions and timing the execution
-            print("{}...".format(f))
-            cmd = "cabal new-run livs -- --code-file={}".format(f)
-            elapsed, output = runWithTimeout(cmd, timeout)
-            output_lines = output.split('\n')
-
-            # Write to dump file
-            elapsed_str = "{0:.3f}s".format(elapsed).ljust(7)
-            txtfile.write("{}".format(f).ljust(31) + " : {} : {}\n".format(elapsed_str, output_lines[-2]))
-            txtfile.flush()
-
-            # If CVC4 erred, throw out result
-            if output_lines[0] == 'ERROR':
-                print("erred on {}".format(f))
-                print(output_lines)
-                continue
-
-            # Write to results
-            ignore = ["CVC4 interrupted by SIGTERM.", "Up to date"]
-            cvc4_time = sum([float(line[:-1]) for line in output_lines[:-2] if line not in ignore])
-            stats = {
-                'logic': "slia" if "slia" in f else "lia" if "lia" in f else "strings" if "strings" in f else "mturk",
-                'components': int(f[-4]) + primitives if mode == 'gen' else 2,
-                'solved': 0 if output_lines[0] == "timeout" else 1,
-                'cvc4_time': cvc4_time,
-                'total_time': elapsed
-            }
-            results.append(stats)
-
-        txtfile.write(str(results))
-
+    # Write to output files
     if mode == 'mturk':
 
         fieldnames = ['logic', 'components', 'cvc4_time', 'total_time', 'solved']
